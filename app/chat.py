@@ -18,6 +18,3 @@ prompt = ChatPromptTemplate.from_messages(
 )
 
 chain = prompt | ChatOpenAI(model="gpt-4-turbo-preview")
-
-print("type of chat is ")
-print(type(chain))
