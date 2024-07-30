@@ -32,6 +32,13 @@ langchain-template 코드 제거
 poetry run langchain app remove retrieval-agent
 ```
 
+
+## vs-code에서 debugger 실행
+
+./vscode/launch.json 파일 참조
+
+
+
 ## Procfile
 
 app 패키지(폴더) 하위의 [s](http://server.py)erver.py 안에 app 으로 진입점 초기화 한다는 뜻
@@ -61,41 +68,6 @@ web: uvicorn app.server:app --host=0.0.0.0 --port=${PORT:-5000}
 3. git init
     - github 에 소스코드 업로드
 
-## Heroku
-
-### Install the Heroku CLI
-
-Download and install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-command-line).
-
-heroku 대시보드에 접속하여 새로운 앱을 생성
-
-앱이름: `langserve-template` 으로 이미 생성해 놓았음
-
-![Untitled](images/1.png)
-
-터미널에 heroku init
-
-아래의 `langserve-template` 대신 본인의 앱이름을 입력 가능!
-
-```bash
-heorku git:remote -a langserve-template
-```
-
-배포
-
-```bash
-git push heroku main
-```
-
-## 환경변수
-
-```bash
-heroku config:set OPENAI_API_KEY=이곳에_API_KEY_입력
-heroku config:set LANGCHAIN_TRACING_V2=true
-heroku config:set LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
-heroku config:set LANGCHAIN_PROJECT=LANGSERVE
-heroku config:set LANGCHAIN_API_KEY=이곳에_API_KEY_입력
-```
 
 
 
