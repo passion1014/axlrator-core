@@ -1,6 +1,7 @@
 import os
 from langchain.text_splitter import CharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import OpenAIEmbeddings
+from langchain.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 import chardet
@@ -10,8 +11,6 @@ import argparse
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
 
-# 실행방법
-# python upload_vectordb.py ../data/norway.txt mycollec
 
 def load_and_detect_encoding(file_path):
     # 1. 파일 로드 및 인코딩 탐지
@@ -44,13 +43,26 @@ def main():
     # 각 chunk를 문서 객체로 변환
     docs = text_splitter.create_documents(chunks)
 
+
     # FAISS 인덱스 생성 및 문서 추가
-    embeddings = OpenAIEmbeddings()
+    # embeddings = OpenAIEmbeddings()
+    embeddings = OllamaEmbeddings(
+        model="nomic-embed-text",
+        base_url="http://localhost:11434"  # Ollama의 기본 URL입니다. 필요에 따라 변경하세요.
+    )
     db = FAISS.from_documents(docs, embeddings)
 
     # FAISS 인덱스 저장
-    db.save_local(f"../vectordb/{args.index_name}")
-    print(f"FAISS 인덱스를 '../vectordb/{args.index_name}'에 저장했습니다.")
+    current_directory = os.getcwd()
+    vectordb_path = os.path.normpath(os.path.join(current_directory, 'vectordb'))
+    print(current_directory)
+    print(vectordb_path)
+        
+    db.save_local(f"{vectordb_path}/{args.index_name}")
+    print(f"FAISS 인덱스를 '{vectordb_path}/{args.index_name}'에 저장했습니다.")
 
 if __name__ == '__main__':
+    ''' 사용법
+        # python upload_vectordb.py ../data/norway.txt db_desc
+    '''
     main()
