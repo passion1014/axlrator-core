@@ -3,7 +3,6 @@ import chromadb
 # from langchain.vectorstores import Chroma
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings  # 경로 수정
-from langchain.embeddings import OllamaEmbeddings
 from dotenv import load_dotenv
 import argparse
 
@@ -22,19 +21,13 @@ def main():
     # Chroma 데이터베이스 클라이언트 설정
     client = chromadb.PersistentClient(path="../vectordb/chroma_db")  # 기존 데이터베이스 경로
     
-    embeddings = OllamaEmbeddings(
-        model="nomic-embed-text",
-        base_url="http://localhost:11434"  # Ollama의 기본 URL입니다. 필요에 따라 변경하세요.
-    )
-
-    
     # 기존 컬렉션 로드
     db = Chroma(
         client=client,
         collection_name="openai_collection",
-        embedding_function=embeddings
+        embedding_function=OpenAIEmbeddings()
     )
-    
+
     # 쿼리로 유사한 문서 검색
     docs = db.similarity_search(args.query)
     

@@ -1,120 +1,62 @@
-# packages in environment at /Users/passion1014/anaconda3/envs/ragserver:
-#
-# Name                    Version                   Build  Channel
-aiohttp                   3.9.5                    pypi_0    pypi
-aiosignal                 1.3.1                    pypi_0    pypi
-annotated-types           0.7.0                    pypi_0    pypi
-anthropic                 0.32.0                   pypi_0    pypi
-anyio                     4.4.0                    pypi_0    pypi
-asttokens                 2.4.1                    pypi_0    pypi
-attrs                     23.2.0                   pypi_0    pypi
-backoff                   2.2.1                    pypi_0    pypi
-bzip2                     1.0.8                h80987f9_6  
-ca-certificates           2024.7.2             hca03da5_0  
-certifi                   2024.7.4                 pypi_0    pypi
-charset-normalizer        3.3.2                    pypi_0    pypi
-click                     8.1.7                    pypi_0    pypi
-dataclasses-json          0.6.7                    pypi_0    pypi
-decorator                 5.1.1                    pypi_0    pypi
-defusedxml                0.7.1                    pypi_0    pypi
-distro                    1.9.0                    pypi_0    pypi
-dnspython                 2.6.1                    pypi_0    pypi
-email-validator           2.2.0                    pypi_0    pypi
-executing                 2.0.1                    pypi_0    pypi
-expat                     2.6.2                h313beb8_0  
-faiss-cpu                 1.8.0.post1              pypi_0    pypi
-fastapi                   0.111.1                  pypi_0    pypi
-fastapi-cli               0.0.4                    pypi_0    pypi
-filelock                  3.15.4                   pypi_0    pypi
-frozenlist                1.4.1                    pypi_0    pypi
-fsspec                    2024.6.1                 pypi_0    pypi
-h11                       0.14.0                   pypi_0    pypi
-httpcore                  1.0.5                    pypi_0    pypi
-httptools                 0.6.1                    pypi_0    pypi
-httpx                     0.27.0                   pypi_0    pypi
-huggingface-hub           0.24.3                   pypi_0    pypi
-idna                      3.7                      pypi_0    pypi
-ipython                   8.26.0                   pypi_0    pypi
-jedi                      0.19.1                   pypi_0    pypi
-jinja2                    3.1.4                    pypi_0    pypi
-jiter                     0.5.0                    pypi_0    pypi
-jsonpatch                 1.33                     pypi_0    pypi
-jsonpointer               3.0.0                    pypi_0    pypi
-jsonschema                4.23.0                   pypi_0    pypi
-jsonschema-specifications 2023.12.1                pypi_0    pypi
-langchain                 0.2.11                   pypi_0    pypi
-langchain-anthropic       0.1.21                   pypi_0    pypi
-langchain-community       0.2.10                   pypi_0    pypi
-langchain-core            0.2.24                   pypi_0    pypi
-langchain-openai          0.1.19                   pypi_0    pypi
-langchain-text-splitters  0.2.2                    pypi_0    pypi
-langfuse                  2.39.3                   pypi_0    pypi
-langgraph                 0.1.16                   pypi_0    pypi
-langserve                 0.2.2                    pypi_0    pypi
-langsmith                 0.1.93                   pypi_0    pypi
-libcxx                    14.0.6               h848a8c0_0  
-libffi                    3.4.4                hca03da5_1  
-markdown-it-py            3.0.0                    pypi_0    pypi
-markupsafe                2.1.5                    pypi_0    pypi
-marshmallow               3.21.3                   pypi_0    pypi
-matplotlib-inline         0.1.7                    pypi_0    pypi
-mdurl                     0.1.2                    pypi_0    pypi
-multidict                 6.0.5                    pypi_0    pypi
-mypy-extensions           1.0.0                    pypi_0    pypi
-ncurses                   6.4                  h313beb8_0  
-numpy                     1.26.4                   pypi_0    pypi
-openai                    1.37.1                   pypi_0    pypi
-openssl                   3.0.14               h80987f9_0  
-orjson                    3.10.6                   pypi_0    pypi
-packaging                 23.2                     pypi_0    pypi
-parso                     0.8.4                    pypi_0    pypi
-pexpect                   4.9.0                    pypi_0    pypi
-pip                       24.0            py312hca03da5_0  
-prompt-toolkit            3.0.47                   pypi_0    pypi
-ptyprocess                0.7.0                    pypi_0    pypi
-pure-eval                 0.2.3                    pypi_0    pypi
-pydantic                  2.8.2                    pypi_0    pypi
-pydantic-core             2.20.1                   pypi_0    pypi
-pygments                  2.18.0                   pypi_0    pypi
-pyproject-toml            0.0.10                   pypi_0    pypi
-python                    3.12.4               h99e199e_1  
-python-dotenv             1.0.1                    pypi_0    pypi
-python-multipart          0.0.9                    pypi_0    pypi
-pyyaml                    6.0.1                    pypi_0    pypi
-readline                  8.2                  h1a28f6b_0  
-referencing               0.35.1                   pypi_0    pypi
-regex                     2024.7.24                pypi_0    pypi
-requests                  2.32.3                   pypi_0    pypi
-rich                      13.7.1                   pypi_0    pypi
-rpds-py                   0.19.1                   pypi_0    pypi
-setuptools                69.5.1          py312hca03da5_0  
-shellingham               1.5.4                    pypi_0    pypi
-six                       1.16.0                   pypi_0    pypi
-sniffio                   1.3.1                    pypi_0    pypi
-sqlalchemy                2.0.31                   pypi_0    pypi
-sqlite                    3.45.3               h80987f9_0  
-sse-starlette             2.1.2                    pypi_0    pypi
-stack-data                0.6.3                    pypi_0    pypi
-starlette                 0.37.2                   pypi_0    pypi
-tenacity                  8.5.0                    pypi_0    pypi
-tiktoken                  0.7.0                    pypi_0    pypi
-tk                        8.6.14               h6ba3021_0  
-tokenizers                0.19.1                   pypi_0    pypi
-toml                      0.10.2                   pypi_0    pypi
-tqdm                      4.66.4                   pypi_0    pypi
-traitlets                 5.14.3                   pypi_0    pypi
-typer                     0.12.3                   pypi_0    pypi
-typing-extensions         4.12.2                   pypi_0    pypi
-typing-inspect            0.9.0                    pypi_0    pypi
-tzdata                    2024a                h04d1e81_0  
-urllib3                   2.2.2                    pypi_0    pypi
-uvicorn                   0.30.3                   pypi_0    pypi
-uvloop                    0.19.0                   pypi_0    pypi
-watchfiles                0.22.0                   pypi_0    pypi
-wcwidth                   0.2.13                   pypi_0    pypi
-websockets                12.0                     pypi_0    pypi
-wheel                     0.43.0          py312hca03da5_0  
-wrapt                     1.16.0                   pypi_0    pypi
-xz                        5.4.6                h80987f9_1  
-yarl                      1.9.4                    pypi_0    pypi
-zlib                      1.2.13               h18a0788_1  
+aiohttp==3.9.3 ; python_version >= "3.11" and python_version < "4.0"
+aiosignal==1.3.1 ; python_version >= "3.11" and python_version < "4.0"
+annotated-types==0.6.0 ; python_version >= "3.11" and python_version < "4.0"
+anyio==4.3.0 ; python_version >= "3.11" and python_version < "4.0"
+attrs==23.2.0 ; python_version >= "3.11" and python_version < "4.0"
+certifi==2024.2.2 ; python_version >= "3.11" and python_version < "4.0"
+charset-normalizer==3.3.2 ; python_version >= "3.11" and python_version < "4.0"
+click==8.1.7 ; python_version >= "3.11" and python_version < "4.0"
+colorama==0.4.6 ; python_version >= "3.11" and python_version < "4.0"
+dataclasses-json==0.6.4 ; python_version >= "3.11" and python_version < "4.0"
+distro==1.9.0 ; python_version >= "3.11" and python_version < "4.0"
+fastapi==0.110.0 ; python_version >= "3.11" and python_version < "4.0"
+frozenlist==1.4.1 ; python_version >= "3.11" and python_version < "4.0"
+gitdb==4.0.11 ; python_version >= "3.11" and python_version < "4.0"
+gitpython==3.1.42 ; python_version >= "3.11" and python_version < "4.0"
+greenlet==3.0.3 ; python_version >= "3.11" and python_version < "4.0" and (platform_machine == "aarch64" or platform_machine == "ppc64le" or platform_machine == "x86_64" or platform_machine == "amd64" or platform_machine == "AMD64" or platform_machine == "win32" or platform_machine == "WIN32")
+h11==0.14.0 ; python_version >= "3.11" and python_version < "4.0"
+httpcore==1.0.4 ; python_version >= "3.11" and python_version < "4.0"
+httpx-sse==0.4.0 ; python_version >= "3.11" and python_version < "4.0"
+httpx==0.27.0 ; python_version >= "3.11" and python_version < "4.0"
+idna==3.6 ; python_version >= "3.11" and python_version < "4.0"
+jsonpatch==1.33 ; python_version >= "3.11" and python_version < "4.0"
+jsonpointer==2.4 ; python_version >= "3.11" and python_version < "4.0"
+langchain-cli==0.0.21 ; python_version >= "3.11" and python_version < "4.0"
+langchain-community==0.0.29 ; python_version >= "3.11" and python_version < "4.0"
+langchain-core==0.1.33 ; python_version >= "3.11" and python_version < "4.0"
+langchain-text-splitters==0.0.1 ; python_version >= "3.11" and python_version < "4.0"
+langchain==0.1.13 ; python_version >= "3.11" and python_version < "4.0"
+langserve==0.0.51 ; python_version >= "3.11" and python_version < "4.0"
+langserve[all]==0.0.51 ; python_version >= "3.11" and python_version < "4.0"
+langsmith==0.1.31 ; python_version >= "3.11" and python_version < "4.0"
+markdown-it-py==3.0.0 ; python_version >= "3.11" and python_version < "4.0"
+marshmallow==3.21.1 ; python_version >= "3.11" and python_version < "4.0"
+mdurl==0.1.2 ; python_version >= "3.11" and python_version < "4.0"
+multidict==6.0.5 ; python_version >= "3.11" and python_version < "4.0"
+mypy-extensions==1.0.0 ; python_version >= "3.11" and python_version < "4.0"
+numpy==1.26.4 ; python_version >= "3.11" and python_version < "4.0"
+openai==1.14.2 ; python_version >= "3.11" and python_version < "4.0"
+orjson==3.9.15 ; python_version >= "3.11" and python_version < "4.0"
+packaging==23.2 ; python_version >= "3.11" and python_version < "4.0"
+pydantic-core==2.16.3 ; python_version >= "3.11" and python_version < "4.0"
+pydantic==2.6.4 ; python_version >= "3.11" and python_version < "4.0"
+pygments==2.17.2 ; python_version >= "3.11" and python_version < "4.0"
+python-dotenv==1.0.1 ; python_version >= "3.11" and python_version < "4.0"
+pyyaml==6.0.1 ; python_version >= "3.11" and python_version < "4.0"
+requests==2.31.0 ; python_version >= "3.11" and python_version < "4.0"
+rich==13.7.1 ; python_version >= "3.11" and python_version < "4.0"
+shellingham==1.5.4 ; python_version >= "3.11" and python_version < "4.0"
+smmap==5.0.1 ; python_version >= "3.11" and python_version < "4.0"
+sniffio==1.3.1 ; python_version >= "3.11" and python_version < "4.0"
+sqlalchemy==2.0.28 ; python_version >= "3.11" and python_version < "4.0"
+sse-starlette==1.8.2 ; python_version >= "3.11" and python_version < "4.0"
+starlette==0.36.3 ; python_version >= "3.11" and python_version < "4.0"
+tenacity==8.2.3 ; python_version >= "3.11" and python_version < "4.0"
+tomlkit==0.12.4 ; python_version >= "3.11" and python_version < "4.0"
+tqdm==4.66.2 ; python_version >= "3.11" and python_version < "4.0"
+typer[all]==0.9.0 ; python_version >= "3.11" and python_version < "4.0"
+typing-extensions==4.10.0 ; python_version >= "3.11" and python_version < "4.0"
+typing-inspect==0.9.0 ; python_version >= "3.11" and python_version < "4.0"
+urllib3==2.2.1 ; python_version >= "3.11" and python_version < "4.0"
+uvicorn==0.23.2 ; python_version >= "3.11" and python_version < "4.0"
+yarl==1.9.4 ; python_version >= "3.11" and python_version < "4.0"
