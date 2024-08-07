@@ -1,9 +1,13 @@
+import os
 from langchain_community.vectorstores import FAISS
-# from langchain_openai import OpenAIEmbeddings
 from langchain.embeddings import OllamaEmbeddings
-from app.config import FAISS_INDEX_PATH, setup_logging
+from app.config import setup_logging
 
 logger = setup_logging()
+
+# FAISS 인덱스 경로 설정
+FAISS_INDEX_PATH = os.path.join(os.path.dirname(__file__), '../vectordb/db_desc')
+
 
 def load_vector_database():
     # embeddings = OpenAIEmbeddings()
@@ -25,3 +29,8 @@ def load_vector_database():
     logger.info(f"----- Number of items in FAISS index: {len(db.index_to_docstore_id)}")
     
     return retriever
+
+
+
+
+
