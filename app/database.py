@@ -1,7 +1,7 @@
 import os
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings import OllamaEmbeddings
-from app.config import setup_logging
+from .config import setup_logging
 
 logger = setup_logging()
 

@@ -3,7 +3,7 @@
     "configurations": [
         // Vector Database File Load
         {
-            "name": "Upload VectorDB",
+            "name": "업로드 VectorDB",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tools/upload_vectordb.py",
@@ -20,26 +20,32 @@
             "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
             "cwd": "${workspaceFolder}"
         },
-        
+        // {
+        //     "name": "Langchain Serve",
+        //     "type": "python",
+        //     "request": "launch",
+        //     // "module": "langchain.cli",
+        //     "program": "${workspaceFolder}/app/server.py",
+        //     "args": [
+        //         "serve"
+        //     ],
+        //     "console": "integratedTerminal",
+        //     "justMyCode": true,
+        //     "envFile": "${workspaceFolder}/.env",
+        //     "env": {
+        //         "POETRY_ACTIVE": "1",
+        //         "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
+        //     },
+        //     "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+        //     "cwd": "${workspaceFolder}"
+        // },
         // Langchain Server
         {
-            "name": "Langchain Serve",
+            "name": "서버 실행",
             "type": "python",
             "request": "launch",
-            // "module": "langchain.cli",
-            "program": "${workspaceFolder}/app/server.py",
-            "args": [
-                "serve"
-            ],
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "envFile": "${workspaceFolder}/.env",
-            "env": {
-                "POETRY_ACTIVE": "1",
-                "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
-            },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
-            "cwd": "${workspaceFolder}"
+            "module": "app.server",
+            "console": "integratedTerminal"
         }
     ]
 }

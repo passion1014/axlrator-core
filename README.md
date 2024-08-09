@@ -1,37 +1,63 @@
 # 건설공제를 위한 LangServe With FastAPI
 
-## Poetry
+## 사용 기술 Stack
 
-poetry 설치
+**LangChain = RAG 서비스 구축을 위한 AI Framework**
 
+**Langfuse = 실행 로그 저장**
+
+**FastAPI = 웹서버**
+
+**SQLAlchemy = ORM 모듈 ( postgresql에 데이터 관리)**
+
+
+## 실행방법
+
+### 일반 서비스 실행
+> python -m app.server
+
+### vs code debugger 실행 
+> 디버깅 툴에서 "서버 실행(rag_server)" 메뉴 선택 후 실행
+
+
+
+## 설정방법
+
+### 필요한 라이브러리 설치
+참고 파일 : requirements.txt
+
+### Langfuse 설치
+
+참고 : [Langfuse 공식](https://langfuse.com/docs/deployment/local)
 ```bash
-pip install poetry
+# Clone the Langfuse repository
+git clone https://github.com/langfuse/langfuse.git
+cd langfuse
+ 
+# Start the server and database
+docker compose up
 ```
 
-필요한 패키지 추가
 
-```bash
-poetry add langchain-openai
+### RDB 설정
+
+Langfuse를 사용하기 위해서는 기본적으로 postgresql이 필요하며 설치를 해야한다.<br>
+여기서 설치된 postgresql을 사용하는 것을 기준으로 가이드 한다. <br>
+
+#### 1. 기존 postgresql에 사용자 추가
+```sql
+CREATE USER ragserver WITH PASSWORD 'ragserver' SUPERUSER;
 ```
 
-langserve 실행
+#### 2. 계정 정보 셋팅
+db_model/database.py 아래 정보를 수정한다.
+```python
+SQLALCHEMY_DATABASE_URL = "postgresql://ragserver:ragserver@localhost/ragserver"
 
-```bash
-poetry run langchain serve
 ```
+>**Tip:** 테이블 정보는 database_models.py에 정의 되어 있고, 서비스 실행시 생성된다. (ORM)
 
-langchain-template 코드 추가
-
-```bash
-poetry run langchain app add retrieval-agent
-```
-
-langchain-template 코드 제거
-
-```bash
-poetry run langchain app remove retrieval-agent
-```
-
+<br><br><br><br><br><br><br><br>
 ## Procfile
 
 app 패키지(폴더) 하위의 [s](http://server.py)erver.py 안에 app 으로 진입점 초기화 한다는 뜻
@@ -68,10 +94,3 @@ web: uvicorn app.server:app --host=0.0.0.0 --port=${PORT:-5000}
 
 
 # 모듈 설명
-
-### server.py
-FastAPI 를 사용한 서버 시작
-
-### chat.py
-
-### chain.py
