@@ -20,7 +20,7 @@ def main():
     args = parser.parse_args()
     
     # Chroma 데이터베이스 클라이언트 설정
-    client = chromadb.PersistentClient(path="../vectordb/chroma_db")  # 기존 데이터베이스 경로
+    client = chromadb.PersistentClient(path="../data/vector/chroma_db")  # 기존 데이터베이스 경로
     
     embeddings = OllamaEmbeddings(
         model="nomic-embed-text",

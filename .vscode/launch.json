@@ -1,12 +1,26 @@
 {
     "version": "0.2.0",
     "configurations": [
+        {
+            "name": "DB 스키마 조회",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tools/db_schema.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "env": {
+                "POETRY_ACTIVE": "1",
+                "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
+            },
+            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "cwd": "${workspaceFolder}"
+        },
         // Vector Database File Load
         {
             "name": "업로드 VectorDB",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/tools/upload_vectordb.py",
+            "program": "${workspaceFolder}/app/vectordb/upload_vectordb.py",
             "args": [
                 "${workspaceFolder}/data/employees.txt", // Vector DB에 로드할 파일 경로
                 "db_desc"
@@ -20,25 +34,6 @@
             "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
             "cwd": "${workspaceFolder}"
         },
-        // {
-        //     "name": "Langchain Serve",
-        //     "type": "python",
-        //     "request": "launch",
-        //     // "module": "langchain.cli",
-        //     "program": "${workspaceFolder}/app/server.py",
-        //     "args": [
-        //         "serve"
-        //     ],
-        //     "console": "integratedTerminal",
-        //     "justMyCode": true,
-        //     "envFile": "${workspaceFolder}/.env",
-        //     "env": {
-        //         "POETRY_ACTIVE": "1",
-        //         "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
-        //     },
-        //     "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
-        //     "cwd": "${workspaceFolder}"
-        // },
         // Langchain Server
         {
             "name": "서버 실행",

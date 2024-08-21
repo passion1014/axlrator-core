@@ -1,17 +1,22 @@
-from typing import List, Tuple, TypedDict, Annotated
+import os
+from dotenv import load_dotenv
+from typing import List, Tuple, TypedDict
 from langchain_core.messages import AIMessage
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
 from langserve.pydantic_v1 import BaseModel, Field
-from langchain_community.chat_models import ChatOllama
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from app.database import load_vector_database
-from app.prompts import CONDENSE_QUESTION_PROMPT, ANSWER_PROMPT
-from app.utils import combine_documents, format_chat_history
 from langgraph.graph import StateGraph, END
-from langfuse.decorators import observe, langfuse_context
+from langchain_community.vectorstores import FAISS
+from app.prompts.prompts import MERGE_QUESTION_PROMPT, ANSWER_PROMPT
+from app.utils import combine_documents, merge_chat_history, get_embedding_model, get_llm_model
+from .config import setup_logging
 
+# .env 파일 로드
+load_dotenv()
+
+logger = setup_logging()
+
+# FAISS 인덱스 경로 설정
+vector_index = os.getenv("VECTOR_DATABASE_INDEX")
+FAISS_INDEX_PATH = os.path.join(os.path.dirname(__file__), f'../data/vector/{vector_index}')
 
 
 class ChatHistory(BaseModel):
@@ -21,24 +26,46 @@ class ChatHistory(BaseModel):
     )
     question: str
 
+
 class AgentState(TypedDict):
     chat_history: List[Tuple[str, str]]
     question: str
     context: str
     response: str
 
+
+def load_vector_database():
+    '''
+    Retriever를 반환하는 벡터 데이터베이스 로드 함수
+    '''
+    embeddings = get_embedding_model()
+    
+    try:
+        db = FAISS.load_local(FAISS_INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
+        logger.info(f"----- FAISS index loaded from: {FAISS_INDEX_PATH}")
+        
+    except ValueError as e:
+        logger.error(f"Error loading FAISS index: {e}")
+        db = FAISS.load_local(FAISS_INDEX_PATH, allow_dangerous_deserialization=True)
+        db.embeddings = embeddings
+
+    retriever = db.as_retriever(search_kwargs={"k": 1})    
+    logger.info(f"----- Number of items in FAISS index: {len(db.index_to_docstore_id)}")
+    
+    return retriever
+
+
+
 def create_chain():
     # retriever 선언
     retriever = load_vector_database()
     
-    # 사용할 모델 선언
-    # model = ChatOpenAI(temperature=0)
-    # model = ChatAnthropic(model="claude-3-sonnet-20240229")
-    model = ChatOllama(model="EEVE-Korean-10.8B:latest")
+    # 모델 선언
+    model = get_llm_model()
 
     def get_context(state: AgentState) -> AgentState:
-        chat_history = format_chat_history(state['chat_history'])
-        standalone_question_prompt = CONDENSE_QUESTION_PROMPT.format(
+        chat_history = merge_chat_history(state['chat_history'])
+        standalone_question_prompt = MERGE_QUESTION_PROMPT.format(
             chat_history=chat_history, question=state['question']
         )
         standalone_question_response = model.invoke(standalone_question_prompt)
@@ -57,9 +84,11 @@ def create_chain():
 
     workflow = StateGraph(AgentState)
 
+    # 노드 정의
     workflow.add_node("get_context", get_context)
     workflow.add_node("generate_response", generate_response)
 
+    # 워크플로우 정의
     workflow.set_entry_point("get_context")
     workflow.add_edge("get_context", "generate_response")
     workflow.add_edge("generate_response", END)
