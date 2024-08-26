@@ -12,17 +12,6 @@ import org.json.JSONObject;
 
 
 public class SchemaReader {
-
-    // private static JdbcTemplate getJdbcTemplate(String url, String username, String password, String driverClassName) {
-    //     DriverManagerDataSource datasource = new DriverManagerDataSource();
-    //     datasource.setDriverClassName(driverClassName);
-    //     datasource.setUrl(url);
-    //     datasource.setUsername(username);
-    //     datasource.setPassword(password);
-
-    //     return new JdbcTemplate(datasource);
-    // }
-
     public static Map<String, List<Map<String, String>>> getOracleSchema(String url, String username, String password, String schemaName) throws Exception {
         Connection connection = DriverManager.getConnection(url, username, password);
         Statement statement = connection.createStatement();
@@ -37,7 +26,7 @@ public class SchemaReader {
                 + " AND a.TABLE_NAME = b.TABLE_NAME \n"
                 + " AND a.TABLE_NAME = c.TABLE_NAME(+) \n"
                 + " AND a.COLUMN_NAME = c.COLUMN_NAME(+) \n"
-                + " AND b.TABLE_NAME = '" + schemaName.toUpperCase() + "' \n"
+//                + " AND b.TABLE_NAME = '" + schemaName.toUpperCase() + "' \n"
                 + " ORDER BY b.TABLE_NAME, a.COLUMN_NAME";
 
         ResultSet rs = statement.executeQuery(query);

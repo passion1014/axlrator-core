@@ -9,7 +9,10 @@ from app.chain import create_chain
 from langgraph.graph import END, StateGraph
 from IPython.display import Image, display
 from langfuse.callback import CallbackHandler
+from langchain_core.output_parsers import StrOutputParser
 
+from app.prompts.sql_prompt import SQL_QUERY_PROMPT
+from app.utils import get_llm_model
 from app.vectordb.upload_vectordb import vector_upload
 from .db_model.database import engine, SessionLocal
 from .db_model import database_models
@@ -36,14 +39,6 @@ database_models.Base.metadata.create_all(bind=engine)
 #     finally:
 #         db.close()
 
-
-# ---------------------------------------
-# 체인 생성
-# ---------------------------------------
-langfuse_handler = CallbackHandler() # Langfuse CallbackHandler 초기화
-chain = create_chain().with_config(callbacks=[langfuse_handler])
-
-
 # ---------------------------------------
 # FastAPI 앱 설정
 # ---------------------------------------
@@ -52,9 +47,22 @@ app = FastAPI (
     version="1.0",
     description="AI Server for Construction Guarantee Company",
 )
+
+# 랭퓨즈 저장을 위한 핸들러
+langfuse_handler = CallbackHandler() # Langfuse CallbackHandler 초기화
+
+# ---------------------------------------
+# 체인 생성
+# ---------------------------------------
+rag_chain = create_chain().with_config(callbacks=[langfuse_handler])
+
+prompt_chain = (
+    SQL_QUERY_PROMPT | get_llm_model().with_config(callbacks=[langfuse_handler]) | StrOutputParser()
+)
+
 # 라우트 추가
-add_routes(app, chain, path="/prompt", enable_feedback_endpoint=True)
-#add_routes(app, chain, path="/prompt", enable_feedback_endpoint=True)
+add_routes(app, prompt_chain, path="/prompt", enable_feedback_endpoint=True)
+add_routes(app, rag_chain, path="/rag", enable_feedback_endpoint=True)
 
 # Jinja2 템플릿 설정
 templates = Jinja2Templates(directory="templates")

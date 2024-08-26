@@ -24,6 +24,9 @@
 ## 설정방법
 
 ### 필요한 라이브러리 설치
+
+1) 
+
 참고 파일 : requirements.txt
 
 ### Langfuse 설치
@@ -45,9 +48,15 @@ Langfuse를 사용하기 위해서는 기본적으로 postgresql이 필요하며
 여기서 설치된 postgresql을 사용하는 것을 기준으로 가이드 한다. <br>
 
 #### 1. 기존 postgresql에 사용자 추가
+먼저 **psql**로 postgresql에 로그인한다.
+
+아래 명령어로 사용자 추가
 ```sql
 CREATE USER ragserver WITH PASSWORD 'ragserver' SUPERUSER;
+CREATE DATABASE ragserver owner ragserver;
 ```
+
+
 
 #### 2. 계정 정보 셋팅
 db_model/database.py 아래 정보를 수정한다.
