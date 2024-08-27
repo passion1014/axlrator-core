@@ -3,11 +3,11 @@ from fastapi import FastAPI, File, Request, UploadFile
 from pathlib import Path
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langserve import add_routes
 from app.config import setup_logging
 from app.chain import create_chain
-from langgraph.graph import END, StateGraph
-from IPython.display import Image, display
 from langfuse.callback import CallbackHandler
 from langchain_core.output_parsers import StrOutputParser
 
@@ -63,6 +63,17 @@ prompt_chain = (
 # 라우트 추가
 add_routes(app, prompt_chain, path="/prompt", enable_feedback_endpoint=True)
 add_routes(app, rag_chain, path="/rag", enable_feedback_endpoint=True)
+
+add_routes(
+    app,
+    ChatOpenAI(model="gpt-3.5-turbo-0125"),
+    path="/openai",
+)
+add_routes(
+    app,
+    ChatAnthropic(model="claude-3-haiku-20240307"),
+    path="/anthropic",
+)
 
 # Jinja2 템플릿 설정
 templates = Jinja2Templates(directory="templates")
