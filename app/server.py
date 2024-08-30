@@ -2,6 +2,7 @@ from http.client import HTTPException
 from fastapi import FastAPI, File, Request, UploadFile
 from pathlib import Path
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
@@ -75,17 +76,17 @@ add_routes(
     path="/anthropic",
 )
 
+# 정적 파일 경로 설정
+app.mount("/static", StaticFiles(directory="templates/static"), name="static")
+
 # Jinja2 템플릿 설정
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/uploadData", response_class=HTMLResponse)
 async def read_root(request: Request):
     # 템플릿을 렌더링하면서 데이터 전달
-    return templates.TemplateResponse("index.html", {"request": request, "message": "Hello, FastAPI!"})
+    return templates.TemplateResponse("uploadData.html", {"request": request, "message": "건설공제 파일 업로드 (Test버전)"})
     
-
-# 정적 파일 경로 설정
-# app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 
 # # CORS 설정 (필요 시)
 # app.add_middleware(

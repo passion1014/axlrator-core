@@ -4,7 +4,10 @@ from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 import chardet
 import argparse
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.utils import get_embedding_model
+from langchain.docstore.document import Document
 
 # .env 파일 로드
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
@@ -29,11 +32,14 @@ def vector_upload(file_path, index_name):
     print("파일 내용을 성공적으로 읽었습니다.")
 
     # 2. 의미별로 chunk로 나누기
-    text_splitter = CharacterTextSplitter(chunk_size=100, chunk_overlap=5)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=5)
     chunks = text_splitter.split_text(text)
 
     # 각 chunk를 문서 객체로 변환
     docs = text_splitter.create_documents(chunks)
+    
+    # 각 chunk를 문서 객체로 변환 이 과정에서 각 청크를 개별 문서로 다룬다
+    docs = [Document(page_content=chunk) for chunk in chunks]
 
     # FAISS 인덱스 생성 및 문서 추가
     embeddings = get_embedding_model()
