@@ -1,6 +1,28 @@
-OPENAI_API_KEY=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
-LANGCHAIN_API_KEY=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
+# API_KEY
+OPENAI_API_KEY=OPENAI_API_KEY
+ANTHROPIC_API_KEY=ANTHROPIC_API_KEY
+
+# setting EMBEDDING_MODEL
+#   예) text-embedding-3-large, nomic-embed-text
+EMBEDDING_MODEL_NAME="text-embedding-3-large" 
+
+# setting LLM_MODEL
+#   예) claude-3-sonnet-20240229(ChatAnthropic), gpt-3.5-turbo(ChatOpenAI) EEVE-Korean-10.8B:latest(ChatOllama)
+# LLM_MODEL_NAME="claude-3-sonnet-20240229"
+LLM_MODEL_NAME="EEVE-Korean-10.8B:latest"
+
+# LANGCHAIN
+LANGCHAIN_API_KEY=LANGCHAIN_API_KEY
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
 LANGCHAIN_PROJECT=LANGSERVE_TEMPLATE
-ANTHROPIC_API_KEY=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
+
+# LANGFUSE
+LANGFUSE_SECRET_KEY=LANGFUSE_SECRET_KEY
+LANGFUSE_PUBLIC_KEY=LANGFUSE_PUBLIC_KEY
+LANGFUSE_HOST="http://langfuse-main-langfuse-server-1:3000"
+# LANGFUSE_HOST="http://host.docker.internal:3000"
+# LANGFUSE_HOST="https://us.cloud.langfuse.com" # 🇺🇸 US region
+
+# VECTOR DATABASE
+VECTOR_DATABASE_INDEX="sin_in_christ"
