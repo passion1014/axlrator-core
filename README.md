@@ -102,4 +102,40 @@ web: uvicorn app.server:app --host=0.0.0.0 --port=${PORT:-5000}
 
 
 
-# 모듈 설명
+# 실행하기
+
+### 도커 빌드 하기
+(개발서버가 linux/arm64/v3 플랫폼으로 되어 있어서 플랫폼을 지정하여 빌드함)
+docker buildx build --platform linux/arm64/v3 -t rag_server:latest .
+
+### 도커 실행
+docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server --network langfuse-main_default --name rag_server rag_server
+
+### 도커 터미널에서 실행
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+### rag server 실행
+python -m app.server
+
+### 도커 명령어 (네트워크)
+docker network inspect langfuse-main_default
+docker network connect langfuse-main_default nervous_poitras
+
+## 도커 배포하기
+
+### 1. 도커 컨테이너 이미지로 커밋하기
+docker commit -m "first Creating a snapshot of rag_server" da42eacd1254 rag_server_dev:latest
+
+### 2. 도커 저장하기
+docker save -o rag_server_dev.tar rag_server_dev:latest
+
+### 3. 도커 이미지 로드하기  (먼저 파일을 옮겨놓고 실행해야 함)
+docker load -i rag_server_dev.tar
+
+### 4. 로드된 이미지 확인
+docker images
+
+### 5. 로드된 도커 이미지 실행
+docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server --network langfuse-main_default --name rag_server rag_server_dev
