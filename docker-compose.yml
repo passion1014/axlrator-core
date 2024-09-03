@@ -1,0 +1,62 @@
+version: '3'
+services:
+  db:
+    image: postgres  # 빌드된 이미지 이름
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    networks:
+      - alfred_network
+
+  langfuse-server:
+    image: langfuse/langfuse  # 빌드된 이미지 이름
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - NEXTAUTH_SECRET=mysecret
+      - SALT=mysalt
+      - ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000 # generate via `openssl rand -hex 32`
+      - NEXTAUTH_URL=http://localhost:3000
+      - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-true}
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+    networks:
+      - alfred_network
+
+  rag_server:
+    image: rag_server  # 빌드된 이미지 이름
+    container_name: rag_server
+    depends_on:
+      langfuse-server:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+      - "11434:11434"
+    volumes:
+      - /Users/passion1014/project/langchain/rag_server:/app/rag_server
+    networks:
+      - alfred_network
+    stdin_open: true  # -i 옵션 (인터랙티브 모드)
+    tty: true  # -t 옵션 (터미널 할당)
+
+networks:
+  alfred_network:
+    driver: bridge
+
+volumes:
+  database_data:
+    driver: local

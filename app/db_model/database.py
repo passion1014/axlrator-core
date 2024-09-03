@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 # SQLAlchemy engine 생성하기
 # engine = create_engine("postgresql://ragserver:ragserver@localhost/ragserver")
-engine = create_engine("postgresql://ragserver:ragserver@langfuse-main-db-1:5432/ragserver")
+engine = create_engine("postgresql://ragserver:ragserver@rag_server-db-1:5432/ragserver")
 
 # DB 세션 생성하기
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

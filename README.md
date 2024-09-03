@@ -106,13 +106,20 @@ web: uvicorn app.server:app --host=0.0.0.0 --port=${PORT:-5000}
 
 ### 도커 빌드 하기
 (개발서버가 linux/arm64/v3 플랫폼으로 되어 있어서 플랫폼을 지정하여 빌드함)
-docker buildx build --platform linux/arm64/v3 -t rag_server:latest .
+docker build -t rag_server:latest .
+
+### 랭퓨즈를 기존의 네트워크에서 분리하기
+docker network disconnect langfuse-main_default langfuse-main-langfuse-server-1
+docker network disconnect langfuse-main_default langfuse-main-db-1
+
+### docker-compose.yml로 신규 네트워크 생성 및 컨테이너 네트워크 묶기
+docker-compose up -d
 
 ### 도커 실행
 docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server --network langfuse-main_default --name rag_server rag_server
 
 ### 도커 터미널에서 실행
-python3 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
@@ -120,8 +127,9 @@ pip install -r requirements.txt
 python -m app.server
 
 ### 도커 명령어 (네트워크)
-docker network inspect langfuse-main_default
-docker network connect langfuse-main_default nervous_poitras
+docker network ls
+docker network inspect rag_server_alfred_network
+docker network connect rag_server_alfred_network nervous_poitras
 
 ## 도커 배포하기
 
@@ -139,3 +147,4 @@ docker images
 
 ### 5. 로드된 도커 이미지 실행
 docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server --network langfuse-main_default --name rag_server rag_server_dev
+
