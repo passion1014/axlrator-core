@@ -100,6 +100,43 @@ web: uvicorn app.server:app --host=0.0.0.0 --port=${PORT:-5000}
 
 .env 참조
 
+@@ -1,36 +0,0 @@
+conda env export > requirements_240729.yml
+conda list --explicit > requirements_240729.txt
+mkdir requirements_240729
+conda pack -n langservtest -o requirements_240729/langservtest.tar.gz
+
+
+
+
+# Conda 환경을 옮기는 방법
+
+1. 현재 환경 내보내기:
+   ```
+   conda env export > environment.yml
+   ```
+
+2. 환경에 설치된 패키지 다운로드:
+   ```
+   conda list --explicit > spec-file.txt
+   mkdir conda_pkgs
+   conda pack -n your_env_name -o conda_pkgs/your_env_name.tar.gz
+   ```
+
+3. 파일 전송:
+   `environment.yml`, `spec-file.txt`, `conda_pkgs` 폴더를 새 PC로 옮깁니다.
+
+4. 새 PC에서 환경 생성:
+   ```
+   conda create --name new_env --file spec-file.txt
+   conda activate new_env
+   ```
+
+5. 패키지 설치:
+   ```
+   conda install --offline -n new_env conda_pkgs/*.tar.bz2
+   ```
+
 
 
 # 실행하기
@@ -147,4 +184,9 @@ docker images
 
 ### 5. 로드된 도커 이미지 실행
 docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server --network langfuse-main_default --name rag_server rag_server_dev
+
+### Ollama 포트 설정
+set OLLAMA_HOST=0.0.0.0
+
+ollama serve
 
