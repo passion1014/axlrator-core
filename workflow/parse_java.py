@@ -1,0 +1,169 @@
+import os
+import re
+from datetime import datetime
+
+# Java 파일에서 주석을 제거하는 함수
+def remove_comments(java_code):
+    # 블록 주석 /* ... */ 및 라인 주석 // ... 을 제거
+    pattern = r'//.*?$|/\*.*?\*/'
+    return re.sub(pattern, '', java_code, flags=re.DOTALL | re.MULTILINE)
+
+# 클래스 정보 추출
+def extract_class_info(java_code):
+    class_info = {
+        'package': None,        # 패키지명
+        'class_type': None,     # 클래스유형
+        'class_name': None,     # 클래스명
+        'extends': None,        # 상속자
+        'implements': [],       # 구현자 목록
+        'imports': [],          # 클래스 import 목록
+        'fields': [],           # 클래스 어트리뷰트 목록
+        'methods': [],          # 메소드명 목록
+        'method_count': 0,      # 메소드 갯수
+        'last_modified': None   # 최종 수정일
+    }
+
+    # 패키지 추출
+    package_match = re.search(r'package\s+([\w\.]+);', java_code)
+    if package_match:
+        class_info['package'] = package_match.group(1)
+
+    # import 추출
+    imports = re.findall(r'import\s+([\w\.]+);', java_code)
+    class_info['imports'].extend(imports)
+
+    # 클래스 정보 추출 (class, interface, enum, abstract class 등)
+    class_match = re.search(r'(class|interface|enum|abstract\s+class)\s+(\w+)', java_code)
+    if class_match:
+        class_info['class_type'] = class_match.group(1)
+        class_info['class_name'] = class_match.group(2)
+
+    # extends 추출
+    extends_match = re.search(r'extends\s+(\w+)', java_code)
+    if extends_match:
+        class_info['extends'] = extends_match.group(1)
+
+    # implements 추출
+    implements_match = re.search(r'implements\s+([\w\s,]+)', java_code)
+    if implements_match:
+        class_info['implements'] = [imp.strip() for imp in implements_match.group(1).split(',')]
+
+    return class_info
+
+# 메서드 본문 추출 함수
+def extract_method_code(java_code, start_pos):
+    code_lines = java_code.splitlines()
+    method_code_lines = []
+    brace_count = 0
+    in_method = False
+
+    for i in range(start_pos, len(code_lines)):
+        line = code_lines[i].strip()
+
+        # 중괄호로 시작과 끝을 체크
+        brace_count += line.count('{')
+        brace_count -= line.count('}')
+
+        # 메서드 시작
+        if '{' in line and not in_method:
+            in_method = True
+
+        if in_method:
+            method_code_lines.append(line)
+
+        # 중괄호가 모두 닫혔다면 메서드 종료
+        if in_method and brace_count == 0:
+            break
+
+    return '\n'.join(method_code_lines)
+
+# 메서드 정보 추출 함수
+def extract_methods_from_java(java_code):
+    methods = []
+
+    # 메서드 시그니처 찾기 (public, private, protected 등 접근제어자 포함)
+    method_pattern = re.compile(r'(public|private|protected)?\s*(static)?\s*([\w<>\[\]]+)\s+(\w+)\s*\(([^)]*)\)\s*{')
+
+    for match in method_pattern.finditer(java_code):
+        return_type = match.group(3)
+        method_name = match.group(4)
+        parameters = match.group(5)
+
+        # 메서드의 시작 위치
+        start_pos = match.start()
+
+        # 메서드 본문 추출
+        method_code = extract_method_code(java_code, java_code[:start_pos].count('\n'))
+
+        # 메서드 정보 저장
+        method_info = {
+            'name': method_name,
+            'return_type': return_type,
+            'parameters': parameters,
+            'code': method_code
+        }
+        methods.append(method_info)
+
+    return methods
+
+# Java 파일 파싱 함수
+def parse_java_file(file_path):
+    # Java 파일 읽기
+    with open(file_path, 'r', encoding='utf-8') as f:
+        java_code = f.read()
+
+    # 주석 제거
+    java_code = remove_comments(java_code)
+
+    # 클래스 정보 추출
+    class_info = extract_class_info(java_code)
+
+    # 메서드 정보 추출
+    methods = extract_methods_from_java(java_code)
+    class_info['methods'] = [method['name'] for method in methods]
+    class_info['method_count'] = len(methods)
+
+    # 파일의 최종 수정일 가져오기
+    last_modified = os.path.getmtime(file_path)
+    class_info['last_modified'] = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
+
+    return class_info, methods
+
+def parse_java_directory(directory_path, output_file):
+    # 출력 파일 열기 (쓰기 모드)
+    with open(output_file, 'w', encoding='utf-8') as f_out:
+        # 디렉토리 내의 모든 폴더 및 파일을 재귀적으로 탐색
+        for root, dirs, files in os.walk(directory_path):
+            for file in files:
+                # 확장자가 .java인 파일에 대해 처리
+                if file.endswith('.java'):
+                    file_path = os.path.join(root, file)
+                    f_out.write(f"Parsing file: {file_path}\n")
+                    f_out.write("=" * 40 + "\n")
+
+                    # Java 파일을 파싱하여 클래스 정보 및 메서드 정보 추출
+                    class_info, methods = parse_java_file(file_path)
+
+                    # 클래스 정보 출력
+                    f_out.write("Class Info:\n")
+                    f_out.write(str(class_info) + "\n")
+                    
+                    # 메서드 정보 출력
+                    f_out.write("\nMethods:\n")
+                    for method in methods:
+                        f_out.write(f"Method: {method['name']}\n")
+                        f_out.write(f"Return Type: {method['return_type']}\n")
+                        f_out.write(f"Parameters: {method['parameters']}\n")
+                        f_out.write(f"Code:\n{method['code']}\n")
+                        f_out.write("-" * 40 + "\n")
+                    
+                    f_out.write("\n\n")  # 파일 간 구분을 위한 공백 추가
+
+# 테스트용 메인 함수
+if __name__ == '__main__':
+    directory_path = "/Users/passion1014/project/langchain/rag_data"  # 실제 Java 파일 경로
+
+    output_file = "output.txt"  # 결과를 저장할 출력 파일 경로
+
+    # 디렉토리 내 모든 Java 파일에 대해 파싱 수행 및 결과를 파일에 쓰기
+    parse_java_directory(directory_path, output_file)

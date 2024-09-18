@@ -1,0 +1,229 @@
+import os
+from typing import Dict, Optional
+import faiss
+# import json      # 메타데이터를 JSON으로 처리하기 위한 라이브러리
+from langchain_community.vectorstores import FAISS
+import numpy as np
+from sqlalchemy.orm import Session
+from sqlalchemy import select, update, delete
+from langchain_core.documents import Document
+
+from app.db_model.database import SessionLocal
+from app.db_model.database_models import DocstoreIndex, FaissInfo, OrgRSrcData
+from app.utils import get_embedding_model
+
+
+class PostgresDocstore:
+    def __init__(self, db_session: Session):
+        """SQLAlchemy 세션을 주입받음"""
+        self.session = db_session
+        
+    def insert_faiss_info(self, index_name, index_desc, index_file_path) -> FaissInfo:
+        """FAISS 인덱스 정보 저장"""
+        
+        faiss_info = FaissInfo(
+            index_name=index_name,
+            index_desc=index_desc,
+            index_file_path=index_file_path,
+        )
+        self.session.add(faiss_info)
+        self.session.commit()
+        
+        return faiss_info
+        
+
+    def insert_document(self, document_id, index, content, metadata=None) -> None:
+        """OrgRSrcData 테이블에 문서 추가"""
+        new_document = OrgRSrcData(
+            org_resrc_id=document_id,
+            content=content, 
+            vector_index=index,
+            document_metadata=metadata
+        )
+        self.session.add(new_document)
+        self.session.commit()
+        
+
+    def get_document(self, document_id) -> Optional[Dict[str, any]]:
+        """OrgRSrcData 테이블에서 문서 조회"""
+        stmt = select(OrgRSrcData).where(OrgRSrcData.id == document_id)
+        result = self.session.execute(stmt).scalar_one_or_none()
+        if result:
+            return {"content": result.content, "metadata": result.document_metadata}
+        return None
+    
+
+    def get_document_by_index(self, vector_index) -> Optional[Dict[str, any]]:
+        """vector_index 조회"""
+        
+        # Numpy int64 값을 Python의 int로 변환
+        vector_index = int(vector_index) 
+        
+        stmt = select(OrgRSrcData).where(OrgRSrcData.vector_index == vector_index)
+        result = self.session.execute(stmt).scalar_one_or_none()
+        if result:
+            return {"content": result.content, "metadata": result.document_metadata}
+        return None
+
+
+    def update_document(self, document_id, content=None, metadata=None) -> None:
+        """OrgRSrcData 테이블에서 문서 업데이트"""
+        stmt = update(OrgRSrcData).where(OrgRSrcData.id == document_id)
+        if content:
+            stmt = stmt.values(content=content)
+        if metadata:
+            stmt = stmt.values(document_metadata=metadata)
+        self.session.execute(stmt)
+        self.session.commit()
+
+
+    def delete_document(self, document_id) -> None:
+        """OrgRSrcData 테이블에서 문서 삭제"""
+        stmt = delete(OrgRSrcData).where(OrgRSrcData.id == document_id)
+        self.session.execute(stmt)
+        self.session.commit()
+        
+
+    def insert_docstore_index(self, document_id, index) -> DocstoreIndex:
+        """OrgRSrcData 테이블에 문서 추가"""
+
+        docstoreIndex = DocstoreIndex(
+            document_id=document_id,
+            index=index,
+        )
+        self.session.add(docstoreIndex)
+        self.session.commit()
+        
+        return docstoreIndex
+
+
+
+class FaissVectorDB:
+    # 임베딩 모델 가져오기
+    embeddings = get_embedding_model()
+
+    # index 셋팅
+    # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
+    # •	IndexFlatIP: 내적 기반 유사도 계산, 코사인 유사도와 유사한 결과 제공.
+    # •	IndexLSH: 근사 검색을 위한 해싱 기반 방법으로 대규모 데이터에 적합.
+    # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
+    # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
+    # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
+    index = faiss.IndexFlatL2(len(embeddings.embed_query("임베딩 벡터 차원")))
+    
+    
+    psql_docstore = PostgresDocstore(SessionLocal())
+
+    # FAISS vector store 선언
+    vector_store = FAISS(
+        embedding_function=embeddings,
+        index=index,
+        docstore=psql_docstore,
+        index_to_docstore_id={},
+    )
+
+
+    def as_retriever(self, search_kwargs):
+        return self.vector_store.as_retriever(search_kwargs=search_kwargs)
+
+
+    def add_document_to_store(self, document_id, content, metadata=None):
+        # Document 객체 생성
+        document = Document(page_content=content, metadata=metadata)
+        
+        # 임베딩 벡터 생성
+        embedding_content = self.embeddings.embed_query(document.page_content)
+        
+        # 벡터를 배열로 변환 및 float32 타입으로 변환
+        embedding_content = np.array([embedding_content], dtype=np.float32)
+        
+        # FAISS 인덱스에 벡터 추가
+        self.vector_store.index.add(embedding_content)
+        
+        # FAISS 인덱스에 벡터가 추가된 후 매핑 정보 업데이트
+        # 주의: 인덱스의 벡터 개수는 추가된 후에 반영되므로, ntotal을 사용해서 현재 벡터 인덱스를 가져옴
+        faiss_index = self.vector_store.index.ntotal - 1  # 현재 추가된 벡터의 인덱스
+        
+        # FAISS 인덱스와 문서 ID 간의 매핑 설정
+        self.vector_store.index_to_docstore_id[faiss_index] = document_id
+        print(f"Document ID {document_id} mapped to FAISS vector index {faiss_index}")
+        
+        # PostgreSQL docstore에 문서 추가
+        # self.psql_docstore.insert_document(document_id, faiss_index, content, metadata)
+        self.psql_docstore.insert_docstore_index(document_id, faiss_index)
+
+        # 매핑 정보와 추가된 벡터 정보 확인
+        print(f"Total vectors in FAISS index: {self.vector_store.index.ntotal}")
+        print(f"index_to_docstore_id mapping: {self.vector_store.index_to_docstore_id}")
+
+
+    def search_similar_documents(self, query, k=10):
+        # 쿼리를 임베딩으로 변환
+        query_embedding = self.embeddings.embed_query(query)
+        
+        # 임베딩 벡터를 numpy 배열로 변환
+        query_embedding = np.array(query_embedding, dtype=np.float32)
+        
+        # 벡터를 2차원 배열로 변환 (1x3072)
+        query_embedding = query_embedding.reshape(1, -1)
+        print(f"### query_embedding.shape = {query_embedding.shape}")
+
+        # FAISS에서 유사한 벡터 검색 (k는 찾을 유사 벡터의 수)
+        distances, indices = self.vector_store.index.search(query_embedding, k)
+
+        # 검색된 인덱스와 거리 출력
+        print(f"### Distances: {distances}, Indices: {indices}")
+        # 매핑된 문서 ID 정보 출력
+        print(f"### index_to_docstore_id mapping: {self.vector_store.index_to_docstore_id}")
+        
+        # PostgreSQL에서 문서 가져오기
+        results = [
+            self.psql_docstore.get_document_by_index(idx)
+            for idx in indices[0] # 현재는 1개의 쿼리만을 사용하기 때문에 하드코딩, 다중 쿼리를 사용할 경우 수정되어야 함
+            if idx != -1  # 유효하지 않은 인덱스 (-1) 무시
+        ]
+        
+        return results
+    
+    
+    def write_index(self, file_path, index_name=None, index_desc=None) -> FaissInfo:
+        # FAISS 인덱스를 디스크에 저장
+        faiss.write_index(self.vector_store.index, file_path)
+        
+        # index_name이 없을 경우 파일명으로 사용
+        if not index_name:
+            filename = os.path.basename(file_path)
+            index_name = os.path.splitext(filename)[0]
+        
+        # DB 업데이트
+        faiss_info = self.psql_docstore.insert_faiss_info(index_name=index_name, index_desc=index_desc, index_file_path=file_path)
+        
+        return faiss_info
+        
+        
+        
+    def read_index(self, file_path):
+        # FAISS 인덱스를 파일에서 로드
+        self.vector_store.index = faiss.read_index(file_path)
+        
+        # 인덱스의 기본 정보 출력
+        print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력
+        print(f"### Dimension of vectors: {self.vector_store.index.d}")  # 벡터의 차원 출력
+
+        # 체크하기! = 첫 번째 벡터(예시) 조회 (자기자신과 비교 할시, 거리가 0이 나와야 정상임)
+        # if self.vector_store.index.ntotal > 0:
+        #     # 첫 번째 벡터와 유사한 벡터를 검색 (자신과의 유사도 검색)
+        #     D, I = self.vector_store.index.search(self.vector_store.index.reconstruct(0).reshape(1, -1), 1)
+        #     print(f"### First vector in index: {self.vector_store.index.reconstruct(0)}")
+        #     print(f"### Distance: {D}, Index: {I}")
+        # else:
+        #     print("### Index is empty.")
+
+
+    # 예제) 유사한 문서 검색
+    # similar_docs = search_similar_documents(vector_store, query="test document")
+    # for doc in similar_docs:
+    #     print(f"Similar Document Content: {doc['content']}, Metadata: {doc['metadata']}")
+
+    # 예제) 문서 추가
+    # add_document_to_store(vector_store, document_id=1, content="This is a test document.", metadata={"source": "test"})

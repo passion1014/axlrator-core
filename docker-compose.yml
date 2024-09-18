@@ -48,6 +48,8 @@ services:
       - "11434:11434"
     volumes:
       - /Users/passion1014/project/langchain/rag_server:/app/rag_server
+      - /Users/passion1014/project/langchain/rag_data:/app/rag_data
+
     networks:
       - alfred_network
     stdin_open: true  # -i 옵션 (인터랙티브 모드)
