@@ -3,7 +3,7 @@ import re
 import xml.etree.ElementTree as ET
 import luigi
 
-from app.db_model.database_models import OrgRSrc, OrgRSrcCode, OrgRSrcData, OrgRSrcDataCode
+from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData, OrgRSrcDataCode
 from app.db_model.database import SessionLocal
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from workflow.parse_java import parse_java_file
@@ -83,7 +83,7 @@ class ParseFile(luigi.Task):
 
             print(f"#### 함수 갯수 = {len(functions)}")
             for idx, method in enumerate(functions):
-                org_resrc_data = OrgRSrcData(
+                org_resrc_data = ChunkedData(
                     seq=idx + 1,  # 순번
                     org_resrc_id=org_resrc.id,  # OrgRSrc의 외래키
                     data_name=method.get('name'),  # 함수명, get으로 변경

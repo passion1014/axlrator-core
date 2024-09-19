@@ -2,7 +2,7 @@ import os
 import luigi
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from app.db_model.database_models import OrgRSrc, OrgRSrcData, VectorData, VectorDataChunk  # 정의된 ORM 모델들
+from app.db_model.database_models import OrgRSrc, ChunkedData, VectorData, VectorDataChunk  # 정의된 ORM 모델들
 from app.utils import get_embedding_model
 from datetime import datetime
 from app.db_model.database import SessionLocal
@@ -66,7 +66,7 @@ class EmbedData(luigi.Task):
                 print(f"### org_resrc_id = {org_resrc_id} 시작!")
 
                 # org_resrc_id로 OrgRSrcData 를 조회
-                org_resrc_data = session.query(OrgRSrcData).filter(OrgRSrcData.org_resrc_id == org_resrc_id).all()
+                org_resrc_data = session.query(ChunkedData).filter(ChunkedData.org_resrc_id == org_resrc_id).all()
 
                 # 각각의 OrgRSrcData에 대해 처리
                 for data in org_resrc_data:

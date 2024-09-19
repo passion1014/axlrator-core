@@ -9,7 +9,7 @@ from sqlalchemy import select, update, delete
 from langchain_core.documents import Document
 
 from app.db_model.database import SessionLocal
-from app.db_model.database_models import DocstoreIndex, FaissInfo, OrgRSrcData
+from app.db_model.database_models import DocstoreIndex, FaissInfo, ChunkedData
 from app.utils import get_embedding_model
 
 
@@ -34,7 +34,7 @@ class PostgresDocstore:
 
     def insert_document(self, document_id, index, content, metadata=None) -> None:
         """OrgRSrcData 테이블에 문서 추가"""
-        new_document = OrgRSrcData(
+        new_document = ChunkedData(
             org_resrc_id=document_id,
             content=content, 
             vector_index=index,
@@ -46,7 +46,7 @@ class PostgresDocstore:
 
     def get_document(self, document_id) -> Optional[Dict[str, any]]:
         """OrgRSrcData 테이블에서 문서 조회"""
-        stmt = select(OrgRSrcData).where(OrgRSrcData.id == document_id)
+        stmt = select(ChunkedData).where(ChunkedData.id == document_id)
         result = self.session.execute(stmt).scalar_one_or_none()
         if result:
             return {"content": result.content, "metadata": result.document_metadata}
@@ -59,7 +59,7 @@ class PostgresDocstore:
         # Numpy int64 값을 Python의 int로 변환
         vector_index = int(vector_index) 
         
-        stmt = select(OrgRSrcData).where(OrgRSrcData.vector_index == vector_index)
+        stmt = select(ChunkedData).where(ChunkedData.vector_index == vector_index)
         result = self.session.execute(stmt).scalar_one_or_none()
         if result:
             return {"content": result.content, "metadata": result.document_metadata}
@@ -68,7 +68,7 @@ class PostgresDocstore:
 
     def update_document(self, document_id, content=None, metadata=None) -> None:
         """OrgRSrcData 테이블에서 문서 업데이트"""
-        stmt = update(OrgRSrcData).where(OrgRSrcData.id == document_id)
+        stmt = update(ChunkedData).where(ChunkedData.id == document_id)
         if content:
             stmt = stmt.values(content=content)
         if metadata:
@@ -79,7 +79,7 @@ class PostgresDocstore:
 
     def delete_document(self, document_id) -> None:
         """OrgRSrcData 테이블에서 문서 삭제"""
-        stmt = delete(OrgRSrcData).where(OrgRSrcData.id == document_id)
+        stmt = delete(ChunkedData).where(ChunkedData.id == document_id)
         self.session.execute(stmt)
         self.session.commit()
         
