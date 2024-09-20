@@ -38,8 +38,8 @@ class OrgRSrc(Base):
     created_at = Column(TIMESTAMP, index=True, comment="생성시간")
     
     # 관계 설정
-    org_resrc_code = relationship("OrgRSrcCode", back_populates="org_resrc", comment="OrgRSrcCode FK")
-    chunked_data = relationship("ChunkedData", back_populates="org_resrc", comment="ChunkedData FK")
+    org_resrc_code = relationship("OrgRSrcCode", back_populates="org_resrc")
+    chunked_data = relationship("ChunkedData", back_populates="org_resrc")
 
 
 class OrgRSrcCode(Base):
@@ -82,13 +82,33 @@ class ChunkedData(Base):
     content = Column(Text, comment="콘텐츠")  # 콘텐츠
     document_metadata = Column(JSON, comment="문서의 메타데이터")  # 문서의 메타데이터
     
-    # 벡터 인덱스 정보
+    # 벡터 인덱스 정보\
+    faiss_info_id = Column(Integer, ForeignKey("faiss_info.id"), comment="FaissInfo FK")  # FAISS_INFO 외래키
     vector_index = Column(BigInteger, index=True, comment="벡터 인덱스값")
-    index_file_path = Column(Text, comment="인덱스 파일 경로")
 
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
     created_at = Column(TIMESTAMP, index=True, comment="생성시간")
 
     # 관계 설정
-    org_resrc = relationship("OrgRSrc", back_populates="org_resrc_data", comment="OrgRSrc FK")
+    org_resrc = relationship("OrgRSrc", back_populates="chunked_data")
+    faiss_info = relationship("FaissInfo", back_populates="chunked_data")
+
+
+
+class FaissInfo(Base):
+    '''
+    FAISS 인덱스 정보
+    '''
+    __tablename__ = "faiss_info"
+
+    id = Column(Integer, primary_key=True, index=True, comment="primary key")  # 유일키
+    index_name = Column(String, comment="인덱스명")
+    index_desc = Column(Text, comment="인덱스 설명")
+    index_file_path = Column(Text, comment="인덱스 파일 경로")
+    
+    modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
+    created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+
+    # ChunkedData와의 관계 설정
+    chunked_data = relationship("ChunkedData", back_populates="faiss_info")
 

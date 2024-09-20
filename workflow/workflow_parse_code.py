@@ -3,7 +3,7 @@ import re
 import xml.etree.ElementTree as ET
 import luigi
 
-from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData, OrgRSrcDataCode
+from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData
 from app.db_model.database import SessionLocal
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from workflow.parse_java import parse_java_file
@@ -41,7 +41,7 @@ class FindFiles(luigi.Task):
 # Luigi Task: 각 파일 파싱
 class ParseFile(luigi.Task):
     file_path = luigi.Parameter()
-    faiss_info_id = luigi.Parameter()
+    # faiss_info_id = luigi.Parameter()
     
     session = SessionLocal()
 
@@ -59,8 +59,7 @@ class ParseFile(luigi.Task):
                 resrc_type = '01',  # 가정
                 resrc_path = self.file_path,
                 resrc_desc = 'Parsed Java class',
-                last_modified_time = class_info.get('last_modified'),
-                faiss_info_id = self.faiss_info_id,
+                # last_modified_time = class_info.get('last_modified'), # 추후 어떤 값을 셋팅 할지 확인 필요
             )
             self.session.add(org_resrc)
             self.session.commit()
@@ -75,7 +74,7 @@ class ParseFile(luigi.Task):
                 class_implements = class_info.get('implements'),
                 class_imports = ', '.join(class_info.get('imports', [])),  # 기본값을 빈 리스트로
                 class_attributes = ', '.join([f"{field['type']} {field['name']}" for field in class_info.get('fields', [])]),  # 기본값 빈 리스트
-                class_methods_cnt = class_info.get('method_count', 0)  # 기본값 0
+                # class_methods_cnt = class_info.get('method_count', 0)  # 기본값 0
             )
             self.session.add(org_resrc_code)
             self.session.commit()
@@ -83,21 +82,15 @@ class ParseFile(luigi.Task):
 
             print(f"#### 함수 갯수 = {len(functions)}")
             for idx, method in enumerate(functions):
-                org_resrc_data = ChunkedData(
+                chunked_data = ChunkedData(
                     seq=idx + 1,  # 순번
                     org_resrc_id=org_resrc.id,  # OrgRSrc의 외래키
-                    data_name=method.get('name'),  # 함수명, get으로 변경
+                    data_name=method.get('name'),  # 함수명
                     data_type='function',  # 데이터 유형 (예: function)
-                    content=method.get('code')  # 함수 내용, get으로 변경
+                    content=method.get('code'),  # 함수 내용
+                    # faiss_info_id = self.faiss_info_id,
                 )
-                self.session.add(org_resrc_data)
-                
-                org_resrc_data_code = OrgRSrcDataCode(
-                    org_resrc_data_id=org_resrc_data.id,
-                    return_type=method.get('return_type'),  # 리턴 타입, get으로 변경
-                    parameter=method.get('parameters'),  # 파라미터
-                )
-                self.session.add(org_resrc_data_code)
+                self.session.add(chunked_data)
 
             # 세션 커밋
             self.session.commit()            
@@ -156,7 +149,6 @@ class ProcessAllFiles(luigi.Task):
     project_dir = luigi.Parameter()
     index_name = luigi.Parameter()
     
-    # faiss_info = None
 
     def requires(self):
         return FindFiles(self.project_dir)
@@ -167,11 +159,11 @@ class ProcessAllFiles(luigi.Task):
     def run(self):
         print(f"### ProcessAllFiles run / index_name = {str(self.index_name)}")
         
-        # FAISS_INFO에 저장 및 .index 파일 생성
-        faissVectorDB = FaissVectorDB()
-        faiss_info = faissVectorDB.write_index(file_path=f'data/vector/{self.index_name}.index',
-                                               index_name=self.index_name, 
-                                               index_desc='프로그램 분석')
+        # # FAISS_INFO에 저장 및 .index 파일 생성
+        # faissVectorDB = FaissVectorDB()
+        # faiss_info = faissVectorDB.write_index(file_path=f'data/vector/{self.index_name}.index',
+        #                                        index_name=self.index_name, 
+        #                                        index_desc='프로그램 분석')
 
         # FindFiles Task로부터 파일 경로 리스트를 메모리에서 가져옴
         find_files_task = self.requires()
@@ -179,7 +171,7 @@ class ProcessAllFiles(luigi.Task):
 
         # 각 파일을 처리하는 ParseFile Task 실행 (yield 대신 직접 호출)
         for file_path in file_paths:
-            parse_task = ParseFile(file_path=file_path, faiss_info_id=faiss_info.id)
+            parse_task = ParseFile(file_path=file_path)
             luigi.build([parse_task], local_scheduler=True)
 
         # 모든 파일 처리가 완료되면 완료 파일 생성

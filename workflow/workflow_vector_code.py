@@ -2,14 +2,14 @@ import os
 import luigi
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from app.db_model.database_models import OrgRSrc, ChunkedData, VectorData, VectorDataChunk  # 정의된 ORM 모델들
+from app.db_model.database_models import OrgRSrc, ChunkedData  # 정의된 ORM 모델들
 from app.utils import get_embedding_model
 from datetime import datetime
 from app.db_model.database import SessionLocal
 import numpy as np  # 임베딩을 위해 numpy 사용
 import uuid
 
-from app.vectordb.faiss_vectordb import FaissVectorDB  # 청크 ID를 생성하기 위해 사용
+from app.vectordb.faiss_vectordb import FaissVectorDB, PostgresDocstore  # 청크 ID를 생성하기 위해 사용
 
 
 # 임베딩 함수: 예시로 랜덤 벡터 생성
@@ -40,8 +40,6 @@ class ReadFromDB(luigi.Task):
 
 # Luigi Task: 데이터를 읽고 임베딩 생성
 class EmbedData(luigi.Task):
-    # 임베딩 모델 가져오기
-    # embeddings = get_embedding_model()
     faissVectorDB = FaissVectorDB()
 
     def requires(self):
@@ -56,60 +54,56 @@ class EmbedData(luigi.Task):
     def run(self):
         session = SessionLocal()
 
+        # faiss 인덱스 정보 셋팅
+        index_name = 'is_modon_proto'
+        faiss_index_file_path = f'data/vector/{index_name}.index'
+
+        # FAISS_INFO 저장
+        psql_docstore = PostgresDocstore(db_session=session)
+        faiss_info = psql_docstore.insert_faiss_info(index_name=index_name, index_desc="프로그램 소스 코드", index_file_path=faiss_index_file_path)
+
         # OrgRSrc 테이블에서 is_vectorize가 True가 아닌 항목만 조회
         org_resrc_list = session.query(OrgRSrc).filter(OrgRSrc.is_vector.isnot(True)).all()
 
+        
         with self.output().open('w') as output_file:
             for org_resrc in org_resrc_list:
 
                 org_resrc_id = org_resrc.id
                 print(f"### org_resrc_id = {org_resrc_id} 시작!")
 
-                # org_resrc_id로 OrgRSrcData 를 조회
-                org_resrc_data = session.query(ChunkedData).filter(ChunkedData.org_resrc_id == org_resrc_id).all()
+                # org_resrc_id로 ChunkedData 를 조회
+                chunked_data_list = session.query(ChunkedData).filter(ChunkedData.org_resrc_id == org_resrc_id).all()
 
-                # 각각의 OrgRSrcData에 대해 처리
-                for data in org_resrc_data:
-                    # 데이터 임베딩
-                    # embedding_data = embed_content(self.embeddings, data.content)
+                # 각각의 ChunkedData에 대해 처리
+                for data in chunked_data_list:
+                    # FAISS.id 업데이트
+                    data.faiss_info_id = faiss_info.id
                     
-                    # TODO
-                    # 1) FAISS index 확인
-                    # 2) OrgRSrcData 업데이트
-                    # 3) metadata 생성하여 함께 업데이트 하기
-                    
-                    self.faissVectorDB.add_document_to_store(data.id, )
-                    self.faissVectorDB.write_index(file_path='data/vector/faiss_test.index')
-                    
+                    # metadata 생성하여 함께 업데이트 하기
+                    data.document_metadata = data.document_metadata or {}
 
-                    '''
-                    # 벡터 데이터를 DB에 저장
-                    vector_data = VectorData(
-                        org_resrc_id=org_resrc_id,
-                        proc_time=datetime.now().time()
-                    )
-                    session.add(vector_data)
+                    # 벡터 인덱스 생성
+                    faiss_index = self.faissVectorDB.add_embedded_content_to_index(data.id, data.content, data.document_metadata)
+                    data.vector_index = faiss_index # 벡터 인덱스 업데이트
 
-                    # 임베딩 벡터를 여러 청크로 나눠서 저장
-                    # chunk_id = uuid.uuid4()
-                    vector_chunk = VectorDataChunk(
-                        vector_data_id=vector_data.id,
-                        org_resrc_id=org_resrc_id,
-                        # chunk_id=chunk_id,
-                        chunk_data=str(embedding_data)  # 문자열로 저장
-                    )
-                    session.add(vector_chunk)
-                    '''
+                    # chunked_data의 값 변경 및 수정
+                    session.add(data)
+                    session.commit()
 
                     # 파일에 저장
-                    output_file.write(f"{org_resrc_id}, {vector_data.id}, {embedding_data}\n")
+                    output_file.write(f"{data.org_resrc_id}, {data.id}, {data.vector_index}\n")
                 
                 # OrgRSrc 처리 후 is_vectorize 값을 True로 업데이트
                 org_resrc.is_vectorize = True
                 session.add(org_resrc)  # OrgRSrc 업데이트 사항 커밋
                 session.commit()
                 
-                print(f"### org_resrc_id = {org_resrc_id}, 함수 갯수 = {len(org_resrc_data)} 끝!")
+                print(f"### org_resrc_id = {org_resrc_id}, 함수 갯수 = {len(chunked_data_list)} 끝!")
+                
+
+            # FAISS_INFO에 저장 및 .index 파일 생성
+            self.faissVectorDB.write_index(file_path=faiss_index_file_path)
 
         session.close()
 

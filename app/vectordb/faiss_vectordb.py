@@ -9,7 +9,7 @@ from sqlalchemy import select, update, delete
 from langchain_core.documents import Document
 
 from app.db_model.database import SessionLocal
-from app.db_model.database_models import DocstoreIndex, FaissInfo, ChunkedData
+from app.db_model.database_models import FaissInfo, ChunkedData
 from app.utils import get_embedding_model
 
 
@@ -42,7 +42,7 @@ class PostgresDocstore:
         )
         self.session.add(new_document)
         self.session.commit()
-        
+                
 
     def get_document(self, document_id) -> Optional[Dict[str, any]]:
         """OrgRSrcData 테이블에서 문서 조회"""
@@ -65,36 +65,12 @@ class PostgresDocstore:
             return {"content": result.content, "metadata": result.document_metadata}
         return None
 
-
-    def update_document(self, document_id, content=None, metadata=None) -> None:
-        """OrgRSrcData 테이블에서 문서 업데이트"""
-        stmt = update(ChunkedData).where(ChunkedData.id == document_id)
-        if content:
-            stmt = stmt.values(content=content)
-        if metadata:
-            stmt = stmt.values(document_metadata=metadata)
-        self.session.execute(stmt)
-        self.session.commit()
-
-
     def delete_document(self, document_id) -> None:
         """OrgRSrcData 테이블에서 문서 삭제"""
         stmt = delete(ChunkedData).where(ChunkedData.id == document_id)
         self.session.execute(stmt)
         self.session.commit()
         
-
-    def insert_docstore_index(self, document_id, index) -> DocstoreIndex:
-        """OrgRSrcData 테이블에 문서 추가"""
-
-        docstoreIndex = DocstoreIndex(
-            document_id=document_id,
-            index=index,
-        )
-        self.session.add(docstoreIndex)
-        self.session.commit()
-        
-        return docstoreIndex
 
 
 
@@ -127,7 +103,7 @@ class FaissVectorDB:
         return self.vector_store.as_retriever(search_kwargs=search_kwargs)
 
 
-    def add_document_to_store(self, document_id, content, metadata=None):
+    def add_embedded_content_to_index(self, document_id, content, metadata) -> ChunkedData:
         # Document 객체 생성
         document = Document(page_content=content, metadata=metadata)
         
@@ -148,13 +124,7 @@ class FaissVectorDB:
         self.vector_store.index_to_docstore_id[faiss_index] = document_id
         print(f"Document ID {document_id} mapped to FAISS vector index {faiss_index}")
         
-        # PostgreSQL docstore에 문서 추가
-        # self.psql_docstore.insert_document(document_id, faiss_index, content, metadata)
-        self.psql_docstore.insert_docstore_index(document_id, faiss_index)
-
-        # 매핑 정보와 추가된 벡터 정보 확인
-        print(f"Total vectors in FAISS index: {self.vector_store.index.ntotal}")
-        print(f"index_to_docstore_id mapping: {self.vector_store.index_to_docstore_id}")
+        return faiss_index
 
 
     def search_similar_documents(self, query, k=10):
@@ -186,19 +156,19 @@ class FaissVectorDB:
         return results
     
     
-    def write_index(self, file_path, index_name=None, index_desc=None) -> FaissInfo:
+    def write_index(self, file_path, index_name=None, index_desc=None):
         # FAISS 인덱스를 디스크에 저장
         faiss.write_index(self.vector_store.index, file_path)
         
-        # index_name이 없을 경우 파일명으로 사용
-        if not index_name:
-            filename = os.path.basename(file_path)
-            index_name = os.path.splitext(filename)[0]
+        # # index_name이 없을 경우 파일명으로 사용
+        # if not index_name:
+        #     filename = os.path.basename(file_path)
+        #     index_name = os.path.splitext(filename)[0]
         
-        # DB 업데이트
-        faiss_info = self.psql_docstore.insert_faiss_info(index_name=index_name, index_desc=index_desc, index_file_path=file_path)
+        # # DB 업데이트
+        # faiss_info = self.psql_docstore.insert_faiss_info(index_name=index_name, index_desc=index_desc, index_file_path=file_path)
         
-        return faiss_info
+        # return faiss_info
         
         
         
@@ -218,6 +188,18 @@ class FaissVectorDB:
         #     print(f"### Distance: {D}, Index: {I}")
         # else:
         #     print("### Index is empty.")
+
+    def restore_index_to_docstore_id(self):
+        # 데이터베이스 세션 생성
+        session = self.psql_docstore.session
+        
+        # 모든 ChunkedData 레코드 조회
+        results = session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
+        
+        # 매핑 정보 재구성
+        self.vector_store.index_to_docstore_id = {vector_index: org_resrc_id for vector_index, org_resrc_id in results}
+        
+        print("### index_to_docstore_id mapping restored")
 
 
     # 예제) 유사한 문서 검색
