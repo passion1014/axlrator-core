@@ -18,6 +18,8 @@ class ModelInfo(Base):
 
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
     created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+    modified_by = Column(String(50), index=True, comment="최종수정자")
+    created_by = Column(String(50), index=True, comment="생성자")
 
 
 
@@ -36,6 +38,8 @@ class OrgRSrc(Base):
     
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
     created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+    modified_by = Column(String(50), index=True, comment="최종수정자")
+    created_by = Column(String(50), index=True, comment="생성자")
     
     # 관계 설정
     org_resrc_code = relationship("OrgRSrcCode", back_populates="org_resrc")
@@ -63,6 +67,8 @@ class OrgRSrcCode(Base):
 
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
     created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+    modified_by = Column(String(50), index=True, comment="최종수정자")
+    created_by = Column(String(50), index=True, comment="생성자")
 
     # 관계 설정
     org_resrc = relationship("OrgRSrc", back_populates="org_resrc_code")
@@ -88,6 +94,8 @@ class ChunkedData(Base):
 
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
     created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+    modified_by = Column(String(50), index=True, comment="최종수정자")
+    created_by = Column(String(50), index=True, comment="생성자")
 
     # 관계 설정
     org_resrc = relationship("OrgRSrc", back_populates="chunked_data")
@@ -108,6 +116,8 @@ class FaissInfo(Base):
     
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
     created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+    modified_by = Column(String(50), index=True, comment="최종수정자")
+    created_by = Column(String(50), index=True, comment="생성자")
 
     # ChunkedData와의 관계 설정
     chunked_data = relationship("ChunkedData", back_populates="faiss_info")

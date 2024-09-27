@@ -15,7 +15,7 @@ from langchain_core.output_parsers import StrOutputParser
 from app.prompts.sql_prompt import SQL_QUERY_PROMPT
 from app.utils import get_llm_model
 from app.vectordb.upload_vectordb import vector_upload
-from .db_model.database import engine, SessionLocal
+from .db_model.database import engine
 from .db_model import database_models
 
 
