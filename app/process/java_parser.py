@@ -1,16 +1,28 @@
 import os
 import re
-from datetime import datetime
-
+from typing import Optional
 # Java 파일에서 주석을 제거하는 함수
-def remove_comments(java_code):
+def remove_comments(java_code: str) -> str:
+    """
+    주어진 Java 코드에서 주석을 제거합니다.
+
+    :param java_code: Java 코드 문자열
+    :return: 주석이 제거된 Java 코드 문자열
+    """
     # 블록 주석 /* ... */ 및 라인 주석 // ... 을 제거
     pattern = r'//.*?$|/\*.*?\*/'
     return re.sub(pattern, '', java_code, flags=re.DOTALL | re.MULTILINE)
 
 # 클래스 정보 추출
-def extract_class_info(java_code):
+def extract_class_info(java_code: str) -> dict[str, Optional[str]]:
+    """
+    주어진 Java 코드에서 클래스 정보를 추출합니다.
+
+    :param java_code: Java 코드 문자열
+    :return: 클래스 정보를 담은 딕셔너리
+    """
     class_info = {
+        'class_signature': None,  # 클래스 시그니처
         'package': None,        # 패키지명
         'class_type': None,     # 클래스유형
         'class_name': None,     # 클래스명
@@ -22,6 +34,11 @@ def extract_class_info(java_code):
         'method_count': 0,      # 메소드 갯수
         'last_modified': None   # 최종 수정일
     }
+    
+    # 클래스 시그니처 추출
+    class_signature = extract_class_signature(java_code)
+    if class_signature:
+        class_info['class_signature'] = class_signature
 
     # 패키지 추출
     package_match = re.search(r'package\s+([\w\.]+);', java_code)
@@ -50,8 +67,26 @@ def extract_class_info(java_code):
 
     return class_info
 
-# 메서드 본문 추출 함수
-def extract_method_code(java_code, start_pos):
+def extract_class_signature(java_code: str) -> Optional[str]:
+    """
+    주어진 Java 파일에서 클래스 시그니처를 추출합니다.
+    """
+    class_signature_pattern = re.compile(r'^\s*(public|protected|private)?\s*(abstract|final)?\s*class\s+(\w+)(\s+extends\s+\w+)?(\s+implements\s+[\w, ]+)?', re.MULTILINE)
+    match = class_signature_pattern.search(java_code)
+    if match:
+        return match.group(0)  # 전체 매치된 클래스 시그니처 반환
+    else:
+        return None
+
+
+def extract_method_code(java_code: str, start_pos: int) -> str:
+    """
+    주어진 Java 코드에서 메서드 본문을 추출합니다.
+
+    :param java_code: Java 코드 문자열
+    :param start_pos: 메서드 시작 위치
+    :return: 메서드 본문 문자열
+    """
     code_lines = java_code.splitlines()
     method_code_lines = []
     brace_count = 0
@@ -77,8 +112,15 @@ def extract_method_code(java_code, start_pos):
 
     return '\n'.join(method_code_lines)
 
+
 # 메서드 정보 추출 함수
-def extract_methods_from_java(java_code):
+def extract_methods_from_java(java_code: str) -> list[dict[str, str]]:
+    """
+    주어진 Java 코드에서 메서드 정보를 추출합니다.
+
+    :param java_code: Java 코드 문자열
+    :return: 메서드 정보의 리스트
+    """
     methods = []
 
     # 메서드 시그니처 찾기 (public, private, protected 등 접근제어자 포함)
@@ -106,12 +148,14 @@ def extract_methods_from_java(java_code):
 
     return methods
 
-# Java 파일 파싱 함수
-def parse_java_file(file_path):
-    # Java 파일 읽기
-    with open(file_path, 'r', encoding='utf-8') as f:
-        java_code = f.read()
 
+def parse_java_file(java_code: str) -> tuple[dict[str, Optional[str]], list[dict[str, str]]]:
+    """
+    Java 코드를 파싱하여 클래스 정보와 메서드 정보를 추출합니다.
+
+    :param java_code: Java 코드 문자열
+    :return: 클래스 정보와 메서드 정보의 튜플
+    """
     # 주석 제거
     java_code = remove_comments(java_code)
 
@@ -123,13 +167,19 @@ def parse_java_file(file_path):
     class_info['methods'] = [method['name'] for method in methods]
     class_info['method_count'] = len(methods)
 
-    # 파일의 최종 수정일 가져오기
-    last_modified = os.path.getmtime(file_path)
-    class_info['last_modified'] = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
+    # 파일의 최종 수정일 가져오기 #TODO 상위 프로세스로 move
+    # last_modified = os.path.getmtime(file_path)
+    # class_info['last_modified'] = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
 
     return class_info, methods
 
-def parse_java_directory(directory_path, output_file):
+def parse_java_directory(directory_path: str, output_file: str) -> None:
+    """
+    주어진 디렉토리 내의 모든 Java 파일을 파싱하여 클래스 정보와 메서드 정보를 추출하고 결과를 출력 파일에 저장합니다.
+
+    :param directory_path: Java 파일이 있는 디렉토리 경로
+    :param output_file: 결과를 저장할 출력 파일 경로
+    """
     # 출력 파일 열기 (쓰기 모드)
     with open(output_file, 'w', encoding='utf-8') as f_out:
         # 디렉토리 내의 모든 폴더 및 파일을 재귀적으로 탐색
@@ -141,8 +191,12 @@ def parse_java_directory(directory_path, output_file):
                     f_out.write(f"Parsing file: {file_path}\n")
                     f_out.write("=" * 40 + "\n")
 
+                    # Java 파일 읽기
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        java_code = f.read()
+                        
                     # Java 파일을 파싱하여 클래스 정보 및 메서드 정보 추출
-                    class_info, methods = parse_java_file(file_path)
+                    class_info, methods = parse_java_file(java_code)
 
                     # 클래스 정보 출력
                     f_out.write("Class Info:\n")

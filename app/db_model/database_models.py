@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, TIMESTAMP, BigInteger, Boolean, Column, ForeignKey, Integer, String, CHAR, Text, Time, UUID
+from sqlalchemy import JSON, TIMESTAMP, BigInteger, Boolean, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 # database.py에서 생성한 Base import
@@ -86,6 +86,7 @@ class ChunkedData(Base):
     data_name = Column(String, comment="데이터명")  # 데이터명
     data_type = Column(Text, comment="데이터 유형")  # 데이터 유형
     content = Column(Text, comment="콘텐츠")  # 콘텐츠
+    context_chunk = Column(Text, comment="컨텍스트 청크")  # 컨텍스트 청크
     document_metadata = Column(JSON, comment="문서의 메타데이터")  # 문서의 메타데이터
     
     # 벡터 인덱스 정보\

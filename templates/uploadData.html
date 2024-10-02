@@ -5,19 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Construction Guarantee</title>
-    <!-- Bootstrap CSS 로컬 링크 -->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS 링크 -->
-    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="/static/css/style.css?version=1" rel="stylesheet">
 </head>
 
 <body>
-    <div class="container">
+    <div class="container mt-5 p-4 shadow-lg bg-white rounded">
         <h1>{{ message }}</h1>
         <p class="text-center">파일 업로드 및 VectorDB + RDB에 내용 저장을 위한 테스트 페이지</p>
 
         <!-- 경고 메시지 -->
-        <div id="alert" class="alert alert-danger" role="alert">
+        <div id="alert" class="alert alert-danger" role="alert" style="display:none;">
             파일을 선택해주세요.
         </div>
 
@@ -28,9 +26,29 @@
                 <input type="file" id="file-upload" name="files" multiple class="form-control-file">
             </div>
 
+                    <!-- FAISS Info Table -->
+            <h2>FAISS 인덱스 정보</h2>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="faiss-info-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">선택</th>
+                            <th style="width: 5%;">ID</th>
+                            <th style="width: 20%;">인덱스명</th>
+                            <th style="width: 40%;">인덱스 설명</th>
+                            <th style="width: 30%;">인덱스 파일 경로</th>
+                        </tr>
+                    </thead>
+                    <tbody id="faiss-info-tbody">
+                        <!-- 데이터는 여기로 추가됩니다. -->
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Save Button -->
             <button type="button" class="btn btn-primary" onclick="handleSubmit()">저장</button>
         </form>
+
     </div>
 
     <!-- Bootstrap JS 및 종속성 -->
@@ -38,34 +56,71 @@
     <script src="static/js/popper.min.js"></script>
     <script src="static/js/bootstrap.min.js"></script>
     <script>
+        // 페이지 로드 시 FAISS Info 데이터 가져오기
+        document.addEventListener('DOMContentLoaded', fetchFaissInfo);
+
+        function fetchFaissInfo() {
+            fetch('/upload/api/faiss_info')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('faiss-info-tbody');
+                    tbody.innerHTML = ""; // 기존 내용 지우기
+                    data.forEach(info => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><input type="checkbox" class="select-checkbox" data-id="${info.id}"></td>
+                            <td>${info.id}</td>
+                            <td>${info.index_name}</td>
+                            <td>${info.index_desc}</td>
+                            <td>${info.index_file_path}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching FAISS Info:', error);
+                });
+        }
+                
         function handleSubmit() {
             const fileInput = document.getElementById('file-upload');
             const alertBox = document.getElementById('alert');
 
-            // 파일이 선택되지 않았을 경우 경고 메시지 표시
-            if (fileInput.files.length === 0) {
+            // 경고 메시지 숨기기
+            alertBox.style.display = 'none';
+
+            // 선택된 체크박스가 있는지 확인
+            const selectedCheckboxes = document.querySelectorAll('.select-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
                 alertBox.style.display = 'block';
+                alertBox.textContent = '그리드에서 하나 이상의 항목을 선택해주세요.';
                 return;
             }
 
-            // 경고 메시지 숨기기
-            alertBox.style.display = 'none';
+            // 파일이 선택되지 않았을 경우 경고 메시지 표시
+            if (fileInput.files.length === 0) {
+                alertBox.style.display = 'block';
+                alertBox.textContent = '파일을 선택해주세요.';
+                return;
+            }
 
             // FormData에 파일 데이터 추가
             const formData = new FormData();
             for (const file of fileInput.files) {
                 formData.append('files', file);
             }
+            // 선택된 FAISS ID 추가
+            formData.append('selectedIds', JSON.stringify(selectedIds));
 
             // 비동기 요청으로 파일 업로드
-            fetch('/api/uploadFile', {
+            fetch('/api/upload/uploadFile', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
-                // 필요한 경우 추가 처리 (ex: 업로드 성공 메시지, 페이지 이동 등)
+                fetchFaissInfo();  // 파일 업로드 후 데이터 갱신
             })
             .catch((error) => {
                 console.error('Error:', error);

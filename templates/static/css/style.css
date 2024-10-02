@@ -4,11 +4,11 @@ body {
 }
 
 .container {
-    max-width: 600px;
+    max-width: 1200px;
     margin: auto;
+    background: white;
     padding: 20px;
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
 }
 
@@ -32,4 +32,27 @@ button {
 
 .alert {
     display: none;
+}
+
+table {
+    width: 100%; 
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    vertical-align: middle;
+    border: 1px solid #dee2e6;
+    word-break: break-word;
+}
+
+th {
+    background-color: #f1f1f1;
+    white-space: nowrap;
+}
+
+.btn {
+    display: block;
+    width: 150px;
+    margin: 10px 0;
 }

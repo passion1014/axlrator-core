@@ -2,12 +2,18 @@ import os
 from dotenv import load_dotenv
 from typing import List, Tuple, TypedDict
 from langchain_core.messages import AIMessage
+from langchain_openai import ChatOpenAI
 from langserve.pydantic_v1 import BaseModel, Field
+from app.prompts.code_prompt import CODE_SUMMARY_GENERATE_PROMPT
+from app.prompts.sql_prompt import SQL_QUERY_PROMPT
 from langgraph.graph import StateGraph, END
 from langchain_community.vectorstores import FAISS
 from app.prompts.prompts import MERGE_QUESTION_PROMPT, ANSWER_PROMPT
 from app.utils import combine_documents, merge_chat_history, get_embedding_model, get_llm_model
 from .config import setup_logging
+from langfuse.callback import CallbackHandler
+from langchain_core.output_parsers import StrOutputParser
+from langchain_anthropic import ChatAnthropic
 
 # .env 파일 로드
 load_dotenv()
@@ -56,7 +62,7 @@ def load_vector_database():
 
 
 
-def create_chain():
+def create_rag_chain():
     # retriever 선언
     retriever = load_vector_database()
     
@@ -94,5 +100,34 @@ def create_chain():
     workflow.add_edge("generate_response", END)
 
     chain = workflow.compile()
-        
-    return chain.with_types(input_type=ChatHistory)
+    chain.with_types(input_type=ChatHistory).with_config(callbacks=[CallbackHandler()])
+    
+    return chain
+
+# text_to_sql 체인 생성
+def create_text_to_sql_chain():
+    """
+    text를 받아서 sql을 만들어줌
+    """
+    prompt_chain = (
+        SQL_QUERY_PROMPT | get_llm_model().with_config(callbacks=[CallbackHandler()]) | StrOutputParser()
+    )
+    return prompt_chain
+
+def create_summary_chain():
+    """
+    chunk를 받아서 summary를 만들어줌
+    """
+    prompt_chain = (
+        CODE_SUMMARY_GENERATE_PROMPT | get_llm_model().with_config(callbacks=[CallbackHandler()]) | StrOutputParser()
+    )
+    return prompt_chain
+
+
+# openai 체인 생성
+def create_openai_chain():
+    return ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+# anthropic 체인 생성
+def create_anthropic_chain():
+    return ChatAnthropic(model="claude-3-haiku-20240307")

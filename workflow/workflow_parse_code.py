@@ -6,7 +6,17 @@ import luigi
 from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData
 from app.db_model.database import SessionLocal
 from app.vectordb.faiss_vectordb import FaissVectorDB
-from workflow.parse_java import parse_java_file
+from app.process.java_parser import parse_java_file
+
+
+# 코드 어시스트를 위한 파일처리 순서
+# 1. 파일 파싱
+# ㄴ DB 저장
+# 2. 컨텍스추얼 청크 생성
+# ㄴ DB 조회
+# ㄴ 모델 호출
+# 3. 파일 벡터화
+
 
 # Luigi Task: 프로젝트 내 파일 탐색
 class FindFiles(luigi.Task):
