@@ -84,6 +84,7 @@ class PostgresDocstore:
 
 
 class FaissVectorDB:
+    
     # 임베딩 모델 가져오기
     embeddings = get_embedding_model()
 
@@ -106,8 +107,8 @@ class FaissVectorDB:
         docstore=psql_docstore,
         index_to_docstore_id={},
     )
-
-
+    
+    
     def as_retriever(self, search_kwargs):
         return self.vector_store.as_retriever(search_kwargs=search_kwargs)
 
@@ -200,9 +201,13 @@ class FaissVectorDB:
         
         
         
-    def read_index(self, file_path):
-        # FAISS 인덱스를 파일에서 로드
-        self.vector_store.index = faiss.read_index(file_path)
+    def read_index(self, index_name=None):
+        # PostgresDocstore에서 FAISS 정보 가져오기
+        faiss_info = self.psql_docstore.get_faiss_info(index_name)
+        self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
+
+        print(f"----------- PostgresDocstore에서 FAISS 정보 읽기 >> index_name={index_name}, index_file_path={faiss_info.index_file_path}")
+
         
         # 인덱스의 기본 정보 출력
         print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력

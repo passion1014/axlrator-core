@@ -1,3 +1,4 @@
+import os
 from fastapi.staticfiles import StaticFiles
 from langserve import add_routes
 from app.chain import create_anthropic_chain, create_openai_chain, create_rag_chain, create_text_to_sql_chain
@@ -18,6 +19,8 @@ webServerApp = FastAPI(
 # 정적 파일 경로 및 Jinja2 템플릿 설정
 webServerApp.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# 
+os.environ["LANGCHAIN_HANDLER"] = "null"
 
 # ---------------------------------------
 # 라우터 등록
