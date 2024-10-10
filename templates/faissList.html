@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <meta charset="UTF-8">
+    <title>관리자 화면</title>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Construction Guarantee</title>
+        <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+        <!-- link href="/static/css/style.css?version=1" rel="stylesheet" -->
+    </head>
+<body>
+    <div class="container mt-5">
+        <!-- 1단: 조회조건 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">조회조건</h2>
+            </div>
+            <div class="card-body">
+                <form class="row g-3">
+                    <div class="col-md-3">
+                        <label for="start-date" class="form-label">조회시작일:</label>
+                        <input type="date" id="start-date" name="start-date" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end-date" class="form-label">조회종료일:</label>
+                        <input type="date" id="end-date" name="end-date" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">상태:</label>
+                        <select id="status" name="status" class="form-select w-100">
+                            <option value="">전체</option>
+                            <option value="active">활성</option>
+                            <option value="inactive">비활성</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="type" class="form-label">유형:</label>
+                        <select id="type" name="type" class="form-select w-100">
+                            <option value="">전체</option>
+                            <option value="type1">유형1</option>
+                            <option value="type2">유형2</select>
+                    </div>
+                    <div class="col-12 text-end mt-3">
+                        <button type="submit" class="btn btn-primary">검색</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2단: 목록 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">목록</h2>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered table-hover table-striped table-responsive">
+                    <thead class="table-light">
+                        <tr>
+                            <th>등록일</th>
+                            <th>상태</th>
+                            <th>유형</th>
+                            <th>리소스명</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 데이터 예시 -->
+                        <tr>
+                            <td>2023-10-01</td>
+                            <td>활성</td>
+                            <td>유형1</td>
+                            <td>리소스 A</td>
+                        </tr>
+                        <tr>
+                            <td>2023-10-02</td>
+                            <td>비활성</td>
+                            <td>유형2</td>
+                            <td>리소스 B</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FAISS 인덱스 정보 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">FAISS 인덱스 정보</h2>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered table-hover table-striped table-responsive" id="faiss-info-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%; text-align: center;">선택</th>
+                            <th style="width: 5%;">ID</th>
+                            <th style="width: 20%;">인덱스명</th>
+                            <th style="width: 40%;">인덱스 설명</th>
+                            <th style="width: 30%;">인덱스 파일 경로</th>
+                        </tr>
+                    </thead>
+                    <tbody id="faiss-info-tbody">
+                        <!-- 데이터는 여기로 추가됩니다. -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3단: 프로세스 버튼 -->
+        <div class="d-flex justify-content-end gap-4 mb-4">
+            <button type="button" class="btn btn-success">등록</button>
+            <button type="button" class="btn btn-danger">삭제</button>
+            <button type="button" class="btn btn-warning">처리</button>
+        </div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 FAISS Info 데이터 가져오기
+        document.addEventListener('DOMContentLoaded', fetchFaissInfo);
+
+        function fetchFaissInfo() {
+            fetch('/upload/api/faiss_info')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('faiss-info-tbody');
+                    tbody.innerHTML = ""; // 기존 내용 지우기
+                    data.forEach(info => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><input type="checkbox" class="form-check-input" data-id="${info.id}"></td>
+                            <td>${info.id}</td>
+                            <td class="text-primary text-decoration-underline clickable" style="cursor: pointer;">${info.index_name}</td>
+                            <td>${info.index_desc}</td>
+                            <td>${info.index_file_path}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+    
+                    // 인덱스명 셀에 클릭 이벤트 추가
+                    const clickableCells = document.querySelectorAll('.clickable');
+                    clickableCells.forEach(cell => {
+                        cell.addEventListener('click', function() {
+                            getFaissDetail(cell);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching FAISS Info:', error);
+                });
+        }
+
+        function getFaissDetail(element) {
+            // 클릭된 행의 인덱스명 가져오기
+            const row = element.closest('tr');
+            const indexName = row.cells[2].textContent;
+            
+            // 여기에 인덱스 상세 정보를 가져오는 로직을 구현하세요.
+            // 예: API 호출 또는 다른 처리
+            console.log('인덱스 상세 정보 가져오기:', indexName);
+            
+            // 상세 정보를 표시하는 로직 (예: 모달 창 열기)
+            alert('인덱스 상세 정보: ' + indexName);
+        }
+    </script>
+</body>
+</html>

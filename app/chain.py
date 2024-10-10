@@ -119,7 +119,7 @@ def create_summary_chain():
     chunk를 받아서 summary를 만들어줌
     """
     prompt_chain = (
-        CODE_SUMMARY_GENERATE_PROMPT | get_llm_model().with_config(callbacks=[CallbackHandler()]) | StrOutputParser()
+        CODE_SUMMARY_GENERATE_PROMPT | get_llm_model().with_config(callbacks=[CallbackHandler()])
     )
     return prompt_chain
 

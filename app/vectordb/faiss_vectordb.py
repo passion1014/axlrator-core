@@ -18,7 +18,16 @@ class PostgresDocstore:
         """SQLAlchemy 세션을 주입받음"""
         self.session = db_session
         
-    def insert_faiss_info(self, index_name, index_desc, index_file_path) -> FaissInfo:
+    def get_faiss_info(self, index_name: str) -> FaissInfo:
+        """인덱스 이름으로 FAISS 정보를 조회합니다."""
+        stmt = select(FaissInfo).where(FaissInfo.index_name == index_name)
+        result = self.session.execute(stmt).scalar_one_or_none()
+        
+        if result:
+            return result
+        return None
+        
+    def insert_faiss_info(self, index_name: str, index_desc: str, index_file_path: str) -> FaissInfo:
         """FAISS 인덱스 정보 저장"""
         
         faiss_info = FaissInfo(
@@ -104,6 +113,25 @@ class FaissVectorDB:
 
 
     def add_embedded_content_to_index(self, document_id, content, metadata) -> ChunkedData:
+        """
+        문서 내용을 임베딩하고 FAISS 인덱스에 추가합니다.
+
+        Args:
+            document_id (str): 문서의 고유 식별자
+            content (str): 문서의 내용
+            metadata (dict): 문서와 관련된 메타데이터
+
+        Returns:
+            int: FAISS 인덱스에 추가된 벡터의 인덱스
+
+        동작 과정:
+        1. 주어진 내용과 메타데이터로 Document 객체를 생성합니다.
+        2. 문서 내용을 임베딩 벡터로 변환합니다.
+        3. 임베딩 벡터를 FAISS 인덱스에 추가합니다.
+        4. 추가된 벡터의 인덱스를 계산합니다.
+        5. FAISS 인덱스와 문서 ID 간의 매핑을 설정합니다.
+        6. 추가된 벡터의 인덱스를 반환합니다.
+        """
         # Document 객체 생성
         document = Document(page_content=content, metadata=metadata)
         

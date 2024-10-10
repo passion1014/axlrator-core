@@ -45,6 +45,8 @@ class OrgRSrc(Base):
     org_resrc_code = relationship("OrgRSrcCode", back_populates="org_resrc")
     chunked_data = relationship("ChunkedData", back_populates="org_resrc")
 
+    def __repr__(self):
+        return f"OrgRSrc(id={self.id}, resrc_name='{self.resrc_name}', resrc_type='{self.resrc_type}', is_vector={self.is_vector})"
 
 class OrgRSrcCode(Base):
     '''

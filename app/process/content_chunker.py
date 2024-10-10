@@ -3,6 +3,7 @@ import json
 import os
 
 from app.chain import create_summary_chain
+from app.formatter.code_formatter import parse_augmented_chunk
 from app.process.java_parser import parse_java_file
 
 class BaseChunkMeta:
@@ -78,7 +79,7 @@ def read_file(file_path):
 def save_chunks(chunks, extension, last_modified):
     """chunk를 데이터베이스에 저장"""
     for idx, chunk in enumerate(chunks, 1):
-        print(chunk)
+        print("=============================================")
         
 def get_file_extension(file_path):
     """Return the file extension of the given file path."""
@@ -107,11 +108,11 @@ def split_java_file(content:str) -> list[BaseChunkMeta]:
     return chunks
 
 def make_summary_with_llm(chunk:BaseChunkMeta):
-    """chunk를 받아서 summary를 만들어줌"""
+    """chunk를 받아서 LLM을 사용하여 summary를 만듬"""
 
     # create_summary_chain 호출
     summary_chain = create_summary_chain()
-
+    
     # 요약 생성을 위한 프롬프트 입력
     inputs = {
         "CODE_CHUNK": chunk.chunk_content
@@ -119,11 +120,15 @@ def make_summary_with_llm(chunk:BaseChunkMeta):
     
     # summary_chain 실행
     try:
-        result = summary_chain.invoke(inputs)
-        print(f"Summary Chain Output: {result}")
+        summary_ai_message = summary_chain.invoke(inputs) # result = AIMessage 타입
+        parsed_ai_message = parse_augmented_chunk(summary_ai_message.content)
+        parsed_json_message = json.loads(parsed_ai_message.model_dump_json())  # Pydantic v2의 기본 json 메서드를 사용해 JSON으로 변환
+        result = json.dumps(parsed_json_message, ensure_ascii=False, indent=4)
+        # print(f"####### summary={result}")
+        # print(parsed_json_message.get("summary"))        
     except Exception as e:
         result = ""
-        print(f"Error during summary chain execution: {e}")
+        print(f"에러발생-summary chain execution: {e}")
     
     return result
 
@@ -133,15 +138,11 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     content = read_file(file_path)
     extension = get_file_extension(file_path)
 
-
     # 파일 확장자에 따라 청크 분할 로직 선택
     if extension == ".java":
         chunks = split_java_file(content)
         
     elif extension == ".xml":
-        # chunks = split_xml_file(content, llm_splitter)
-        # output_path = os.path.join(os.path.dirname(file_path), "chunks")
-        # write_chunks(chunks, output_path)
         print(f"xml 파일 처리 예정")
         
     else:
@@ -149,15 +150,18 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
 
     # 파일의 최종 수정일 가져오기 
     last_modified = os.path.getmtime(file_path)
-    datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
+    last_modified = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
 
     # summary 추가
     for chunk in chunks:
         summary = make_summary_with_llm(chunk)
         chunk.set_summary(summary)
-
+    # summary = make_summary_with_llm(chunks[0])
+    # print(f"####### {summary}")
+    
     # 청크 정보 저장
-    save_chunks(chunks, extension, last_modified)
+    # save_chunks(chunks, extension, last_modified)
+    return chunks
 
 
 

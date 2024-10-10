@@ -18,12 +18,7 @@ router = APIRouter()
 
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
-
-@router.get("/uploadData", response_class=HTMLResponse)
-async def ui_upload_page(request: Request):
-    return templates.TemplateResponse("uploadData.html", {"request": request, "message": "건설공제 파일 업로드 (Test버전)"})
-
-@router.get("/faisslist", response_class=HTMLResponse)
+@router.get("/list", response_class=HTMLResponse)
 async def ui_faiss_list(request: Request):
     return templates.TemplateResponse("faissList.html", {"request": request, "message": "건설공제 파일 업로드 (Test버전)"})
 

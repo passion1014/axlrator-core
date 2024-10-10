@@ -1,0 +1,1108 @@
+Testing chunk_file with file: /app/rag_data/is_modon_proto/src/main/java/com/modon/control/farm/service/FarmServiceImpl.java
+Valid file path. Proceeding with chunking...
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>getFarmByIdentification</function_name>
+<summary>Retrieves a FarmDto object based on a given farm identification string.</summary>
+<features>
+- Logs an informational message with the provided farm identification parameter
+- Utilizes the moFarmRepository to find a farm entity by its identification
+- Maps the found farm entity to a FarmDto object using the convertToDto function
+- Returns an Optional containing the FarmDto object if found, otherwise returns an empty Optional
+</features>
+</metadata>
+<code>
+public Optional<FarmDto> getFarmByIdentification(String farmIdentification) {
+log.info("Fetching data for param: {}", farmIdentification);
+return moFarmRepository.findByFarmIdentification(farmIdentification)
+.map(this::convertToDto);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>getFarmDetailInfo</function_name>
+<summary>Retrieves farm detail information and associated cage data for a given farm identification.</summary>
+<features>
+- Logs the input farm identification parameter
+- Fetches a MoFarm entity from a repository based on the farm identification
+- Retrieves a list of MoCage entities associated with the farm
+- Converts the MoFarm entity to a FarmDto object
+- Creates a CageTreeNodeDto object from the list of MoCage entities
+- Returns an Optional containing a FarmDetailDto object with the farm data and cage tree node data
+</features>
+</metadata>
+<code>
+public Optional<FarmDetailDto> getFarmDetailInfo(String farmIdentification) {
+log.info("Fetching data for param: {}", farmIdentification);
+
+FarmDetailDto farmDetailDto = new FarmDetailDto();
+
+
+Optional<MoFarm> moFarm = moFarmRepository.findByFarmIdentification(farmIdentification);
+
+
+moFarm.ifPresent(farm -> {
+
+
+List moCageList = moCageRepository.findAllByCageFarm(farm);
+
+farmDetailDto.setFarmDto(convertToDto(farm));
+farmDetailDto.setCageTreeNodeDto(createTreeNode(moCageList));
+});
+
+return Optional.of(farmDetailDto);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>createTreeNode</function_name>
+<summary>Creates a tree data structure from a list of cages, with the root node representing the entire hierarchy.</summary>
+<features>
+- Uses a HashMap to store nodes keyed by their cage IDs
+- Constructs the tree by iterating through the cages and adding child nodes to their respective parents
+- Handles cases where a cage has no parent (root node) or has a parent node
+- Builds CageTreeNodeDto and CageDto objects to represent the tree structure
+</features>
+</metadata>
+<code>
+private CageTreeNodeDto createTreeNode(List<MoCage> cageList) {
+CageTreeNodeDto root = CageTreeNodeDto.builder()
+.cageDto(CageDto.builder().id(0L).cageName("root").build())
+.children(new ArrayList<>())
+.build();
+
+
+Map<Long, CageTreeNodeDto> nodeMap = new HashMap<>();
+
+
+for (MoCage cage : cageList) {
+Long parentCageCode = cage.getCageParentCode() != null ? cage.getCageParentCode().getId() : 0L;
+nodeMap.put(cage.getId(),
+new CageTreeNodeDto(CageDto.builder().id(cage.getId())
+.cageParentCode(parentCageCode)
+.cageName(cage.getCageName())
+.cageStatus(cage.getCageStatus())
+.cageDate(cage.getCageDate())
+.cageExpiryDate(cage.getCageExpiryDate())
+.cageExpiredYn(cage.getCageExpiredYn())
+.typeCode(cage.getTypeCode())
+.build()));
+}
+
+
+for (CageTreeNodeDto node : nodeMap.values()) {
+Long parentCageCode = node.getCageDto().getCageParentCode();
+if (parentCageCode == null || parentCageCode == 0) {
+root.addChild(node);
+} else {
+CageTreeNodeDto parentNode = nodeMap.get(parentCageCode);
+parentNode.addChild(node);
+}
+}
+
+return root;
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>modifyFarm</function_name>
+<summary>Updates the details of a farm record based on the provided FarmDto object.</summary>
+<features>
+- Retrieves the existing MoFarm entity from the repository using the provided ID
+- Updates various fields of the MoFarm entity with values from the FarmDto object using Optional and lambda expressions
+- Saves the updated MoFarm entity back to the repository
+- Returns true if the update is successful
+</features>
+</metadata>
+<code>
+public Optional<Boolean> modifyFarm(FarmDto farmDto) {
+MoFarm moFarm = moFarmRepository.findById(farmDto.getId())
+.orElseThrow(() -> new IllegalArgumentException("해당 농장정보가 없습니다. id=" + farmDto.getId()));
+
+Optional.ofNullable(farmDto.getFarmStatus())
+.map(FarmStatus::valueOf)
+.ifPresent(moFarm::setFarmStatus);
+
+Optional.ofNullable(farmDto.getFarmOwnerName()).ifPresent(moFarm::setFarmOwnerName);
+Optional.ofNullable(farmDto.getBusinessNumber()).ifPresent(moFarm::setBusinessNumber);
+Optional.ofNullable(farmDto.getFarmName()).ifPresent(moFarm::setFarmName);
+Optional.ofNullable(farmDto.getFarmTel()).ifPresent(moFarm::setFarmTel);
+Optional.ofNullable(farmDto.getFarmZipcode()).ifPresent(moFarm::setFarmZipcode);
+Optional.ofNullable(farmDto.getFarmRoadAddr()).ifPresent(moFarm::setFarmRoadAddr);
+Optional.ofNullable(farmDto.getFarmJibunAddr()).ifPresent(moFarm::setFarmJibunAddr);
+Optional.ofNullable(farmDto.getFarmAddrExt()).ifPresent(moFarm::setFarmAddrExt);
+Optional.ofNullable(farmDto.getFarmUrl()).ifPresent(moFarm::setFarmUrl);
+Optional.ofNullable(farmDto.getFarmLat()).ifPresent(moFarm::setFarmLat);
+Optional.ofNullable(farmDto.getFarmLng()).ifPresent(moFarm::setFarmLng);
+Optional.ofNullable(farmDto.getFarmSido()).ifPresent(moFarm::setFarmSido);
+Optional.ofNullable(farmDto.getFarmSigungu()).ifPresent(moFarm::setFarmSigungu);
+Optional.ofNullable(farmDto.getFarmManagerTeam()).ifPresent(moFarm::setFarmManagerTeam);
+Optional.ofNullable(farmDto.getFarmManagerGrade()).ifPresent(moFarm::setFarmManagerGrade);
+Optional.ofNullable(farmDto.getFarmManagerName()).ifPresent(moFarm::setFarmManagerName);
+Optional.ofNullable(farmDto.getFarmManagerEmail()).ifPresent(moFarm::setFarmManagerEmail);
+Optional.ofNullable(farmDto.getFarmManagerTel()).ifPresent(moFarm::setFarmManagerTel);
+Optional.ofNullable(farmDto.getFarmManagerMobile()).ifPresent(moFarm::setFarmManagerMobile);
+Optional.ofNullable(farmDto.getLoginNotice()).ifPresent(moFarm::setLoginNotice);
+Optional.ofNullable(farmDto.getPwFindNotice()).ifPresent(moFarm::setPwFindNotice);
+
+
+moFarmRepository.save(moFarm);
+return Optional.of(true);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>changeImage</function_name>
+<summary>This function handles the process of changing or uploading an image for a farm entity in the application.</summary>
+<features>
+- Finds the farm entity in the repository based on the provided farm identification
+- Uploads the provided image file to an AWS S3 bucket and generates a URL
+- Deletes the previously uploaded image for the specified image type if it exists
+- Associates the new image with the farm entity based on the specified image type
+- Updates the farm entity in the repository
+- Constructs a FarmImgDto object with the new image details
+</features>
+</metadata>
+<code>
+public Optional<FarmImgDto> changeImage(MultipartFile file, FarmImgDto farmImgDto) {
+MoFarm moFarm = moFarmRepository.findByFarmIdentification(farmImgDto.getFarmIdentification())
+.orElseThrow(() -> new CustomRuntimeException("등록되지 않은 농장입니다."));
+
+if (file != null) {
+
+String s3Key = AwsBuckets.generateUserProfileKey(farmImgDto.getFarmIdentification());
+String url = s3.upload(file, s3Key);
+
+if (url != null && !url.isEmpty()) {
+String savedFileName = url.substring(url.lastIndexOf("/"));
+
+
+MoAttach moAttach = MoAttach.builder()
+.attachFileExtension(file.getContentType())
+.attachFileSize(file.getSize())
+.attachFilePath(url)
+.attachOriginalFileName(file.getOriginalFilename())
+.attachSavedFileName(savedFileName)
+.build();
+
+
+if (1 == farmImgDto.getImgType()) {
+Optional.ofNullable(moFarm.getFarmImg()).ifPresent(moAttach1 -> s3.delete(moAttach1.getAttachFilePath()));
+} else if (2 == farmImgDto.getImgType()) {
+Optional.ofNullable(moFarm.getFarmImg2()).ifPresent(moAttach2 -> s3.delete(moAttach2.getAttachFilePath()));
+} else if (3 == farmImgDto.getImgType()) {
+Optional.ofNullable(moFarm.getFarmImg3()).ifPresent(moAttach3 -> s3.delete(moAttach3.getAttachFilePath()));
+} else if (4 == farmImgDto.getImgType()) {
+
+Optional.ofNullable(moFarm.getLargeLogoImg()).ifPresent(
+moAttach4 -> {
+
+s3.delete(moAttach4.getAttachFilePath());
+}
+);
+} else if (5 == farmImgDto.getImgType()) {
+Optional.ofNullable(moFarm.getSmallLogoImg()).ifPresent(moAttach5 -> s3.delete(moAttach5.getAttachFilePath()));
+}
+
+
+if (1 == farmImgDto.getImgType()) {
+moFarm.setFarmImg(moAttach);
+} else if (2 == farmImgDto.getImgType()) {
+moFarm.setFarmImg2(moAttach);
+} else if (3 == farmImgDto.getImgType()) {
+moFarm.setFarmImg3(moAttach);
+} else if (4 == farmImgDto.getImgType()) {
+moFarm.setLargeLogoImg(moAttach);
+} else if (5 == farmImgDto.getImgType()) {
+moFarm.setSmallLogoImg(moAttach);
+}
+
+
+moFarmRepository.save(moFarm);
+
+
+farmImgDto.setFarmImg(AttachDto.builder()
+.attachFileExtension(moAttach.getAttachFileExtension())
+.attachFileSize(moAttach.getAttachFileSize())
+.attachFilePath(moAttach.getAttachFilePath())
+.attachOriginalFileName(moAttach.getAttachOriginalFileName())
+.attachSavedFileName(moAttach.getAttachSavedFileName())
+.build());
+}
+}
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>getCagePigList</function_name>
+<summary>Retrieves a list of pigs associated with a given cage, along with their types and other details, and returns it as an Optional&lt;FarmPigJoinDto&gt; object.</summary>
+<features>
+- Retrieves the authenticated user's member grade and permissions
+- Builds a MoCage object from the provided FarmPigJoinDto
+- Fetches a list of pig relations for the given cage code
+- Maps the fetched relations to FarmPigDto objects with pig details and types
+- Counts the number of pigs in the cage
+- Sets the pig count, list of FarmPigDto, and read permissions in the FarmPigJoinDto
+- Utilizes repositories, services, and entity classes from the application's domain
+</features>
+</metadata>
+<code>
+public Optional<FarmPigJoinDto> getCagePigList(FarmPigJoinDto farmPigJoinDto) {
+Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+MoGrade moGrade = userDetails.getMemberGrade();
+MoCage moCage = MoCage.builder().id(farmPigJoinDto.getCageId()).build();
+
+Optional<List<Tuple>> optionalTuples = moPigRelationRepository.findMoPigRelationByCageCode(moCage);
+List<FarmPigDto> farmPigDtoList = optionalTuples.map(list -> list.stream()
+.sorted(Comparator.comparing(tuple -> tuple.get("pigIdentification", String.class)))
+.map(tuple -> {
+MoType moType = moTypeRepository.findByTypeTypeAndCode("2", (String) tuple.get("typeCode"))
+.orElseThrow(() -> new IllegalArgumentException("해당 유형정보가 없습니다. id=" + tuple.get("typeCode")));
+
+return FarmPigDto.builder()
+.pigId(tuple.get("id", Long.class))
+.pigIdentification(tuple.get("pigIdentification", String.class))
+.moType(moType)
+.pigName(tuple.get("pigName", String.class))
+.build();
+})
+.collect(Collectors.toList()))
+.orElse(Collections.emptyList());
+
+farmPigJoinDto.setPigCnt(moPigRelationRepository.countByCageCode(moCage).orElse(0));
+farmPigJoinDto.setFarmPigDtoList(farmPigDtoList);
+farmPigJoinDto.setPigReadAuth(moGradePermissionsService.checkPermission("pig", "pig", moGrade, "read"));
+
+return Optional.of(farmPigJoinDto);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>getFarmPigList</function_name>
+<summary>Retrieves a list of farm pigs with pagination and permission check.</summary>
+<features>
+- Retrieves the current user's authentication details
+- Fetches a paginated list of pigs based on search criteria
+- Checks the user's permission to read pig data based on their grade (role)
+- Returns a FarmPigJoinDto object containing the pig list, count, and read permission status
+</features>
+</metadata>
+<code>
+public Optional<FarmPigJoinDto> getFarmPigList(PigSearchDto pigSearchDto) {
+
+Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+MoGrade moGrade = userDetails.getMemberGrade();
+
+Page<PigDto> pigPageDto = pigService.getListSearchType(pigSearchDto).orElseGet(() ->
+new PageImpl<>(new ArrayList<>(), PageRequest.of(pigSearchDto.getPage(), pigSearchDto.getSize()), 0)
+);
+
+return Optional.ofNullable(FarmPigJoinDto.builder()
+.pigCnt((int) pigPageDto.getTotalElements())
+.pigReadAuth(moGradePermissionsService.checkPermission("pig", "pig", moGrade, "read"))
+.farmPigDtoPage(pigPageDto)
+.build());
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>releaseFarmCage</function_name>
+<summary>Releases a farm cage and/or partition for a given pig code, cage code, and partition code.</summary>
+<features>
+- Finds the MoPigRelation records for the given pig code
+- Iterates through the relations to find matching cage and partition codes
+- Updates the pig's cage and/or partition assignment based on the provided codes
+- Removes the relation record if both cage and partition are unassigned
+- Saves the updated relation record if either cage or partition is still assigned
+- Creates placement history records for tracking pig movements
+- Updates the pig's cage and partition names
+- Uses Java 8 streams and Optional for handling null values
+- Relies on external repositories and services (moPigRelationRepository, pigService)
+</features>
+</metadata>
+<code>
+public Optional<Boolean> releaseFarmCage(Long pigCode, Long cageCode, Long partitionCode) {
+try {
+AtomicBoolean result = new AtomicBoolean(false);
+
+
+Optional<List<MoPigRelation>> moPigRelationList = moPigRelationRepository.findByPigCode(MoPig.builder().id(pigCode).build());
+
+
+
+
+
+moPigRelationList.stream().forEach(relations -> {
+relations.stream().forEach(relation -> {
+Long relationCageCode = Optional.ofNullable(relation.getCageCode())
+.map(MoCage::getId)
+.orElse(null);
+
+Long relationPartitionCode = Optional.ofNullable(relation.getPartitionCode())
+.map(MoCagePartition::getId)
+.orElse(null);
+
+
+boolean isCageCodeMatch = Objects.equals(cageCode, relationCageCode);
+boolean isPartitionCodeMatch = partitionCode == null || Objects.equals(partitionCode, relationPartitionCode);
+boolean isPartitionUninstall = false;
+if (isCageCodeMatch || isPartitionCodeMatch) {
+
+
+if (isCageCodeMatch) {
+relation.setCageCode(null);
+
+if (relationPartitionCode != null) {
+isPartitionUninstall = true;
+relation.setPartitionCode(null);
+this.createPigPlacementHistory(pigCode, relationPartitionCode, null, "MOVE");
+pigService.updatePig(PigDto.builder().id(pigCode).partitionName("").build());
+}
+this.createPigPlacementHistory(pigCode, null, cageCode, "MOVE");
+pigService.updatePig(PigDto.builder().id(pigCode).cageName("").build());
+}
+
+
+if (isPartitionCodeMatch && partitionCode != null && !isPartitionUninstall) {
+
+relation.setPartitionCode(null);
+this.createPigPlacementHistory(pigCode, partitionCode, null, "MOVE");
+pigService.updatePig(PigDto.builder().id(pigCode).partitionName("").build());
+}
+
+
+
+if (relation.getCageCode() == null && relation.getPartitionCode() == null) {
+moPigRelationRepository.delete(relation);
+} else {
+moPigRelationRepository.save(relation);
+}
+result.set(true);
+}
+});
+});
+
+return Optional.of(result.get());
+} catch (Exception e) {
+throw new CustomRuntimeException(e.getMessage());
+}
+
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>multiplePigToFarmCage</function_name>
+<summary>Registers multiple pigs to their respective farm cages based on the provided release list.</summary>
+<features>
+- Iterates over a list of PigReleaseDto objects
+- Calls the registPigToFarmCage function for each PigReleaseDto
+- Handles exceptions thrown by registPigToFarmCage
+- Returns an Optional<Boolean> indicating success or failure
+</features>
+</metadata>
+<code>
+public Optional<Boolean> multiplePigToFarmCage(PigReleaseListDto pigReleaseListDto) {
+for (PigReleaseDto pigReleaseDto : pigReleaseListDto.getPigReleaseList()) {
+registPigToFarmCage(pigReleaseDto.getPigCode(), pigReleaseDto.getCageCode(), pigReleaseDto.getPartitionCode())
+.orElseThrow(() -> new CustomRuntimeException("양돈 케이지 등록 실패"));
+}
+return Optional.of(true);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>registPigToFarmCage</function_name>
+<summary>Registers a pig to a farm cage or partition, handling edge cases and updating the necessary relationships.</summary>
+<features>
+- Checks for existing relationships between the pig, cage, and partition
+- Releases the pig from any existing cage or partition
+- Creates a new relationship between the pig and the specified cage or partition
+- Handles various edge cases and error scenarios
+- Utilizes repositories to interact with the database
+- Uses Java's Optional and AtomicBoolean classes for null safety and thread safety
+</features>
+</metadata>
+<code>
+public Optional<Boolean> registPigToFarmCage(Long pigCode, Long cageCode, Long partitionCode) {
+try {
+AtomicBoolean releaseBool = new AtomicBoolean(false);
+
+
+
+moPigRelationRepository.findByPigCode(MoPig.builder().id(pigCode).build())
+.ifPresent(relations -> relations.forEach(relation -> {
+
+releaseBool.set(true);
+
+
+if (relation.getCageCode() != null && relation.getPartitionCode() != null) {
+
+releaseFarmCage(pigCode, relation.getCageCode().getId(), relation.getPartitionCode().getId());
+} else if (relation.getCageCode() != null) {
+
+releaseFarmCage(pigCode, relation.getCageCode().getId(), null);
+} else if (relation.getPartitionCode() != null) {
+
+releaseFarmCage(pigCode, null, relation.getPartitionCode().getId());
+}
+}));
+
+
+
+MoCage moCage = null;
+if (cageCode != null) {
+moCage = moCageRepository.findById(cageCode)
+.orElseThrow(() -> new CustomRuntimeException("케이지 정보를 조회할 수 없습니다."));
+releaseAndCreateHistoryAndUpdatePig(pigCode, moCage, null);
+}
+
+
+if (partitionCode != null) {
+MoCagePartition moCagePartition = moCagePartitionRepository.findById(partitionCode)
+.orElseThrow(() -> new CustomRuntimeException("파티션 정보를 조회할 수 없습니다."));
+
+if (moCage == null) {
+moCage = moCagePartition.getPartitionCage();
+cageCode = moCagePartition.getPartitionCage().getId();
+releaseAndCreateHistoryAndUpdatePig(pigCode, moCage, null);
+}
+releaseAndCreateHistoryAndUpdatePig(pigCode, null, moCagePartition);
+}
+
+
+
+
+
+MoPigRelation relation = new MoPigRelation();
+relation.setPigCode(moPigRepository.findById(pigCode).orElse(null));
+Optional.ofNullable(cageCode).ifPresent(code -> relation.setCageCode(moCageRepository.findById(code).orElse(null)));
+Optional.ofNullable(partitionCode).ifPresent(code -> relation.setPartitionCode(moCagePartitionRepository.findById(code).orElse(null)));
+
+
+moPigRelationRepository.save(relation);
+
+return Optional.of(true);
+} catch (Exception e) {
+throw new CustomRuntimeException(e.getMessage());
+}
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>releaseAndCreateHistoryAndUpdatePig</function_name>
+<summary>Updates pig placement history and pig details based on changes in the cage or cage partition.</summary>
+<features>
+- Creates a pig placement history record when a pig is moved to a new cage or partition
+- Updates the pig's cage name or partition name in the pig record
+- Handles cases where the pig is moved to a cage or partition
+- Utilizes a service class to update pig details
+</features>
+</metadata>
+<code>
+private void releaseAndCreateHistoryAndUpdatePig(Long pigCode, MoCage moCage, MoCagePartition moCagePartition) {
+
+
+if (moCage != null) {
+this.createPigPlacementHistory(pigCode, null, moCage.getId(), "IN");
+pigService.updatePig(PigDto.builder().id(pigCode).cageName(moCage.getCageName()).build());
+}
+if (moCagePartition != null) {
+this.createPigPlacementHistory(pigCode, moCagePartition.getId(), null, "IN");
+pigService.updatePig(PigDto.builder().id(pigCode).partitionName(moCagePartition.getPartitionName()).build());
+}
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>installPartitions</function_name>
+<summary>Creates and installs new partitions for a given cage based on the provided installation parameters.</summary>
+<features>
+- Retrieves the current partition count for the specified cage
+- Creates and saves new MoCagePartition entities for the requested installation count
+- Constructs CagePartitionDto objects from the saved MoCagePartition entities
+- Returns an Optional containing the updated PartitionInstallDto with the new CagePartitionDto list
+</features>
+</metadata>
+<code>
+public Optional<PartitionInstallDto> installPartitions(PartitionInstallDto partitionInstallDto) {
+List<CagePartitionDto> list = new ArrayList<>();
+
+int partitionCnt = moCagePartitionRepository.countByPartitionCage(MoCage.builder().id(partitionInstallDto.getCageCode()).build()).orElse(0);
+
+for (int i = 0; i < partitionInstallDto.getInstallCount(); i++) {
+MoCagePartition moCagePartition = moCagePartitionRepository.save(MoCagePartition.builder()
+.partitionCage(MoCage.builder().id(partitionInstallDto.getCageCode()).build())
+.partitionName("사이트 " + (partitionCnt + i + 1))
+.partitionStatus('Y')
+.partitionDate(LocalDateTime.from(LocalDateTime.now()))
+.build());
+
+
+list.add(CagePartitionDto.builder()
+.id(moCagePartition.getId())
+.partitionCage(CageDto.builder().id(partitionInstallDto.getCageCode()).build())
+.partitionName(moCagePartition.getPartitionName())
+.partitionStatus(moCagePartition.getPartitionStatus())
+.partitionDate(moCagePartition.getPartitionDate())
+.build());
+}
+
+partitionInstallDto.setCagePartitionDtoList(list);
+
+return Optional.of(partitionInstallDto);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>deletePartition</function_name>
+<summary>Deletes partitions from the system and updates related data.</summary>
+<features>
+- Performs checks to ensure partitions are not associated with sensors or pigs before deletion
+- Updates related data in multiple repositories to remove partition references
+- Deletes partitions from the moCagePartitionRepository
+- Returns a boolean indicating if the operation was successful
+- Utilizes the Java Optional class for handling nullable return values
+- Throws CustomRuntimeException when preconditions are not met
+</features>
+</metadata>
+<code>
+public Optional<Boolean> deletePartition(List<Long> partitionCodeList) {
+for (Long partitionCode : partitionCodeList) {
+MoCagePartition partition = moCagePartitionRepository.findById(partitionCode)
+.orElseThrow(() -> new CustomRuntimeException("파티션 정보가 존재하지 않습니다. ID: " + partitionCode));
+
+
+if (partition.getSensor() != null) {
+throw new CustomRuntimeException("먼저 센서 매칭을 해제해야 합니다. 파티션 ID: " + partitionCode);
+}
+
+
+Optional<List<MoPigRelation>> pigRelationsOptional = moPigRelationRepository.findByPartitionCode(MoCagePartition.builder().id(partitionCode).build());
+if (pigRelationsOptional.isPresent() && !pigRelationsOptional.get().isEmpty()) {
+throw new CustomRuntimeException("먼저 양돈 매칭을 해제해야 합니다. 파티션 ID: " + partitionCode);
+}
+}
+
+
+moPigRelationRepository.updatePartitionCodeToNull(partitionCodeList);
+moSensorRelationRepository.updatePartitionCodeToNull(partitionCodeList);
+moSensorHistoryRepository.updatePartitionCodeToNull(partitionCodeList);
+moPigPlacementHistoryRepository.updatePartitionCodeToNull(partitionCodeList);
+
+
+moCagePartitionRepository.deleteAllById(partitionCodeList);
+return Optional.of(true);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>getCageInfo</function_name>
+<summary>Retrieves information about a cage (facility) and its associated data based on the provided cage ID.</summary>
+<features>
+- Fetches the cage (MoCage) object from a repository based on the given cage ID
+- Retrieves the facility type (MoType) object based on the cage's type code
+- Calculates and includes various statistics related to the cage, such as the number of affiliated pigs, pigs within the cage, sites within the cage, pigs within sites, and sensors within sites
+- Builds and returns a CageInfoDto object containing the gathered information
+- Utilizes the Optional class to handle potential null values
+- Throws IllegalArgumentException if the cage or facility type is not found
+</features>
+</metadata>
+<code>
+public Optional<CageInfoDto> getCageInfo(Long cageId) {
+MoCage moCage = moCageRepository.findById(cageId)
+.orElseThrow(() -> new IllegalArgumentException("해당 시설정보가 없습니다. id=" + cageId));
+
+MoType moType = moTypeRepository.findByTypeTypeAndCode("3", moCage.getTypeCode())
+.orElseThrow(() -> new IllegalArgumentException("해당 유형정보가 없습니다. id=" + moCage.getTypeCode()));
+
+return Optional.ofNullable(CageInfoDto.builder()
+.id(cageId)
+.facilityName(moCage.getCageName())
+.facilityType(moType.getName())
+.affiliationPigNumber(countRecursively(moCage, 1))
+.pigNumber(moPigRelationRepository.countByCageCode(moCage).orElse(0))
+.siteNumber(moCagePartitionRepository.countByPartitionCage(moCage).orElse(0))
+.sitePigNumber(moPigRelationRepository.countByCageCodeAndPartitionCodeIsNotNull(moCage).orElse(0))
+.siteSensorNumber(moCagePartitionRepository.countByPartitionCageAndSensorIsNotNull(moCage).orElse(0))
+.build());
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>modifyPartition</function_name>
+<summary>Modifies the partition name and status of a cage partition based on the provided DTO.</summary>
+<features>
+- Retrieves a CagePartition entity from a repository based on the provided ID
+- Updates the partition name and status if the corresponding fields are present in the DTO
+- Saves the updated CagePartition entity back to the repository
+- Returns an Optional<Boolean> indicating whether the operation was successful
+- Uses functional programming constructs (Optional, lambda expressions) for null-safe operations
+</features>
+</metadata>
+<code>
+public Optional<Boolean> modifyPartition(CagePartitionDto cagePartitionDto) {
+moCagePartitionRepository.findById(cagePartitionDto.getId())
+.ifPresent(moCagePartition -> {
+Optional.ofNullable(cagePartitionDto.getPartitionName()).ifPresent(moCagePartition::setPartitionName);
+Optional.ofNullable(cagePartitionDto.getPartitionStatus()).ifPresent(moCagePartition::setPartitionStatus);
+moCagePartitionRepository.save(moCagePartition);
+});
+
+return Optional.of(true);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>getPartitionList</function_name>
+<summary>Retrieves a paginated list of CagePartitionDto objects based on various search criteria.</summary>
+<features>
+- Utilizes PageRequest object for pagination
+- Performs partial matching on partition name using wildcard pattern
+- Filters results based on cage code, partition name, and no match site
+- Maps tuples from the database to CagePartitionDto objects
+- Constructs related CageDto, PigDto, and SensorDto objects for each CagePartitionDto
+- Returns a Page object containing the list of CagePartitionDto objects
+</features>
+</metadata>
+<code>
+public Optional<Page<CagePartitionDto>> getPartitionList(PartitionSearchDto partitionSearchDto) {
+PageRequest pageRequest = PageRequest.of(partitionSearchDto.getPage(), partitionSearchDto.getSize(), Sort.by("partitionDate").ascending());
+
+String partitionName = Optional.ofNullable(partitionSearchDto.getSearchValue())
+.filter(name -> !name.isEmpty())
+.map(name -> "%" + name + "%")
+.orElse("%");
+
+String noMatchSite = Optional.ofNullable(partitionSearchDto.getNoMatchSite())
+.orElse("N");
+
+Page<Tuple> pageResult = moCagePartitionRepository.searchByPartitionInfo(partitionSearchDto.getCageCode()
+, partitionName
+, noMatchSite
+, pageRequest);
+
+List<CagePartitionDto> list = pageResult.getContent().stream()
+.map(tuple -> {
+MoCagePartition partition = tuple.get("partition", MoCagePartition.class);
+MoPigRelation relation = tuple.get("relation", MoPigRelation.class);
+MoCage cage = partition.getPartitionCage();
+MoPig pig = relation != null ? relation.getPigCode() : null;
+
+CageDto cageDto = Optional.ofNullable(cage)
+.map(c -> CageDto.builder()
+.id(c.getId())
+.cageName(c.getCageName())
+.cageStatus(c.getCageStatus())
+.cageDate(c.getCageDate())
+.cageExpiryDate(c.getCageExpiryDate())
+.cageExpiredYn(c.getCageExpiredYn())
+.typeCode(c.getTypeCode())
+.build())
+.orElse(null);
+
+PigDto pigDto = Optional.ofNullable(pig)
+.map(p -> PigDto.builder()
+.id(p.getId())
+.pigIdentification(p.getPigIdentification())
+.pigStatus(p.getPigStatus().name())
+.pigName(p.getPigName())
+.build())
+.orElse(null);
+
+SensorDto sensorDto = Optional.ofNullable(partition.getSensor())
+.map(s -> SensorDto.builder()
+.id(s.getId())
+.sensorIdentification(s.getSensorIdentification())
+.sensorName(s.getSensorName())
+.sensorStatus(s.getSensorStatus().getDescription())
+.build()
+).orElse(null);
+
+return CagePartitionDto.builder()
+.id(partition.getId())
+.partitionName(partition.getPartitionName())
+.partitionStatus(partition.getPartitionStatus())
+.partitionDate(partition.getPartitionDate())
+.partitionCage(cageDto)
+.sensor(sensorDto)
+.pig(pigDto)
+.build();
+})
+
+
+
+
+
+
+
+.collect(Collectors.toList());
+
+return Optional.of(new PageImpl<>(list, pageRequest, pageResult.getTotalElements()));
+
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>unInstallToPartition</function_name>
+<summary>Detaches a sensor from other partitions and marks a partition as uninstalled.</summary>
+<features>
+- Checks if the partition and sensor exist in the database
+- Filters out deleted sensors
+- Detaches the sensor from other partitions
+- Returns a boolean indicating if the operation was successful
+- Uses Optional and AtomicBoolean for safer null handling and thread-safety
+- Throws custom runtime exceptions for error handling
+</features>
+</metadata>
+<code>
+public Optional<Boolean> unInstallToPartition(CagePartitionDto cagePartitionDto) {
+try {
+AtomicBoolean result = new AtomicBoolean(false);
+
+
+Long partitionId = cagePartitionDto.getId();
+SensorDto sensorDto = cagePartitionDto.getSensor();
+
+moCagePartitionRepository.findById(partitionId)
+.orElseThrow(() -> new CustomRuntimeException("파티션 정보를 조회할 수 없습니다."));
+
+if (sensorDto == null || sensorDto.getId() == null) {
+throw new CustomRuntimeException("센서 정보를 조회할 수 없습니다.");
+} else {
+
+MoSensor moSensor = moSensorRepository.findById(sensorDto.getId())
+.filter(sensor -> "N".equals(sensor.getDeleteYn()))
+.orElseThrow(() -> new CustomRuntimeException("센서 정보를 조회할 수 없습니다."));
+
+System.out.println("??? 통과~");
+
+
+detachSensorFromOtherPartitions(moSensor);
+}
+
+result.set(true);
+return Optional.of(result.get());
+} catch (Exception e) {
+throw new CustomRuntimeException(e.getMessage());
+}
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>registSensorToPartition</function_name>
+<summary>Associates a sensor with a cage partition and detaches it from any other partitions.</summary>
+<features>
+- Retrieves partition and sensor data from repositories
+- Performs validation checks on sensor and partition data
+- Detaches the sensor from any other partitions it was previously associated with
+- Associates the sensor with the specified partition
+- Returns a boolean value indicating success or failure
+- Handles exceptions and wraps them in a custom runtime exception
+</features>
+</metadata>
+<code>
+public Optional<Boolean> registSensorToPartition(CagePartitionDto cagePartitionDto) {
+try {
+AtomicBoolean result = new AtomicBoolean(false);
+
+
+Long partitionId = cagePartitionDto.getId();
+SensorDto sensorDto = cagePartitionDto.getSensor();
+
+MoCagePartition moCagePartition = moCagePartitionRepository.findById(partitionId)
+.orElseThrow(() -> new CustomRuntimeException("파티션 정보를 조회할 수 없습니다."));
+
+if (sensorDto == null || sensorDto.getId() == null) {
+throw new CustomRuntimeException("센서 정보를 조회할 수 없습니다.");
+} else {
+
+MoSensor moSensor = moSensorRepository.findById(sensorDto.getId())
+.filter(sensor -> "N".equals(sensor.getDeleteYn()))
+.orElseThrow(() -> new CustomRuntimeException("센서 정보를 조회할 수 없습니다."));
+
+
+detachSensorFromOtherPartitions(moSensor);
+
+
+attachSensorToPartition(moCagePartition, moSensor);
+}
+
+result.set(true);
+return Optional.of(result.get());
+} catch (Exception e) {
+throw new CustomRuntimeException(e.getMessage());
+}
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>detachSensorFromPartition</function_name>
+<summary>Detaches a sensor from a MoCagePartition and creates a sensor history record.</summary>
+<features>
+- Prints information about the partition and sensor to be detached
+- Creates a sensor history record with the OUT status
+- Sets the sensor reference of the MoCagePartition to null
+- Saves the updated MoCagePartition to the repository
+</features>
+</metadata>
+<code>
+private void detachSensorFromPartition(MoCagePartition moCagePartition) {
+System.out.println("제거할 파티션의 정보 ===> " + moCagePartition);
+System.out.println(moCagePartition.getSensor().getId() + " , " + moCagePartition.getId());
+
+createSensorHistory(moCagePartition.getSensor().getId(), moCagePartition.getId(), SensorHistoryStatus.OUT.name());
+
+moCagePartition.setSensor(null);
+moCagePartitionRepository.save(moCagePartition);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>detachSensorFromOtherPartitions</function_name>
+<summary>Detaches a given sensor from all partitions it is currently associated with.</summary>
+<features>
+- Finds all partitions associated with the given sensor using a repository
+- Iterates through the found partitions
+- Detaches the sensor from each partition by calling another function
+</features>
+</metadata>
+<code>
+private void detachSensorFromOtherPartitions(MoSensor moSensor) {
+
+Optional<List<MoCagePartition>> optionalPartitions = moCagePartitionRepository.findBySensor(moSensor);
+
+if (optionalPartitions.isPresent()) {
+List<MoCagePartition> partitions = optionalPartitions.get();
+for (MoCagePartition partition : partitions) {
+
+detachSensorFromPartition(partition);
+}
+}
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>attachSensorToPartition</function_name>
+<summary>Attaches a sensor to a partition and creates a sensor history record.</summary>
+<features>
+- Creates a new sensor history record for the given sensor and partition with the status "IN"
+- Sets the provided sensor for the given partition
+- Saves the updated partition to the repository
+</features>
+</metadata>
+<code>
+private void attachSensorToPartition(MoCagePartition moCagePartition, MoSensor moSensor) {
+
+createSensorHistory(moSensor.getId(), moCagePartition.getId(), SensorHistoryStatus.IN.name());
+
+moCagePartition.setSensor(moSensor);
+moCagePartitionRepository.save(moCagePartition);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>createSensorHistory</function_name>
+<summary>Creates a sensor placement history record for a given sensor and partition code.</summary>
+<features>
+- Builds a SensorPlacementHistoryDto object with provided sensor code, partition code, and status
+- Sets the cage code to null
+- Calls the sensorService to set the sensor placement history using the created DTO
+</features>
+</metadata>
+<code>
+private void createSensorHistory(Long sensorCode, Long partitionCode, String status) {
+SensorPlacementHistoryDto historyDto = SensorPlacementHistoryDto.builder()
+.historySensorCode(sensorCode)
+.historyPartitionCode(partitionCode)
+.historyCageCode(null)
+.historyStatus(status)
+.build();
+sensorService.setSensorPlacementHistory(historyDto);
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>convertToDto</function_name>
+<summary>Converts a MoFarm object to a FarmDto object.</summary>
+<features>
+- Maps properties from the MoFarm object to the corresponding properties in the FarmDto object
+- Uses the builder pattern to create the FarmDto object
+- Converts the FarmDate property from a LocalDateTime to a Date object
+- Converts FarmImg, FarmImg2, FarmImg3, LargeLogoImg, and SmallLogoImg properties using a separate convertFarmImgToDto method
+</features>
+</metadata>
+<code>
+private FarmDto convertToDto(MoFarm moFarm) {
+
+    return FarmDto.builder()
+            .id(moFarm.getId())
+            .farmStatus(moFarm.getFarmStatus().getStatus())
+            .farmIdentification(moFarm.getFarmIdentification())
+            .farmOwnerName(moFarm.getFarmOwnerName())
+            .businessNumber(moFarm.getBusinessNumber())
+            .farmManagerTeam(moFarm.getFarmManagerTeam())
+            .farmManagerGrade(moFarm.getFarmManagerGrade())
+            .farmUrl(moFarm.getFarmUrl())
+            .farmName(moFarm.getFarmName())
+            .farmTel(moFarm.getFarmTel())
+            .farmZipcode(moFarm.getFarmZipcode())
+            .farmRoadAddr(moFarm.getFarmRoadAddr())
+            .farmJibunAddr(moFarm.getFarmJibunAddr())
+            .farmAddrExt(moFarm.getFarmAddrExt())
+            .farmManagerName(moFarm.getFarmManagerName())
+            .farmManagerEmail(moFarm.getFarmManagerEmail())
+            .farmLat(moFarm.getFarmLat())
+            .farmLng(moFarm.getFarmLng())
+            .farmSido(moFarm.getFarmSido())
+            .farmSigungu(moFarm.getFarmSigungu())
+            .farmManagerTel(moFarm.getFarmManagerTel())
+            .farmManagerMobile(moFarm.getFarmManagerMobile())
+            .farmDate(moFarm.getFarmDate() != null ?
+                    Date.from(moFarm.getFarmDate().atZone(ZoneId.systemDefault()).toInstant()) : null)
+            .farmImg(convertFarmImgToDto(moFarm.getFarmImg()))
+            .farmImg2(convertFarmImgToDto(moFarm.getFarmImg2()))
+            .farmImg3(convertFarmImgToDto(moFarm.getFarmImg3()))
+            .largeLogoImg(convertFarmImgToDto(moFarm.getLargeLogoImg()))
+            .smallLogoImg(convertFarmImgToDto(moFarm.getSmallLogoImg()))
+            .loginNotice(moFarm.getLoginNotice())
+            .pwFindNotice(moFarm.getPwFindNotice())
+            .build();
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>convertFarmImgToDto</function_name>
+<summary>Converts a MoAttach object representing a farm image to an AttachDto object.</summary>
+<features>
+- Handles null input by returning an empty AttachDto object
+- Uses the builder pattern to create an AttachDto object
+- Maps various properties from the MoAttach object to the AttachDto object
+</features>
+</metadata>
+<code>
+private AttachDto convertFarmImgToDto(MoAttach farmImg) {
+if (farmImg == null) {
+return new AttachDto();
+}
+return AttachDto.builder()
+.attachFileExtension(farmImg.getAttachFileExtension())
+.attachFileSize(farmImg.getAttachFileSize())
+.attachFilePath(farmImg.getAttachFilePath())
+.attachOriginalFileName(farmImg.getAttachOriginalFileName())
+.attachSavedFileName(farmImg.getAttachSavedFileName())
+.build();
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>countRecursively</function_name>
+<summary>Recursively counts the number of related entities in a cage hierarchy based on the specified type.</summary>
+<features>
+- Handles four different counting cases using a switch statement
+- Queries the database repositories to count specific entities (MoPigRelation, MoCagePartition)
+- Recursively traverses and counts sub-cages using recursion
+- Returns the total count of entities for the given cage and type
+</features>
+</metadata>
+<code>
+private int countRecursively(MoCage cage, int type) {
+int count = 0;
+switch (type) {
+case 1:
+count = moPigRelationRepository.countByCageCode(cage).orElse(0);
+break;
+
+case 2:
+count = moCagePartitionRepository.countByPartitionCage(cage).orElse(0);
+break;
+
+case 3:
+count = moPigRelationRepository.countByCageCodeAndPartitionCodeIsNotNull(cage).orElse(0);
+break;
+
+case 4:
+count = moCagePartitionRepository.countByPartitionCageAndSensorIsNotNull(cage).orElse(0);
+break;
+}
+
+List<MoCage> subCages = moCageRepository.findByCageParentCode(cage);
+for (MoCage subCage : subCages) {
+count += countRecursively(subCage, type);
+}
+return count;
+}
+</code>
+</augmented_chunk>
+Summary Chain Output: <augmented_chunk>
+<metadata>
+<function_name>createPigPlacementHistory</function_name>
+<summary>Creates a pig placement history record with the provided pig code, partition code, cage code, and status.</summary>
+<features>
+- Uses the builder pattern to create a PigPlacementHistoryDto object
+- Utilizes a PigService to set the pig placement history
+- Handles the creation of a new MoPig object with the provided pigCode
+</features>
+</metadata>
+<code>
+private void createPigPlacementHistory(Long pigCode, Long partitionCode, Long cageCode, String status) {
+PigPlacementHistoryDto historyDto = PigPlacementHistoryDto.builder()
+.historyPigCode(MoPig.builder().id(pigCode).build())
+.historyPartitionCode(partitionCode)
+.historyCageCode(cageCode)
+.historyStatus(status)
+.build();
+pigService.setPigPlacementHistory(historyDto);
+}
+</code>
+</augmented_chunk>
+JavaChunkMeta:{"chunk_content": "public Optional<FarmDto> getFarmByIdentification(String farmIdentification) {\nlog.info(\"Fetching data for param: {}\", farmIdentification);\nreturn moFarmRepository.findByFarmIdentification(farmIdentification)\n.map(this::convertToDto);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>getFarmByIdentification</function_name>\n<summary>Retrieves a FarmDto object based on a given farm identification string.</summary>\n<features>\n- Logs an informational message with the provided farm identification parameter\n- Utilizes the moFarmRepository to find a farm entity by its identification\n- Maps the found farm entity to a FarmDto object using the convertToDto function\n- Returns an Optional containing the FarmDto object if found, otherwise returns an empty Optional\n</features>\n</metadata>\n<code>\npublic Optional<FarmDto> getFarmByIdentification(String farmIdentification) {\nlog.info(\"Fetching data for param: {}\", farmIdentification);\nreturn moFarmRepository.findByFarmIdentification(farmIdentification)\n.map(this::convertToDto);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "getFarmByIdentification", "return_type": "Optional<FarmDto>", "parameters": "String farmIdentification"}
+JavaChunkMeta:{"chunk_content": "public Optional<FarmDetailDto> getFarmDetailInfo(String farmIdentification) {\nlog.info(\"Fetching data for param: {}\", farmIdentification);\n\nFarmDetailDto farmDetailDto = new FarmDetailDto();\n\n\nOptional<MoFarm> moFarm = moFarmRepository.findByFarmIdentification(farmIdentification);\n\n\nmoFarm.ifPresent(farm -> {\n\n\nList moCageList = moCageRepository.findAllByCageFarm(farm);\n\nfarmDetailDto.setFarmDto(convertToDto(farm));\nfarmDetailDto.setCageTreeNodeDto(createTreeNode(moCageList));\n});\n\nreturn Optional.of(farmDetailDto);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>getFarmDetailInfo</function_name>\n<summary>Retrieves farm detail information and associated cage data for a given farm identification.</summary>\n<features>\n- Logs the input farm identification parameter\n- Fetches a MoFarm entity from a repository based on the farm identification\n- Retrieves a list of MoCage entities associated with the farm\n- Converts the MoFarm entity to a FarmDto object\n- Creates a CageTreeNodeDto object from the list of MoCage entities\n- Returns an Optional containing a FarmDetailDto object with the farm data and cage tree node data\n</features>\n</metadata>\n<code>\npublic Optional<FarmDetailDto> getFarmDetailInfo(String farmIdentification) {\nlog.info(\"Fetching data for param: {}\", farmIdentification);\n\nFarmDetailDto farmDetailDto = new FarmDetailDto();\n\n\nOptional<MoFarm> moFarm = moFarmRepository.findByFarmIdentification(farmIdentification);\n\n\nmoFarm.ifPresent(farm -> {\n\n\nList moCageList = moCageRepository.findAllByCageFarm(farm);\n\nfarmDetailDto.setFarmDto(convertToDto(farm));\nfarmDetailDto.setCageTreeNodeDto(createTreeNode(moCageList));\n});\n\nreturn Optional.of(farmDetailDto);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "getFarmDetailInfo", "return_type": "Optional<FarmDetailDto>", "parameters": "String farmIdentification"}
+JavaChunkMeta:{"chunk_content": "private CageTreeNodeDto createTreeNode(List<MoCage> cageList) {\nCageTreeNodeDto root = CageTreeNodeDto.builder()\n.cageDto(CageDto.builder().id(0L).cageName(\"root\").build())\n.children(new ArrayList<>())\n.build();\n\n\nMap<Long, CageTreeNodeDto> nodeMap = new HashMap<>();\n\n\nfor (MoCage cage : cageList) {\nLong parentCageCode = cage.getCageParentCode() != null ? cage.getCageParentCode().getId() : 0L;\nnodeMap.put(cage.getId(),\nnew CageTreeNodeDto(CageDto.builder().id(cage.getId())\n.cageParentCode(parentCageCode)\n.cageName(cage.getCageName())\n.cageStatus(cage.getCageStatus())\n.cageDate(cage.getCageDate())\n.cageExpiryDate(cage.getCageExpiryDate())\n.cageExpiredYn(cage.getCageExpiredYn())\n.typeCode(cage.getTypeCode())\n.build()));\n}\n\n\nfor (CageTreeNodeDto node : nodeMap.values()) {\nLong parentCageCode = node.getCageDto().getCageParentCode();\nif (parentCageCode == null || parentCageCode == 0) {\nroot.addChild(node);\n} else {\nCageTreeNodeDto parentNode = nodeMap.get(parentCageCode);\nparentNode.addChild(node);\n}\n}\n\nreturn root;\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>createTreeNode</function_name>\n<summary>Creates a tree data structure from a list of cages, with the root node representing the entire hierarchy.</summary>\n<features>\n- Uses a HashMap to store nodes keyed by their cage IDs\n- Constructs the tree by iterating through the cages and adding child nodes to their respective parents\n- Handles cases where a cage has no parent (root node) or has a parent node\n- Builds CageTreeNodeDto and CageDto objects to represent the tree structure\n</features>\n</metadata>\n<code>\nprivate CageTreeNodeDto createTreeNode(List<MoCage> cageList) {\nCageTreeNodeDto root = CageTreeNodeDto.builder()\n.cageDto(CageDto.builder().id(0L).cageName(\"root\").build())\n.children(new ArrayList<>())\n.build();\n\n\nMap<Long, CageTreeNodeDto> nodeMap = new HashMap<>();\n\n\nfor (MoCage cage : cageList) {\nLong parentCageCode = cage.getCageParentCode() != null ? cage.getCageParentCode().getId() : 0L;\nnodeMap.put(cage.getId(),\nnew CageTreeNodeDto(CageDto.builder().id(cage.getId())\n.cageParentCode(parentCageCode)\n.cageName(cage.getCageName())\n.cageStatus(cage.getCageStatus())\n.cageDate(cage.getCageDate())\n.cageExpiryDate(cage.getCageExpiryDate())\n.cageExpiredYn(cage.getCageExpiredYn())\n.typeCode(cage.getTypeCode())\n.build()));\n}\n\n\nfor (CageTreeNodeDto node : nodeMap.values()) {\nLong parentCageCode = node.getCageDto().getCageParentCode();\nif (parentCageCode == null || parentCageCode == 0) {\nroot.addChild(node);\n} else {\nCageTreeNodeDto parentNode = nodeMap.get(parentCageCode);\nparentNode.addChild(node);\n}\n}\n\nreturn root;\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "createTreeNode", "return_type": "CageTreeNodeDto", "parameters": "List<MoCage> cageList"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> modifyFarm(FarmDto farmDto) {\nMoFarm moFarm = moFarmRepository.findById(farmDto.getId())\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \ub18d\uc7a5\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + farmDto.getId()));\n\nOptional.ofNullable(farmDto.getFarmStatus())\n.map(FarmStatus::valueOf)\n.ifPresent(moFarm::setFarmStatus);\n\nOptional.ofNullable(farmDto.getFarmOwnerName()).ifPresent(moFarm::setFarmOwnerName);\nOptional.ofNullable(farmDto.getBusinessNumber()).ifPresent(moFarm::setBusinessNumber);\nOptional.ofNullable(farmDto.getFarmName()).ifPresent(moFarm::setFarmName);\nOptional.ofNullable(farmDto.getFarmTel()).ifPresent(moFarm::setFarmTel);\nOptional.ofNullable(farmDto.getFarmZipcode()).ifPresent(moFarm::setFarmZipcode);\nOptional.ofNullable(farmDto.getFarmRoadAddr()).ifPresent(moFarm::setFarmRoadAddr);\nOptional.ofNullable(farmDto.getFarmJibunAddr()).ifPresent(moFarm::setFarmJibunAddr);\nOptional.ofNullable(farmDto.getFarmAddrExt()).ifPresent(moFarm::setFarmAddrExt);\nOptional.ofNullable(farmDto.getFarmUrl()).ifPresent(moFarm::setFarmUrl);\nOptional.ofNullable(farmDto.getFarmLat()).ifPresent(moFarm::setFarmLat);\nOptional.ofNullable(farmDto.getFarmLng()).ifPresent(moFarm::setFarmLng);\nOptional.ofNullable(farmDto.getFarmSido()).ifPresent(moFarm::setFarmSido);\nOptional.ofNullable(farmDto.getFarmSigungu()).ifPresent(moFarm::setFarmSigungu);\nOptional.ofNullable(farmDto.getFarmManagerTeam()).ifPresent(moFarm::setFarmManagerTeam);\nOptional.ofNullable(farmDto.getFarmManagerGrade()).ifPresent(moFarm::setFarmManagerGrade);\nOptional.ofNullable(farmDto.getFarmManagerName()).ifPresent(moFarm::setFarmManagerName);\nOptional.ofNullable(farmDto.getFarmManagerEmail()).ifPresent(moFarm::setFarmManagerEmail);\nOptional.ofNullable(farmDto.getFarmManagerTel()).ifPresent(moFarm::setFarmManagerTel);\nOptional.ofNullable(farmDto.getFarmManagerMobile()).ifPresent(moFarm::setFarmManagerMobile);\nOptional.ofNullable(farmDto.getLoginNotice()).ifPresent(moFarm::setLoginNotice);\nOptional.ofNullable(farmDto.getPwFindNotice()).ifPresent(moFarm::setPwFindNotice);\n\n\nmoFarmRepository.save(moFarm);\nreturn Optional.of(true);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>modifyFarm</function_name>\n<summary>Updates the details of a farm record based on the provided FarmDto object.</summary>\n<features>\n- Retrieves the existing MoFarm entity from the repository using the provided ID\n- Updates various fields of the MoFarm entity with values from the FarmDto object using Optional and lambda expressions\n- Saves the updated MoFarm entity back to the repository\n- Returns true if the update is successful\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> modifyFarm(FarmDto farmDto) {\nMoFarm moFarm = moFarmRepository.findById(farmDto.getId())\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \ub18d\uc7a5\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + farmDto.getId()));\n\nOptional.ofNullable(farmDto.getFarmStatus())\n.map(FarmStatus::valueOf)\n.ifPresent(moFarm::setFarmStatus);\n\nOptional.ofNullable(farmDto.getFarmOwnerName()).ifPresent(moFarm::setFarmOwnerName);\nOptional.ofNullable(farmDto.getBusinessNumber()).ifPresent(moFarm::setBusinessNumber);\nOptional.ofNullable(farmDto.getFarmName()).ifPresent(moFarm::setFarmName);\nOptional.ofNullable(farmDto.getFarmTel()).ifPresent(moFarm::setFarmTel);\nOptional.ofNullable(farmDto.getFarmZipcode()).ifPresent(moFarm::setFarmZipcode);\nOptional.ofNullable(farmDto.getFarmRoadAddr()).ifPresent(moFarm::setFarmRoadAddr);\nOptional.ofNullable(farmDto.getFarmJibunAddr()).ifPresent(moFarm::setFarmJibunAddr);\nOptional.ofNullable(farmDto.getFarmAddrExt()).ifPresent(moFarm::setFarmAddrExt);\nOptional.ofNullable(farmDto.getFarmUrl()).ifPresent(moFarm::setFarmUrl);\nOptional.ofNullable(farmDto.getFarmLat()).ifPresent(moFarm::setFarmLat);\nOptional.ofNullable(farmDto.getFarmLng()).ifPresent(moFarm::setFarmLng);\nOptional.ofNullable(farmDto.getFarmSido()).ifPresent(moFarm::setFarmSido);\nOptional.ofNullable(farmDto.getFarmSigungu()).ifPresent(moFarm::setFarmSigungu);\nOptional.ofNullable(farmDto.getFarmManagerTeam()).ifPresent(moFarm::setFarmManagerTeam);\nOptional.ofNullable(farmDto.getFarmManagerGrade()).ifPresent(moFarm::setFarmManagerGrade);\nOptional.ofNullable(farmDto.getFarmManagerName()).ifPresent(moFarm::setFarmManagerName);\nOptional.ofNullable(farmDto.getFarmManagerEmail()).ifPresent(moFarm::setFarmManagerEmail);\nOptional.ofNullable(farmDto.getFarmManagerTel()).ifPresent(moFarm::setFarmManagerTel);\nOptional.ofNullable(farmDto.getFarmManagerMobile()).ifPresent(moFarm::setFarmManagerMobile);\nOptional.ofNullable(farmDto.getLoginNotice()).ifPresent(moFarm::setLoginNotice);\nOptional.ofNullable(farmDto.getPwFindNotice()).ifPresent(moFarm::setPwFindNotice);\n\n\nmoFarmRepository.save(moFarm);\nreturn Optional.of(true);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "modifyFarm", "return_type": "Optional<Boolean>", "parameters": "FarmDto farmDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<FarmImgDto> changeImage(MultipartFile file, FarmImgDto farmImgDto) {\nMoFarm moFarm = moFarmRepository.findByFarmIdentification(farmImgDto.getFarmIdentification())\n.orElseThrow(() -> new CustomRuntimeException(\"\ub4f1\ub85d\ub418\uc9c0 \uc54a\uc740 \ub18d\uc7a5\uc785\ub2c8\ub2e4.\"));\n\nif (file != null) {\n\nString s3Key = AwsBuckets.generateUserProfileKey(farmImgDto.getFarmIdentification());\nString url = s3.upload(file, s3Key);\n\nif (url != null && !url.isEmpty()) {\nString savedFileName = url.substring(url.lastIndexOf(\"/\"));\n\n\nMoAttach moAttach = MoAttach.builder()\n.attachFileExtension(file.getContentType())\n.attachFileSize(file.getSize())\n.attachFilePath(url)\n.attachOriginalFileName(file.getOriginalFilename())\n.attachSavedFileName(savedFileName)\n.build();\n\n\nif (1 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getFarmImg()).ifPresent(moAttach1 -> s3.delete(moAttach1.getAttachFilePath()));\n} else if (2 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getFarmImg2()).ifPresent(moAttach2 -> s3.delete(moAttach2.getAttachFilePath()));\n} else if (3 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getFarmImg3()).ifPresent(moAttach3 -> s3.delete(moAttach3.getAttachFilePath()));\n} else if (4 == farmImgDto.getImgType()) {\n\nOptional.ofNullable(moFarm.getLargeLogoImg()).ifPresent(\nmoAttach4 -> {\n\ns3.delete(moAttach4.getAttachFilePath());\n}\n);\n} else if (5 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getSmallLogoImg()).ifPresent(moAttach5 -> s3.delete(moAttach5.getAttachFilePath()));\n}\n\n\nif (1 == farmImgDto.getImgType()) {\nmoFarm.setFarmImg(moAttach);\n} else if (2 == farmImgDto.getImgType()) {\nmoFarm.setFarmImg2(moAttach);\n} else if (3 == farmImgDto.getImgType()) {\nmoFarm.setFarmImg3(moAttach);\n} else if (4 == farmImgDto.getImgType()) {\nmoFarm.setLargeLogoImg(moAttach);\n} else if (5 == farmImgDto.getImgType()) {\nmoFarm.setSmallLogoImg(moAttach);\n}\n\n\nmoFarmRepository.save(moFarm);\n\n\nfarmImgDto.setFarmImg(AttachDto.builder()\n.attachFileExtension(moAttach.getAttachFileExtension())\n.attachFileSize(moAttach.getAttachFileSize())\n.attachFilePath(moAttach.getAttachFilePath())\n.attachOriginalFileName(moAttach.getAttachOriginalFileName())\n.attachSavedFileName(moAttach.getAttachSavedFileName())\n.build());\n}\n}\n\nreturn Optional.of(farmImgDto);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>changeImage</function_name>\n<summary>This function handles the process of changing or uploading an image for a farm entity in the application.</summary>\n<features>\n- Finds the farm entity in the repository based on the provided farm identification\n- Uploads the provided image file to an AWS S3 bucket and generates a URL\n- Deletes the previously uploaded image for the specified image type if it exists\n- Associates the new image with the farm entity based on the specified image type\n- Updates the farm entity in the repository\n- Constructs a FarmImgDto object with the new image details\n</features>\n</metadata>\n<code>\npublic Optional<FarmImgDto> changeImage(MultipartFile file, FarmImgDto farmImgDto) {\nMoFarm moFarm = moFarmRepository.findByFarmIdentification(farmImgDto.getFarmIdentification())\n.orElseThrow(() -> new CustomRuntimeException(\"\ub4f1\ub85d\ub418\uc9c0 \uc54a\uc740 \ub18d\uc7a5\uc785\ub2c8\ub2e4.\"));\n\nif (file != null) {\n\nString s3Key = AwsBuckets.generateUserProfileKey(farmImgDto.getFarmIdentification());\nString url = s3.upload(file, s3Key);\n\nif (url != null && !url.isEmpty()) {\nString savedFileName = url.substring(url.lastIndexOf(\"/\"));\n\n\nMoAttach moAttach = MoAttach.builder()\n.attachFileExtension(file.getContentType())\n.attachFileSize(file.getSize())\n.attachFilePath(url)\n.attachOriginalFileName(file.getOriginalFilename())\n.attachSavedFileName(savedFileName)\n.build();\n\n\nif (1 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getFarmImg()).ifPresent(moAttach1 -> s3.delete(moAttach1.getAttachFilePath()));\n} else if (2 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getFarmImg2()).ifPresent(moAttach2 -> s3.delete(moAttach2.getAttachFilePath()));\n} else if (3 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getFarmImg3()).ifPresent(moAttach3 -> s3.delete(moAttach3.getAttachFilePath()));\n} else if (4 == farmImgDto.getImgType()) {\n\nOptional.ofNullable(moFarm.getLargeLogoImg()).ifPresent(\nmoAttach4 -> {\n\ns3.delete(moAttach4.getAttachFilePath());\n}\n);\n} else if (5 == farmImgDto.getImgType()) {\nOptional.ofNullable(moFarm.getSmallLogoImg()).ifPresent(moAttach5 -> s3.delete(moAttach5.getAttachFilePath()));\n}\n\n\nif (1 == farmImgDto.getImgType()) {\nmoFarm.setFarmImg(moAttach);\n} else if (2 == farmImgDto.getImgType()) {\nmoFarm.setFarmImg2(moAttach);\n} else if (3 == farmImgDto.getImgType()) {\nmoFarm.setFarmImg3(moAttach);\n} else if (4 == farmImgDto.getImgType()) {\nmoFarm.setLargeLogoImg(moAttach);\n} else if (5 == farmImgDto.getImgType()) {\nmoFarm.setSmallLogoImg(moAttach);\n}\n\n\nmoFarmRepository.save(moFarm);\n\n\nfarmImgDto.setFarmImg(AttachDto.builder()\n.attachFileExtension(moAttach.getAttachFileExtension())\n.attachFileSize(moAttach.getAttachFileSize())\n.attachFilePath(moAttach.getAttachFilePath())\n.attachOriginalFileName(moAttach.getAttachOriginalFileName())\n.attachSavedFileName(moAttach.getAttachSavedFileName())\n.build());\n}\n}", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "changeImage", "return_type": "Optional<FarmImgDto>", "parameters": "MultipartFile file, FarmImgDto farmImgDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<FarmPigJoinDto> getCagePigList(FarmPigJoinDto farmPigJoinDto) {\nAuthentication authentication = SecurityContextHolder.getContext().getAuthentication();\nCustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();\n\nMoGrade moGrade = userDetails.getMemberGrade();\nMoCage moCage = MoCage.builder().id(farmPigJoinDto.getCageId()).build();\n\nOptional<List<Tuple>> optionalTuples = moPigRelationRepository.findMoPigRelationByCageCode(moCage);\nList<FarmPigDto> farmPigDtoList = optionalTuples.map(list -> list.stream()\n.sorted(Comparator.comparing(tuple -> tuple.get(\"pigIdentification\", String.class)))\n.map(tuple -> {\nMoType moType = moTypeRepository.findByTypeTypeAndCode(\"2\", (String) tuple.get(\"typeCode\"))\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \uc720\ud615\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + tuple.get(\"typeCode\")));\n\nreturn FarmPigDto.builder()\n.pigId(tuple.get(\"id\", Long.class))\n.pigIdentification(tuple.get(\"pigIdentification\", String.class))\n.moType(moType)\n.pigName(tuple.get(\"pigName\", String.class))\n.build();\n})\n.collect(Collectors.toList()))\n.orElse(Collections.emptyList());\n\nfarmPigJoinDto.setPigCnt(moPigRelationRepository.countByCageCode(moCage).orElse(0));\nfarmPigJoinDto.setFarmPigDtoList(farmPigDtoList);\nfarmPigJoinDto.setPigReadAuth(moGradePermissionsService.checkPermission(\"pig\", \"pig\", moGrade, \"read\"));\n\nreturn Optional.of(farmPigJoinDto);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>getCagePigList</function_name>\n<summary>Retrieves a list of pigs associated with a given cage, along with their types and other details, and returns it as an Optional&lt;FarmPigJoinDto&gt; object.</summary>\n<features>\n- Retrieves the authenticated user's member grade and permissions\n- Builds a MoCage object from the provided FarmPigJoinDto\n- Fetches a list of pig relations for the given cage code\n- Maps the fetched relations to FarmPigDto objects with pig details and types\n- Counts the number of pigs in the cage\n- Sets the pig count, list of FarmPigDto, and read permissions in the FarmPigJoinDto\n- Utilizes repositories, services, and entity classes from the application's domain\n</features>\n</metadata>\n<code>\npublic Optional<FarmPigJoinDto> getCagePigList(FarmPigJoinDto farmPigJoinDto) {\nAuthentication authentication = SecurityContextHolder.getContext().getAuthentication();\nCustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();\n\nMoGrade moGrade = userDetails.getMemberGrade();\nMoCage moCage = MoCage.builder().id(farmPigJoinDto.getCageId()).build();\n\nOptional<List<Tuple>> optionalTuples = moPigRelationRepository.findMoPigRelationByCageCode(moCage);\nList<FarmPigDto> farmPigDtoList = optionalTuples.map(list -> list.stream()\n.sorted(Comparator.comparing(tuple -> tuple.get(\"pigIdentification\", String.class)))\n.map(tuple -> {\nMoType moType = moTypeRepository.findByTypeTypeAndCode(\"2\", (String) tuple.get(\"typeCode\"))\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \uc720\ud615\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + tuple.get(\"typeCode\")));\n\nreturn FarmPigDto.builder()\n.pigId(tuple.get(\"id\", Long.class))\n.pigIdentification(tuple.get(\"pigIdentification\", String.class))\n.moType(moType)\n.pigName(tuple.get(\"pigName\", String.class))\n.build();\n})\n.collect(Collectors.toList()))\n.orElse(Collections.emptyList());\n\nfarmPigJoinDto.setPigCnt(moPigRelationRepository.countByCageCode(moCage).orElse(0));\nfarmPigJoinDto.setFarmPigDtoList(farmPigDtoList);\nfarmPigJoinDto.setPigReadAuth(moGradePermissionsService.checkPermission(\"pig\", \"pig\", moGrade, \"read\"));\n\nreturn Optional.of(farmPigJoinDto);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "getCagePigList", "return_type": "Optional<FarmPigJoinDto>", "parameters": "FarmPigJoinDto farmPigJoinDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<FarmPigJoinDto> getFarmPigList(PigSearchDto pigSearchDto) {\n\nAuthentication authentication = SecurityContextHolder.getContext().getAuthentication();\nCustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();\n\nMoGrade moGrade = userDetails.getMemberGrade();\n\nPage<PigDto> pigPageDto = pigService.getListSearchType(pigSearchDto).orElseGet(() ->\nnew PageImpl<>(new ArrayList<>(), PageRequest.of(pigSearchDto.getPage(), pigSearchDto.getSize()), 0)\n);\n\nreturn Optional.ofNullable(FarmPigJoinDto.builder()\n.pigCnt((int) pigPageDto.getTotalElements())\n.pigReadAuth(moGradePermissionsService.checkPermission(\"pig\", \"pig\", moGrade, \"read\"))\n.farmPigDtoPage(pigPageDto)\n.build());\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>getFarmPigList</function_name>\n<summary>Retrieves a list of farm pigs with pagination and permission check.</summary>\n<features>\n- Retrieves the current user's authentication details\n- Fetches a paginated list of pigs based on search criteria\n- Checks the user's permission to read pig data based on their grade (role)\n- Returns a FarmPigJoinDto object containing the pig list, count, and read permission status\n</features>\n</metadata>\n<code>\npublic Optional<FarmPigJoinDto> getFarmPigList(PigSearchDto pigSearchDto) {\n\nAuthentication authentication = SecurityContextHolder.getContext().getAuthentication();\nCustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();\n\nMoGrade moGrade = userDetails.getMemberGrade();\n\nPage<PigDto> pigPageDto = pigService.getListSearchType(pigSearchDto).orElseGet(() ->\nnew PageImpl<>(new ArrayList<>(), PageRequest.of(pigSearchDto.getPage(), pigSearchDto.getSize()), 0)\n);\n\nreturn Optional.ofNullable(FarmPigJoinDto.builder()\n.pigCnt((int) pigPageDto.getTotalElements())\n.pigReadAuth(moGradePermissionsService.checkPermission(\"pig\", \"pig\", moGrade, \"read\"))\n.farmPigDtoPage(pigPageDto)\n.build());\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "getFarmPigList", "return_type": "Optional<FarmPigJoinDto>", "parameters": "PigSearchDto pigSearchDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> releaseFarmCage(Long pigCode, Long cageCode, Long partitionCode) {\ntry {\nAtomicBoolean result = new AtomicBoolean(false);\n\n\nOptional<List<MoPigRelation>> moPigRelationList = moPigRelationRepository.findByPigCode(MoPig.builder().id(pigCode).build());\n\n\n\n\n\nmoPigRelationList.stream().forEach(relations -> {\nrelations.stream().forEach(relation -> {\nLong relationCageCode = Optional.ofNullable(relation.getCageCode())\n.map(MoCage::getId)\n.orElse(null);\n\nLong relationPartitionCode = Optional.ofNullable(relation.getPartitionCode())\n.map(MoCagePartition::getId)\n.orElse(null);\n\n\nboolean isCageCodeMatch = Objects.equals(cageCode, relationCageCode);\nboolean isPartitionCodeMatch = partitionCode == null || Objects.equals(partitionCode, relationPartitionCode);\nboolean isPartitionUninstall = false;\nif (isCageCodeMatch || isPartitionCodeMatch) {\n\n\nif (isCageCodeMatch) {\nrelation.setCageCode(null);\n\nif (relationPartitionCode != null) {\nisPartitionUninstall = true;\nrelation.setPartitionCode(null);\nthis.createPigPlacementHistory(pigCode, relationPartitionCode, null, \"MOVE\");\npigService.updatePig(PigDto.builder().id(pigCode).partitionName(\"\").build());\n}\nthis.createPigPlacementHistory(pigCode, null, cageCode, \"MOVE\");\npigService.updatePig(PigDto.builder().id(pigCode).cageName(\"\").build());\n}\n\n\nif (isPartitionCodeMatch && partitionCode != null && !isPartitionUninstall) {\n\nrelation.setPartitionCode(null);\nthis.createPigPlacementHistory(pigCode, partitionCode, null, \"MOVE\");\npigService.updatePig(PigDto.builder().id(pigCode).partitionName(\"\").build());\n}\n\n\n\nif (relation.getCageCode() == null && relation.getPartitionCode() == null) {\nmoPigRelationRepository.delete(relation);\n} else {\nmoPigRelationRepository.save(relation);\n}\nresult.set(true);\n}\n});\n});\n\nreturn Optional.of(result.get());\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>releaseFarmCage</function_name>\n<summary>Releases a farm cage and/or partition for a given pig code, cage code, and partition code.</summary>\n<features>\n- Finds the MoPigRelation records for the given pig code\n- Iterates through the relations to find matching cage and partition codes\n- Updates the pig's cage and/or partition assignment based on the provided codes\n- Removes the relation record if both cage and partition are unassigned\n- Saves the updated relation record if either cage or partition is still assigned\n- Creates placement history records for tracking pig movements\n- Updates the pig's cage and partition names\n- Uses Java 8 streams and Optional for handling null values\n- Relies on external repositories and services (moPigRelationRepository, pigService)\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> releaseFarmCage(Long pigCode, Long cageCode, Long partitionCode) {\ntry {\nAtomicBoolean result = new AtomicBoolean(false);\n\n\nOptional<List<MoPigRelation>> moPigRelationList = moPigRelationRepository.findByPigCode(MoPig.builder().id(pigCode).build());\n\n\n\n\n\nmoPigRelationList.stream().forEach(relations -> {\nrelations.stream().forEach(relation -> {\nLong relationCageCode = Optional.ofNullable(relation.getCageCode())\n.map(MoCage::getId)\n.orElse(null);\n\nLong relationPartitionCode = Optional.ofNullable(relation.getPartitionCode())\n.map(MoCagePartition::getId)\n.orElse(null);\n\n\nboolean isCageCodeMatch = Objects.equals(cageCode, relationCageCode);\nboolean isPartitionCodeMatch = partitionCode == null || Objects.equals(partitionCode, relationPartitionCode);\nboolean isPartitionUninstall = false;\nif (isCageCodeMatch || isPartitionCodeMatch) {\n\n\nif (isCageCodeMatch) {\nrelation.setCageCode(null);\n\nif (relationPartitionCode != null) {\nisPartitionUninstall = true;\nrelation.setPartitionCode(null);\nthis.createPigPlacementHistory(pigCode, relationPartitionCode, null, \"MOVE\");\npigService.updatePig(PigDto.builder().id(pigCode).partitionName(\"\").build());\n}\nthis.createPigPlacementHistory(pigCode, null, cageCode, \"MOVE\");\npigService.updatePig(PigDto.builder().id(pigCode).cageName(\"\").build());\n}\n\n\nif (isPartitionCodeMatch && partitionCode != null && !isPartitionUninstall) {\n\nrelation.setPartitionCode(null);\nthis.createPigPlacementHistory(pigCode, partitionCode, null, \"MOVE\");\npigService.updatePig(PigDto.builder().id(pigCode).partitionName(\"\").build());\n}\n\n\n\nif (relation.getCageCode() == null && relation.getPartitionCode() == null) {\nmoPigRelationRepository.delete(relation);\n} else {\nmoPigRelationRepository.save(relation);\n}\nresult.set(true);\n}\n});\n});\n\nreturn Optional.of(result.get());\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "releaseFarmCage", "return_type": "Optional<Boolean>", "parameters": "Long pigCode, Long cageCode, Long partitionCode"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> multiplePigToFarmCage(PigReleaseListDto pigReleaseListDto) {\nfor (PigReleaseDto pigReleaseDto : pigReleaseListDto.getPigReleaseList()) {\nregistPigToFarmCage(pigReleaseDto.getPigCode(), pigReleaseDto.getCageCode(), pigReleaseDto.getPartitionCode())\n.orElseThrow(() -> new CustomRuntimeException(\"\uc591\ub3c8 \ucf00\uc774\uc9c0 \ub4f1\ub85d \uc2e4\ud328\"));\n}\nreturn Optional.of(true);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>multiplePigToFarmCage</function_name>\n<summary>Registers multiple pigs to their respective farm cages based on the provided release list.</summary>\n<features>\n- Iterates over a list of PigReleaseDto objects\n- Calls the registPigToFarmCage function for each PigReleaseDto\n- Handles exceptions thrown by registPigToFarmCage\n- Returns an Optional<Boolean> indicating success or failure\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> multiplePigToFarmCage(PigReleaseListDto pigReleaseListDto) {\nfor (PigReleaseDto pigReleaseDto : pigReleaseListDto.getPigReleaseList()) {\nregistPigToFarmCage(pigReleaseDto.getPigCode(), pigReleaseDto.getCageCode(), pigReleaseDto.getPartitionCode())\n.orElseThrow(() -> new CustomRuntimeException(\"\uc591\ub3c8 \ucf00\uc774\uc9c0 \ub4f1\ub85d \uc2e4\ud328\"));\n}\nreturn Optional.of(true);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "multiplePigToFarmCage", "return_type": "Optional<Boolean>", "parameters": "PigReleaseListDto pigReleaseListDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> registPigToFarmCage(Long pigCode, Long cageCode, Long partitionCode) {\ntry {\nAtomicBoolean releaseBool = new AtomicBoolean(false);\n\n\n\nmoPigRelationRepository.findByPigCode(MoPig.builder().id(pigCode).build())\n.ifPresent(relations -> relations.forEach(relation -> {\n\nreleaseBool.set(true);\n\n\nif (relation.getCageCode() != null && relation.getPartitionCode() != null) {\n\nreleaseFarmCage(pigCode, relation.getCageCode().getId(), relation.getPartitionCode().getId());\n} else if (relation.getCageCode() != null) {\n\nreleaseFarmCage(pigCode, relation.getCageCode().getId(), null);\n} else if (relation.getPartitionCode() != null) {\n\nreleaseFarmCage(pigCode, null, relation.getPartitionCode().getId());\n}\n}));\n\n\n\nMoCage moCage = null;\nif (cageCode != null) {\nmoCage = moCageRepository.findById(cageCode)\n.orElseThrow(() -> new CustomRuntimeException(\"\ucf00\uc774\uc9c0 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\nreleaseAndCreateHistoryAndUpdatePig(pigCode, moCage, null);\n}\n\n\nif (partitionCode != null) {\nMoCagePartition moCagePartition = moCagePartitionRepository.findById(partitionCode)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nif (moCage == null) {\nmoCage = moCagePartition.getPartitionCage();\ncageCode = moCagePartition.getPartitionCage().getId();\nreleaseAndCreateHistoryAndUpdatePig(pigCode, moCage, null);\n}\nreleaseAndCreateHistoryAndUpdatePig(pigCode, null, moCagePartition);\n}\n\n\n\n\n\nMoPigRelation relation = new MoPigRelation();\nrelation.setPigCode(moPigRepository.findById(pigCode).orElse(null));\nOptional.ofNullable(cageCode).ifPresent(code -> relation.setCageCode(moCageRepository.findById(code).orElse(null)));\nOptional.ofNullable(partitionCode).ifPresent(code -> relation.setPartitionCode(moCagePartitionRepository.findById(code).orElse(null)));\n\n\nmoPigRelationRepository.save(relation);\n\nreturn Optional.of(true);\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>registPigToFarmCage</function_name>\n<summary>Registers a pig to a farm cage or partition, handling edge cases and updating the necessary relationships.</summary>\n<features>\n- Checks for existing relationships between the pig, cage, and partition\n- Releases the pig from any existing cage or partition\n- Creates a new relationship between the pig and the specified cage or partition\n- Handles various edge cases and error scenarios\n- Utilizes repositories to interact with the database\n- Uses Java's Optional and AtomicBoolean classes for null safety and thread safety\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> registPigToFarmCage(Long pigCode, Long cageCode, Long partitionCode) {\ntry {\nAtomicBoolean releaseBool = new AtomicBoolean(false);\n\n\n\nmoPigRelationRepository.findByPigCode(MoPig.builder().id(pigCode).build())\n.ifPresent(relations -> relations.forEach(relation -> {\n\nreleaseBool.set(true);\n\n\nif (relation.getCageCode() != null && relation.getPartitionCode() != null) {\n\nreleaseFarmCage(pigCode, relation.getCageCode().getId(), relation.getPartitionCode().getId());\n} else if (relation.getCageCode() != null) {\n\nreleaseFarmCage(pigCode, relation.getCageCode().getId(), null);\n} else if (relation.getPartitionCode() != null) {\n\nreleaseFarmCage(pigCode, null, relation.getPartitionCode().getId());\n}\n}));\n\n\n\nMoCage moCage = null;\nif (cageCode != null) {\nmoCage = moCageRepository.findById(cageCode)\n.orElseThrow(() -> new CustomRuntimeException(\"\ucf00\uc774\uc9c0 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\nreleaseAndCreateHistoryAndUpdatePig(pigCode, moCage, null);\n}\n\n\nif (partitionCode != null) {\nMoCagePartition moCagePartition = moCagePartitionRepository.findById(partitionCode)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nif (moCage == null) {\nmoCage = moCagePartition.getPartitionCage();\ncageCode = moCagePartition.getPartitionCage().getId();\nreleaseAndCreateHistoryAndUpdatePig(pigCode, moCage, null);\n}\nreleaseAndCreateHistoryAndUpdatePig(pigCode, null, moCagePartition);\n}\n\n\n\n\n\nMoPigRelation relation = new MoPigRelation();\nrelation.setPigCode(moPigRepository.findById(pigCode).orElse(null));\nOptional.ofNullable(cageCode).ifPresent(code -> relation.setCageCode(moCageRepository.findById(code).orElse(null)));\nOptional.ofNullable(partitionCode).ifPresent(code -> relation.setPartitionCode(moCagePartitionRepository.findById(code).orElse(null)));\n\n\nmoPigRelationRepository.save(relation);\n\nreturn Optional.of(true);\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "registPigToFarmCage", "return_type": "Optional<Boolean>", "parameters": "Long pigCode, Long cageCode, Long partitionCode"}
+JavaChunkMeta:{"chunk_content": "private void releaseAndCreateHistoryAndUpdatePig(Long pigCode, MoCage moCage, MoCagePartition moCagePartition) {\n\n\nif (moCage != null) {\nthis.createPigPlacementHistory(pigCode, null, moCage.getId(), \"IN\");\npigService.updatePig(PigDto.builder().id(pigCode).cageName(moCage.getCageName()).build());\n}\nif (moCagePartition != null) {\nthis.createPigPlacementHistory(pigCode, moCagePartition.getId(), null, \"IN\");\npigService.updatePig(PigDto.builder().id(pigCode).partitionName(moCagePartition.getPartitionName()).build());\n}\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>releaseAndCreateHistoryAndUpdatePig</function_name>\n<summary>Updates pig placement history and pig details based on changes in the cage or cage partition.</summary>\n<features>\n- Creates a pig placement history record when a pig is moved to a new cage or partition\n- Updates the pig's cage name or partition name in the pig record\n- Handles cases where the pig is moved to a cage or partition\n- Utilizes a service class to update pig details\n</features>\n</metadata>\n<code>\nprivate void releaseAndCreateHistoryAndUpdatePig(Long pigCode, MoCage moCage, MoCagePartition moCagePartition) {\n\n\nif (moCage != null) {\nthis.createPigPlacementHistory(pigCode, null, moCage.getId(), \"IN\");\npigService.updatePig(PigDto.builder().id(pigCode).cageName(moCage.getCageName()).build());\n}\nif (moCagePartition != null) {\nthis.createPigPlacementHistory(pigCode, moCagePartition.getId(), null, \"IN\");\npigService.updatePig(PigDto.builder().id(pigCode).partitionName(moCagePartition.getPartitionName()).build());\n}\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "releaseAndCreateHistoryAndUpdatePig", "return_type": "void", "parameters": "Long pigCode, MoCage moCage, MoCagePartition moCagePartition"}
+JavaChunkMeta:{"chunk_content": "public Optional<PartitionInstallDto> installPartitions(PartitionInstallDto partitionInstallDto) {\nList<CagePartitionDto> list = new ArrayList<>();\n\nint partitionCnt = moCagePartitionRepository.countByPartitionCage(MoCage.builder().id(partitionInstallDto.getCageCode()).build()).orElse(0);\n\nfor (int i = 0; i < partitionInstallDto.getInstallCount(); i++) {\nMoCagePartition moCagePartition = moCagePartitionRepository.save(MoCagePartition.builder()\n.partitionCage(MoCage.builder().id(partitionInstallDto.getCageCode()).build())\n.partitionName(\"\uc0ac\uc774\ud2b8 \" + (partitionCnt + i + 1))\n.partitionStatus('Y')\n.partitionDate(LocalDateTime.from(LocalDateTime.now()))\n.build());\n\n\nlist.add(CagePartitionDto.builder()\n.id(moCagePartition.getId())\n.partitionCage(CageDto.builder().id(partitionInstallDto.getCageCode()).build())\n.partitionName(moCagePartition.getPartitionName())\n.partitionStatus(moCagePartition.getPartitionStatus())\n.partitionDate(moCagePartition.getPartitionDate())\n.build());\n}\n\npartitionInstallDto.setCagePartitionDtoList(list);\n\nreturn Optional.of(partitionInstallDto);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>installPartitions</function_name>\n<summary>Creates and installs new partitions for a given cage based on the provided installation parameters.</summary>\n<features>\n- Retrieves the current partition count for the specified cage\n- Creates and saves new MoCagePartition entities for the requested installation count\n- Constructs CagePartitionDto objects from the saved MoCagePartition entities\n- Returns an Optional containing the updated PartitionInstallDto with the new CagePartitionDto list\n</features>\n</metadata>\n<code>\npublic Optional<PartitionInstallDto> installPartitions(PartitionInstallDto partitionInstallDto) {\nList<CagePartitionDto> list = new ArrayList<>();\n\nint partitionCnt = moCagePartitionRepository.countByPartitionCage(MoCage.builder().id(partitionInstallDto.getCageCode()).build()).orElse(0);\n\nfor (int i = 0; i < partitionInstallDto.getInstallCount(); i++) {\nMoCagePartition moCagePartition = moCagePartitionRepository.save(MoCagePartition.builder()\n.partitionCage(MoCage.builder().id(partitionInstallDto.getCageCode()).build())\n.partitionName(\"\uc0ac\uc774\ud2b8 \" + (partitionCnt + i + 1))\n.partitionStatus('Y')\n.partitionDate(LocalDateTime.from(LocalDateTime.now()))\n.build());\n\n\nlist.add(CagePartitionDto.builder()\n.id(moCagePartition.getId())\n.partitionCage(CageDto.builder().id(partitionInstallDto.getCageCode()).build())\n.partitionName(moCagePartition.getPartitionName())\n.partitionStatus(moCagePartition.getPartitionStatus())\n.partitionDate(moCagePartition.getPartitionDate())\n.build());\n}\n\npartitionInstallDto.setCagePartitionDtoList(list);\n\nreturn Optional.of(partitionInstallDto);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "installPartitions", "return_type": "Optional<PartitionInstallDto>", "parameters": "PartitionInstallDto partitionInstallDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> deletePartition(List<Long> partitionCodeList) {\nfor (Long partitionCode : partitionCodeList) {\nMoCagePartition partition = moCagePartitionRepository.findById(partitionCode)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\uac00 \uc874\uc7ac\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. ID: \" + partitionCode));\n\n\nif (partition.getSensor() != null) {\nthrow new CustomRuntimeException(\"\uba3c\uc800 \uc13c\uc11c \ub9e4\uce6d\uc744 \ud574\uc81c\ud574\uc57c \ud569\ub2c8\ub2e4. \ud30c\ud2f0\uc158 ID: \" + partitionCode);\n}\n\n\nOptional<List<MoPigRelation>> pigRelationsOptional = moPigRelationRepository.findByPartitionCode(MoCagePartition.builder().id(partitionCode).build());\nif (pigRelationsOptional.isPresent() && !pigRelationsOptional.get().isEmpty()) {\nthrow new CustomRuntimeException(\"\uba3c\uc800 \uc591\ub3c8 \ub9e4\uce6d\uc744 \ud574\uc81c\ud574\uc57c \ud569\ub2c8\ub2e4. \ud30c\ud2f0\uc158 ID: \" + partitionCode);\n}\n}\n\n\nmoPigRelationRepository.updatePartitionCodeToNull(partitionCodeList);\nmoSensorRelationRepository.updatePartitionCodeToNull(partitionCodeList);\nmoSensorHistoryRepository.updatePartitionCodeToNull(partitionCodeList);\nmoPigPlacementHistoryRepository.updatePartitionCodeToNull(partitionCodeList);\n\n\nmoCagePartitionRepository.deleteAllById(partitionCodeList);\nreturn Optional.of(true);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>deletePartition</function_name>\n<summary>Deletes partitions from the system and updates related data.</summary>\n<features>\n- Performs checks to ensure partitions are not associated with sensors or pigs before deletion\n- Updates related data in multiple repositories to remove partition references\n- Deletes partitions from the moCagePartitionRepository\n- Returns a boolean indicating if the operation was successful\n- Utilizes the Java Optional class for handling nullable return values\n- Throws CustomRuntimeException when preconditions are not met\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> deletePartition(List<Long> partitionCodeList) {\nfor (Long partitionCode : partitionCodeList) {\nMoCagePartition partition = moCagePartitionRepository.findById(partitionCode)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\uac00 \uc874\uc7ac\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. ID: \" + partitionCode));\n\n\nif (partition.getSensor() != null) {\nthrow new CustomRuntimeException(\"\uba3c\uc800 \uc13c\uc11c \ub9e4\uce6d\uc744 \ud574\uc81c\ud574\uc57c \ud569\ub2c8\ub2e4. \ud30c\ud2f0\uc158 ID: \" + partitionCode);\n}\n\n\nOptional<List<MoPigRelation>> pigRelationsOptional = moPigRelationRepository.findByPartitionCode(MoCagePartition.builder().id(partitionCode).build());\nif (pigRelationsOptional.isPresent() && !pigRelationsOptional.get().isEmpty()) {\nthrow new CustomRuntimeException(\"\uba3c\uc800 \uc591\ub3c8 \ub9e4\uce6d\uc744 \ud574\uc81c\ud574\uc57c \ud569\ub2c8\ub2e4. \ud30c\ud2f0\uc158 ID: \" + partitionCode);\n}\n}\n\n\nmoPigRelationRepository.updatePartitionCodeToNull(partitionCodeList);\nmoSensorRelationRepository.updatePartitionCodeToNull(partitionCodeList);\nmoSensorHistoryRepository.updatePartitionCodeToNull(partitionCodeList);\nmoPigPlacementHistoryRepository.updatePartitionCodeToNull(partitionCodeList);\n\n\nmoCagePartitionRepository.deleteAllById(partitionCodeList);\nreturn Optional.of(true);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "deletePartition", "return_type": "Optional<Boolean>", "parameters": "List<Long> partitionCodeList"}
+JavaChunkMeta:{"chunk_content": "public Optional<CageInfoDto> getCageInfo(Long cageId) {\nMoCage moCage = moCageRepository.findById(cageId)\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \uc2dc\uc124\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + cageId));\n\nMoType moType = moTypeRepository.findByTypeTypeAndCode(\"3\", moCage.getTypeCode())\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \uc720\ud615\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + moCage.getTypeCode()));\n\nreturn Optional.ofNullable(CageInfoDto.builder()\n.id(cageId)\n.facilityName(moCage.getCageName())\n.facilityType(moType.getName())\n.affiliationPigNumber(countRecursively(moCage, 1))\n.pigNumber(moPigRelationRepository.countByCageCode(moCage).orElse(0))\n.siteNumber(moCagePartitionRepository.countByPartitionCage(moCage).orElse(0))\n.sitePigNumber(moPigRelationRepository.countByCageCodeAndPartitionCodeIsNotNull(moCage).orElse(0))\n.siteSensorNumber(moCagePartitionRepository.countByPartitionCageAndSensorIsNotNull(moCage).orElse(0))\n.build());\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>getCageInfo</function_name>\n<summary>Retrieves information about a cage (facility) and its associated data based on the provided cage ID.</summary>\n<features>\n- Fetches the cage (MoCage) object from a repository based on the given cage ID\n- Retrieves the facility type (MoType) object based on the cage's type code\n- Calculates and includes various statistics related to the cage, such as the number of affiliated pigs, pigs within the cage, sites within the cage, pigs within sites, and sensors within sites\n- Builds and returns a CageInfoDto object containing the gathered information\n- Utilizes the Optional class to handle potential null values\n- Throws IllegalArgumentException if the cage or facility type is not found\n</features>\n</metadata>\n<code>\npublic Optional<CageInfoDto> getCageInfo(Long cageId) {\nMoCage moCage = moCageRepository.findById(cageId)\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \uc2dc\uc124\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + cageId));\n\nMoType moType = moTypeRepository.findByTypeTypeAndCode(\"3\", moCage.getTypeCode())\n.orElseThrow(() -> new IllegalArgumentException(\"\ud574\ub2f9 \uc720\ud615\uc815\ubcf4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. id=\" + moCage.getTypeCode()));\n\nreturn Optional.ofNullable(CageInfoDto.builder()\n.id(cageId)\n.facilityName(moCage.getCageName())\n.facilityType(moType.getName())\n.affiliationPigNumber(countRecursively(moCage, 1))\n.pigNumber(moPigRelationRepository.countByCageCode(moCage).orElse(0))\n.siteNumber(moCagePartitionRepository.countByPartitionCage(moCage).orElse(0))\n.sitePigNumber(moPigRelationRepository.countByCageCodeAndPartitionCodeIsNotNull(moCage).orElse(0))\n.siteSensorNumber(moCagePartitionRepository.countByPartitionCageAndSensorIsNotNull(moCage).orElse(0))\n.build());\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "getCageInfo", "return_type": "Optional<CageInfoDto>", "parameters": "Long cageId"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> modifyPartition(CagePartitionDto cagePartitionDto) {\nmoCagePartitionRepository.findById(cagePartitionDto.getId())\n.ifPresent(moCagePartition -> {\nOptional.ofNullable(cagePartitionDto.getPartitionName()).ifPresent(moCagePartition::setPartitionName);\nOptional.ofNullable(cagePartitionDto.getPartitionStatus()).ifPresent(moCagePartition::setPartitionStatus);\nmoCagePartitionRepository.save(moCagePartition);\n});\n\nreturn Optional.of(true);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>modifyPartition</function_name>\n<summary>Modifies the partition name and status of a cage partition based on the provided DTO.</summary>\n<features>\n- Retrieves a CagePartition entity from a repository based on the provided ID\n- Updates the partition name and status if the corresponding fields are present in the DTO\n- Saves the updated CagePartition entity back to the repository\n- Returns an Optional<Boolean> indicating whether the operation was successful\n- Uses functional programming constructs (Optional, lambda expressions) for null-safe operations\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> modifyPartition(CagePartitionDto cagePartitionDto) {\nmoCagePartitionRepository.findById(cagePartitionDto.getId())\n.ifPresent(moCagePartition -> {\nOptional.ofNullable(cagePartitionDto.getPartitionName()).ifPresent(moCagePartition::setPartitionName);\nOptional.ofNullable(cagePartitionDto.getPartitionStatus()).ifPresent(moCagePartition::setPartitionStatus);\nmoCagePartitionRepository.save(moCagePartition);\n});\n\nreturn Optional.of(true);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "modifyPartition", "return_type": "Optional<Boolean>", "parameters": "CagePartitionDto cagePartitionDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<Page<CagePartitionDto>> getPartitionList(PartitionSearchDto partitionSearchDto) {\nPageRequest pageRequest = PageRequest.of(partitionSearchDto.getPage(), partitionSearchDto.getSize(), Sort.by(\"partitionDate\").ascending());\n\nString partitionName = Optional.ofNullable(partitionSearchDto.getSearchValue())\n.filter(name -> !name.isEmpty())\n.map(name -> \"%\" + name + \"%\")\n.orElse(\"%\");\n\nString noMatchSite = Optional.ofNullable(partitionSearchDto.getNoMatchSite())\n.orElse(\"N\");\n\nPage<Tuple> pageResult = moCagePartitionRepository.searchByPartitionInfo(partitionSearchDto.getCageCode()\n, partitionName\n, noMatchSite\n, pageRequest);\n\nList<CagePartitionDto> list = pageResult.getContent().stream()\n.map(tuple -> {\nMoCagePartition partition = tuple.get(\"partition\", MoCagePartition.class);\nMoPigRelation relation = tuple.get(\"relation\", MoPigRelation.class);\nMoCage cage = partition.getPartitionCage();\nMoPig pig = relation != null ? relation.getPigCode() : null;\n\nCageDto cageDto = Optional.ofNullable(cage)\n.map(c -> CageDto.builder()\n.id(c.getId())\n.cageName(c.getCageName())\n.cageStatus(c.getCageStatus())\n.cageDate(c.getCageDate())\n.cageExpiryDate(c.getCageExpiryDate())\n.cageExpiredYn(c.getCageExpiredYn())\n.typeCode(c.getTypeCode())\n.build())\n.orElse(null);\n\nPigDto pigDto = Optional.ofNullable(pig)\n.map(p -> PigDto.builder()\n.id(p.getId())\n.pigIdentification(p.getPigIdentification())\n.pigStatus(p.getPigStatus().name())\n.pigName(p.getPigName())\n.build())\n.orElse(null);\n\nSensorDto sensorDto = Optional.ofNullable(partition.getSensor())\n.map(s -> SensorDto.builder()\n.id(s.getId())\n.sensorIdentification(s.getSensorIdentification())\n.sensorName(s.getSensorName())\n.sensorStatus(s.getSensorStatus().getDescription())\n.build()\n).orElse(null);\n\nreturn CagePartitionDto.builder()\n.id(partition.getId())\n.partitionName(partition.getPartitionName())\n.partitionStatus(partition.getPartitionStatus())\n.partitionDate(partition.getPartitionDate())\n.partitionCage(cageDto)\n.sensor(sensorDto)\n.pig(pigDto)\n.build();\n})\n\n\n\n\n\n\n\n.collect(Collectors.toList());\n\nreturn Optional.of(new PageImpl<>(list, pageRequest, pageResult.getTotalElements()));\n\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>getPartitionList</function_name>\n<summary>Retrieves a paginated list of CagePartitionDto objects based on various search criteria.</summary>\n<features>\n- Utilizes PageRequest object for pagination\n- Performs partial matching on partition name using wildcard pattern\n- Filters results based on cage code, partition name, and no match site\n- Maps tuples from the database to CagePartitionDto objects\n- Constructs related CageDto, PigDto, and SensorDto objects for each CagePartitionDto\n- Returns a Page object containing the list of CagePartitionDto objects\n</features>\n</metadata>\n<code>\npublic Optional<Page<CagePartitionDto>> getPartitionList(PartitionSearchDto partitionSearchDto) {\nPageRequest pageRequest = PageRequest.of(partitionSearchDto.getPage(), partitionSearchDto.getSize(), Sort.by(\"partitionDate\").ascending());\n\nString partitionName = Optional.ofNullable(partitionSearchDto.getSearchValue())\n.filter(name -> !name.isEmpty())\n.map(name -> \"%\" + name + \"%\")\n.orElse(\"%\");\n\nString noMatchSite = Optional.ofNullable(partitionSearchDto.getNoMatchSite())\n.orElse(\"N\");\n\nPage<Tuple> pageResult = moCagePartitionRepository.searchByPartitionInfo(partitionSearchDto.getCageCode()\n, partitionName\n, noMatchSite\n, pageRequest);\n\nList<CagePartitionDto> list = pageResult.getContent().stream()\n.map(tuple -> {\nMoCagePartition partition = tuple.get(\"partition\", MoCagePartition.class);\nMoPigRelation relation = tuple.get(\"relation\", MoPigRelation.class);\nMoCage cage = partition.getPartitionCage();\nMoPig pig = relation != null ? relation.getPigCode() : null;\n\nCageDto cageDto = Optional.ofNullable(cage)\n.map(c -> CageDto.builder()\n.id(c.getId())\n.cageName(c.getCageName())\n.cageStatus(c.getCageStatus())\n.cageDate(c.getCageDate())\n.cageExpiryDate(c.getCageExpiryDate())\n.cageExpiredYn(c.getCageExpiredYn())\n.typeCode(c.getTypeCode())\n.build())\n.orElse(null);\n\nPigDto pigDto = Optional.ofNullable(pig)\n.map(p -> PigDto.builder()\n.id(p.getId())\n.pigIdentification(p.getPigIdentification())\n.pigStatus(p.getPigStatus().name())\n.pigName(p.getPigName())\n.build())\n.orElse(null);\n\nSensorDto sensorDto = Optional.ofNullable(partition.getSensor())\n.map(s -> SensorDto.builder()\n.id(s.getId())\n.sensorIdentification(s.getSensorIdentification())\n.sensorName(s.getSensorName())\n.sensorStatus(s.getSensorStatus().getDescription())\n.build()\n).orElse(null);\n\nreturn CagePartitionDto.builder()\n.id(partition.getId())\n.partitionName(partition.getPartitionName())\n.partitionStatus(partition.getPartitionStatus())\n.partitionDate(partition.getPartitionDate())\n.partitionCage(cageDto)\n.sensor(sensorDto)\n.pig(pigDto)\n.build();\n})\n\n\n\n\n\n\n\n.collect(Collectors.toList());\n\nreturn Optional.of(new PageImpl<>(list, pageRequest, pageResult.getTotalElements()));\n\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "getPartitionList", "return_type": "Optional<Page<CagePartitionDto>>", "parameters": "PartitionSearchDto partitionSearchDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> unInstallToPartition(CagePartitionDto cagePartitionDto) {\ntry {\nAtomicBoolean result = new AtomicBoolean(false);\n\n\nLong partitionId = cagePartitionDto.getId();\nSensorDto sensorDto = cagePartitionDto.getSensor();\n\nmoCagePartitionRepository.findById(partitionId)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nif (sensorDto == null || sensorDto.getId() == null) {\nthrow new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\");\n} else {\n\nMoSensor moSensor = moSensorRepository.findById(sensorDto.getId())\n.filter(sensor -> \"N\".equals(sensor.getDeleteYn()))\n.orElseThrow(() -> new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nSystem.out.println(\"??? \ud1b5\uacfc~\");\n\n\ndetachSensorFromOtherPartitions(moSensor);\n}\n\nresult.set(true);\nreturn Optional.of(result.get());\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>unInstallToPartition</function_name>\n<summary>Detaches a sensor from other partitions and marks a partition as uninstalled.</summary>\n<features>\n- Checks if the partition and sensor exist in the database\n- Filters out deleted sensors\n- Detaches the sensor from other partitions\n- Returns a boolean indicating if the operation was successful\n- Uses Optional and AtomicBoolean for safer null handling and thread-safety\n- Throws custom runtime exceptions for error handling\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> unInstallToPartition(CagePartitionDto cagePartitionDto) {\ntry {\nAtomicBoolean result = new AtomicBoolean(false);\n\n\nLong partitionId = cagePartitionDto.getId();\nSensorDto sensorDto = cagePartitionDto.getSensor();\n\nmoCagePartitionRepository.findById(partitionId)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nif (sensorDto == null || sensorDto.getId() == null) {\nthrow new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\");\n} else {\n\nMoSensor moSensor = moSensorRepository.findById(sensorDto.getId())\n.filter(sensor -> \"N\".equals(sensor.getDeleteYn()))\n.orElseThrow(() -> new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nSystem.out.println(\"??? \ud1b5\uacfc~\");\n\n\ndetachSensorFromOtherPartitions(moSensor);\n}\n\nresult.set(true);\nreturn Optional.of(result.get());\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "unInstallToPartition", "return_type": "Optional<Boolean>", "parameters": "CagePartitionDto cagePartitionDto"}
+JavaChunkMeta:{"chunk_content": "public Optional<Boolean> registSensorToPartition(CagePartitionDto cagePartitionDto) {\ntry {\nAtomicBoolean result = new AtomicBoolean(false);\n\n\nLong partitionId = cagePartitionDto.getId();\nSensorDto sensorDto = cagePartitionDto.getSensor();\n\nMoCagePartition moCagePartition = moCagePartitionRepository.findById(partitionId)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nif (sensorDto == null || sensorDto.getId() == null) {\nthrow new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\");\n} else {\n\nMoSensor moSensor = moSensorRepository.findById(sensorDto.getId())\n.filter(sensor -> \"N\".equals(sensor.getDeleteYn()))\n.orElseThrow(() -> new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\n\ndetachSensorFromOtherPartitions(moSensor);\n\n\nattachSensorToPartition(moCagePartition, moSensor);\n}\n\nresult.set(true);\nreturn Optional.of(result.get());\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>registSensorToPartition</function_name>\n<summary>Associates a sensor with a cage partition and detaches it from any other partitions.</summary>\n<features>\n- Retrieves partition and sensor data from repositories\n- Performs validation checks on sensor and partition data\n- Detaches the sensor from any other partitions it was previously associated with\n- Associates the sensor with the specified partition\n- Returns a boolean value indicating success or failure\n- Handles exceptions and wraps them in a custom runtime exception\n</features>\n</metadata>\n<code>\npublic Optional<Boolean> registSensorToPartition(CagePartitionDto cagePartitionDto) {\ntry {\nAtomicBoolean result = new AtomicBoolean(false);\n\n\nLong partitionId = cagePartitionDto.getId();\nSensorDto sensorDto = cagePartitionDto.getSensor();\n\nMoCagePartition moCagePartition = moCagePartitionRepository.findById(partitionId)\n.orElseThrow(() -> new CustomRuntimeException(\"\ud30c\ud2f0\uc158 \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\nif (sensorDto == null || sensorDto.getId() == null) {\nthrow new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\");\n} else {\n\nMoSensor moSensor = moSensorRepository.findById(sensorDto.getId())\n.filter(sensor -> \"N\".equals(sensor.getDeleteYn()))\n.orElseThrow(() -> new CustomRuntimeException(\"\uc13c\uc11c \uc815\ubcf4\ub97c \uc870\ud68c\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\"));\n\n\ndetachSensorFromOtherPartitions(moSensor);\n\n\nattachSensorToPartition(moCagePartition, moSensor);\n}\n\nresult.set(true);\nreturn Optional.of(result.get());\n} catch (Exception e) {\nthrow new CustomRuntimeException(e.getMessage());\n}\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "registSensorToPartition", "return_type": "Optional<Boolean>", "parameters": "CagePartitionDto cagePartitionDto"}
+JavaChunkMeta:{"chunk_content": "private void detachSensorFromPartition(MoCagePartition moCagePartition) {\nSystem.out.println(\"\uc81c\uac70\ud560 \ud30c\ud2f0\uc158\uc758 \uc815\ubcf4 ===> \" + moCagePartition);\nSystem.out.println(moCagePartition.getSensor().getId() + \" , \" + moCagePartition.getId());\n\ncreateSensorHistory(moCagePartition.getSensor().getId(), moCagePartition.getId(), SensorHistoryStatus.OUT.name());\n\nmoCagePartition.setSensor(null);\nmoCagePartitionRepository.save(moCagePartition);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>detachSensorFromPartition</function_name>\n<summary>Detaches a sensor from a MoCagePartition and creates a sensor history record.</summary>\n<features>\n- Prints information about the partition and sensor to be detached\n- Creates a sensor history record with the OUT status\n- Sets the sensor reference of the MoCagePartition to null\n- Saves the updated MoCagePartition to the repository\n</features>\n</metadata>\n<code>\nprivate void detachSensorFromPartition(MoCagePartition moCagePartition) {\nSystem.out.println(\"\uc81c\uac70\ud560 \ud30c\ud2f0\uc158\uc758 \uc815\ubcf4 ===> \" + moCagePartition);\nSystem.out.println(moCagePartition.getSensor().getId() + \" , \" + moCagePartition.getId());\n\ncreateSensorHistory(moCagePartition.getSensor().getId(), moCagePartition.getId(), SensorHistoryStatus.OUT.name());\n\nmoCagePartition.setSensor(null);\nmoCagePartitionRepository.save(moCagePartition);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "detachSensorFromPartition", "return_type": "void", "parameters": "MoCagePartition moCagePartition"}
+JavaChunkMeta:{"chunk_content": "private void detachSensorFromOtherPartitions(MoSensor moSensor) {\n\nOptional<List<MoCagePartition>> optionalPartitions = moCagePartitionRepository.findBySensor(moSensor);\n\nif (optionalPartitions.isPresent()) {\nList<MoCagePartition> partitions = optionalPartitions.get();\nfor (MoCagePartition partition : partitions) {\n\ndetachSensorFromPartition(partition);\n}\n}\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>detachSensorFromOtherPartitions</function_name>\n<summary>Detaches a given sensor from all partitions it is currently associated with.</summary>\n<features>\n- Finds all partitions associated with the given sensor using a repository\n- Iterates through the found partitions\n- Detaches the sensor from each partition by calling another function\n</features>\n</metadata>\n<code>\nprivate void detachSensorFromOtherPartitions(MoSensor moSensor) {\n\nOptional<List<MoCagePartition>> optionalPartitions = moCagePartitionRepository.findBySensor(moSensor);\n\nif (optionalPartitions.isPresent()) {\nList<MoCagePartition> partitions = optionalPartitions.get();\nfor (MoCagePartition partition : partitions) {\n\ndetachSensorFromPartition(partition);\n}\n}\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "detachSensorFromOtherPartitions", "return_type": "void", "parameters": "MoSensor moSensor"}
+JavaChunkMeta:{"chunk_content": "private void attachSensorToPartition(MoCagePartition moCagePartition, MoSensor moSensor) {\n\ncreateSensorHistory(moSensor.getId(), moCagePartition.getId(), SensorHistoryStatus.IN.name());\n\nmoCagePartition.setSensor(moSensor);\nmoCagePartitionRepository.save(moCagePartition);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>attachSensorToPartition</function_name>\n<summary>Attaches a sensor to a partition and creates a sensor history record.</summary>\n<features>\n- Creates a new sensor history record for the given sensor and partition with the status \"IN\"\n- Sets the provided sensor for the given partition\n- Saves the updated partition to the repository\n</features>\n</metadata>\n<code>\nprivate void attachSensorToPartition(MoCagePartition moCagePartition, MoSensor moSensor) {\n\ncreateSensorHistory(moSensor.getId(), moCagePartition.getId(), SensorHistoryStatus.IN.name());\n\nmoCagePartition.setSensor(moSensor);\nmoCagePartitionRepository.save(moCagePartition);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "attachSensorToPartition", "return_type": "void", "parameters": "MoCagePartition moCagePartition, MoSensor moSensor"}
+JavaChunkMeta:{"chunk_content": "private void createSensorHistory(Long sensorCode, Long partitionCode, String status) {\nSensorPlacementHistoryDto historyDto = SensorPlacementHistoryDto.builder()\n.historySensorCode(sensorCode)\n.historyPartitionCode(partitionCode)\n.historyCageCode(null)\n.historyStatus(status)\n.build();\nsensorService.setSensorPlacementHistory(historyDto);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>createSensorHistory</function_name>\n<summary>Creates a sensor placement history record for a given sensor and partition code.</summary>\n<features>\n- Builds a SensorPlacementHistoryDto object with provided sensor code, partition code, and status\n- Sets the cage code to null\n- Calls the sensorService to set the sensor placement history using the created DTO\n</features>\n</metadata>\n<code>\nprivate void createSensorHistory(Long sensorCode, Long partitionCode, String status) {\nSensorPlacementHistoryDto historyDto = SensorPlacementHistoryDto.builder()\n.historySensorCode(sensorCode)\n.historyPartitionCode(partitionCode)\n.historyCageCode(null)\n.historyStatus(status)\n.build();\nsensorService.setSensorPlacementHistory(historyDto);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "createSensorHistory", "return_type": "void", "parameters": "Long sensorCode, Long partitionCode, String status"}
+JavaChunkMeta:{"chunk_content": "private FarmDto convertToDto(MoFarm moFarm) {\n\n\n\n\n\n\n\nreturn FarmDto.builder()\n.id(moFarm.getId())\n.farmStatus(moFarm.getFarmStatus().getStatus())\n.farmIdentification(moFarm.getFarmIdentification())\n.farmOwnerName(moFarm.getFarmOwnerName())\n.businessNumber(moFarm.getBusinessNumber())\n.farmManagerTeam(moFarm.getFarmManagerTeam())\n.farmManagerGrade(moFarm.getFarmManagerGrade())\n.farmUrl(moFarm.getFarmUrl())\n.farmName(moFarm.getFarmName())\n.farmTel(moFarm.getFarmTel())\n.farmZipcode(moFarm.getFarmZipcode())\n.farmRoadAddr(moFarm.getFarmRoadAddr())\n.farmJibunAddr(moFarm.getFarmJibunAddr())\n.farmAddrExt(moFarm.getFarmAddrExt())\n.farmManagerName(moFarm.getFarmManagerName())\n.farmManagerEmail(moFarm.getFarmManagerEmail())\n.farmLat(moFarm.getFarmLat())\n.farmLng(moFarm.getFarmLng())\n.farmSido(moFarm.getFarmSido())\n.farmSigungu(moFarm.getFarmSigungu())\n.farmManagerTel(moFarm.getFarmManagerTel())\n.farmManagerMobile(moFarm.getFarmManagerMobile())\n.farmDate(moFarm.getFarmDate() != null ?\nDate.from(moFarm.getFarmDate().atZone(ZoneId.systemDefault()).toInstant()) : null)\n.farmImg(convertFarmImgToDto(moFarm.getFarmImg()))\n.farmImg2(convertFarmImgToDto(moFarm.getFarmImg2()))\n.farmImg3(convertFarmImgToDto(moFarm.getFarmImg3()))\n\n\n.largeLogoImg(convertFarmImgToDto(moFarm.getLargeLogoImg()))\n.smallLogoImg(convertFarmImgToDto(moFarm.getSmallLogoImg()))\n.loginNotice(moFarm.getLoginNotice())\n.pwFindNotice(moFarm.getPwFindNotice())\n\n.build();\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>convertToDto</function_name>\n<summary>Converts a MoFarm object to a FarmDto object.</summary>\n<features>\n- Maps properties from the MoFarm object to the corresponding properties in the FarmDto object\n- Uses the builder pattern to create the FarmDto object\n- Converts the FarmDate property from a LocalDateTime to a Date object\n- Converts FarmImg, FarmImg2, FarmImg3, LargeLogoImg, and SmallLogoImg properties using a separate convertFarmImgToDto method\n</features>\n</metadata>\n<code>\nprivate FarmDto convertToDto(MoFarm moFarm) {\n\n    return FarmDto.builder()\n            .id(moFarm.getId())\n            .farmStatus(moFarm.getFarmStatus().getStatus())\n            .farmIdentification(moFarm.getFarmIdentification())\n            .farmOwnerName(moFarm.getFarmOwnerName())\n            .businessNumber(moFarm.getBusinessNumber())\n            .farmManagerTeam(moFarm.getFarmManagerTeam())\n            .farmManagerGrade(moFarm.getFarmManagerGrade())\n            .farmUrl(moFarm.getFarmUrl())\n            .farmName(moFarm.getFarmName())\n            .farmTel(moFarm.getFarmTel())\n            .farmZipcode(moFarm.getFarmZipcode())\n            .farmRoadAddr(moFarm.getFarmRoadAddr())\n            .farmJibunAddr(moFarm.getFarmJibunAddr())\n            .farmAddrExt(moFarm.getFarmAddrExt())\n            .farmManagerName(moFarm.getFarmManagerName())\n            .farmManagerEmail(moFarm.getFarmManagerEmail())\n            .farmLat(moFarm.getFarmLat())\n            .farmLng(moFarm.getFarmLng())\n            .farmSido(moFarm.getFarmSido())\n            .farmSigungu(moFarm.getFarmSigungu())\n            .farmManagerTel(moFarm.getFarmManagerTel())\n            .farmManagerMobile(moFarm.getFarmManagerMobile())\n            .farmDate(moFarm.getFarmDate() != null ?\n                    Date.from(moFarm.getFarmDate().atZone(ZoneId.systemDefault()).toInstant()) : null)\n            .farmImg(convertFarmImgToDto(moFarm.getFarmImg()))\n            .farmImg2(convertFarmImgToDto(moFarm.getFarmImg2()))\n            .farmImg3(convertFarmImgToDto(moFarm.getFarmImg3()))\n            .largeLogoImg(convertFarmImgToDto(moFarm.getLargeLogoImg()))\n            .smallLogoImg(convertFarmImgToDto(moFarm.getSmallLogoImg()))\n            .loginNotice(moFarm.getLoginNotice())\n            .pwFindNotice(moFarm.getPwFindNotice())\n            .build();\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "convertToDto", "return_type": "FarmDto", "parameters": "MoFarm moFarm"}
+JavaChunkMeta:{"chunk_content": "private AttachDto convertFarmImgToDto(MoAttach farmImg) {\nif (farmImg == null) {\nreturn new AttachDto();\n}\nreturn AttachDto.builder()\n.attachFileExtension(farmImg.getAttachFileExtension())\n.attachFileSize(farmImg.getAttachFileSize())\n.attachFilePath(farmImg.getAttachFilePath())\n.attachOriginalFileName(farmImg.getAttachOriginalFileName())\n.attachSavedFileName(farmImg.getAttachSavedFileName())\n.build();\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>convertFarmImgToDto</function_name>\n<summary>Converts a MoAttach object representing a farm image to an AttachDto object.</summary>\n<features>\n- Handles null input by returning an empty AttachDto object\n- Uses the builder pattern to create an AttachDto object\n- Maps various properties from the MoAttach object to the AttachDto object\n</features>\n</metadata>\n<code>\nprivate AttachDto convertFarmImgToDto(MoAttach farmImg) {\nif (farmImg == null) {\nreturn new AttachDto();\n}\nreturn AttachDto.builder()\n.attachFileExtension(farmImg.getAttachFileExtension())\n.attachFileSize(farmImg.getAttachFileSize())\n.attachFilePath(farmImg.getAttachFilePath())\n.attachOriginalFileName(farmImg.getAttachOriginalFileName())\n.attachSavedFileName(farmImg.getAttachSavedFileName())\n.build();\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "convertFarmImgToDto", "return_type": "AttachDto", "parameters": "MoAttach farmImg"}
+JavaChunkMeta:{"chunk_content": "private int countRecursively(MoCage cage, int type) {\nint count = 0;\nswitch (type) {\ncase 1:\ncount = moPigRelationRepository.countByCageCode(cage).orElse(0);\nbreak;\n\ncase 2:\ncount = moCagePartitionRepository.countByPartitionCage(cage).orElse(0);\nbreak;\n\ncase 3:\ncount = moPigRelationRepository.countByCageCodeAndPartitionCodeIsNotNull(cage).orElse(0);\nbreak;\n\ncase 4:\ncount = moCagePartitionRepository.countByPartitionCageAndSensorIsNotNull(cage).orElse(0);\nbreak;\n}\n\nList<MoCage> subCages = moCageRepository.findByCageParentCode(cage);\nfor (MoCage subCage : subCages) {\ncount += countRecursively(subCage, type);\n}\nreturn count;\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>countRecursively</function_name>\n<summary>Recursively counts the number of related entities in a cage hierarchy based on the specified type.</summary>\n<features>\n- Handles four different counting cases using a switch statement\n- Queries the database repositories to count specific entities (MoPigRelation, MoCagePartition)\n- Recursively traverses and counts sub-cages using recursion\n- Returns the total count of entities for the given cage and type\n</features>\n</metadata>\n<code>\nprivate int countRecursively(MoCage cage, int type) {\nint count = 0;\nswitch (type) {\ncase 1:\ncount = moPigRelationRepository.countByCageCode(cage).orElse(0);\nbreak;\n\ncase 2:\ncount = moCagePartitionRepository.countByPartitionCage(cage).orElse(0);\nbreak;\n\ncase 3:\ncount = moPigRelationRepository.countByCageCodeAndPartitionCodeIsNotNull(cage).orElse(0);\nbreak;\n\ncase 4:\ncount = moCagePartitionRepository.countByPartitionCageAndSensorIsNotNull(cage).orElse(0);\nbreak;\n}\n\nList<MoCage> subCages = moCageRepository.findByCageParentCode(cage);\nfor (MoCage subCage : subCages) {\ncount += countRecursively(subCage, type);\n}\nreturn count;\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "countRecursively", "return_type": "int", "parameters": "MoCage cage, int type"}
+JavaChunkMeta:{"chunk_content": "private void createPigPlacementHistory(Long pigCode, Long partitionCode, Long cageCode, String status) {\nPigPlacementHistoryDto historyDto = PigPlacementHistoryDto.builder()\n.historyPigCode(MoPig.builder().id(pigCode).build())\n.historyPartitionCode(partitionCode)\n.historyCageCode(cageCode)\n.historyStatus(status)\n.build();\npigService.setPigPlacementHistory(historyDto);\n}", "start_line": -1, "end_line": -1, "type": "java", "summary": "<augmented_chunk>\n<metadata>\n<function_name>createPigPlacementHistory</function_name>\n<summary>Creates a pig placement history record with the provided pig code, partition code, cage code, and status.</summary>\n<features>\n- Uses the builder pattern to create a PigPlacementHistoryDto object\n- Utilizes a PigService to set the pig placement history\n- Handles the creation of a new MoPig object with the provided pigCode\n</features>\n</metadata>\n<code>\nprivate void createPigPlacementHistory(Long pigCode, Long partitionCode, Long cageCode, String status) {\nPigPlacementHistoryDto historyDto = PigPlacementHistoryDto.builder()\n.historyPigCode(MoPig.builder().id(pigCode).build())\n.historyPartitionCode(partitionCode)\n.historyCageCode(cageCode)\n.historyStatus(status)\n.build();\npigService.setPigPlacementHistory(historyDto);\n}\n</code>\n</augmented_chunk>", "class_signature": "public class FarmServiceImpl implements FarmService ", "class_package": "com.modon.control.farm.service", "class_fields": [], "function_name": "createPigPlacementHistory", "return_type": "void", "parameters": "Long pigCode, Long partitionCode, Long cageCode, String status"}

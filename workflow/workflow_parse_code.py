@@ -1,103 +1,92 @@
+from datetime import datetime
 import os
 import re
 import xml.etree.ElementTree as ET
 import luigi
 
+from app.process.content_chunker import JavaChunkMeta, chunk_file
 from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData
 from app.db_model.database import SessionLocal
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from app.process.java_parser import parse_java_file
 
 
-# 코드 어시스트를 위한 파일처리 순서
-# 1. 파일 파싱
-# ㄴ DB 저장
-# 2. 컨텍스추얼 청크 생성
-# ㄴ DB 조회
-# ㄴ 모델 호출
-# 3. 파일 벡터화
-
-
-# Luigi Task: 프로젝트 내 파일 탐색
 class FindFiles(luigi.Task):
     project_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()  # 중간 디렉토리 경로 전달
 
     extensions = ['.java', '.xml', '.js']
 
     def output(self):
-        # 더 이상 파일 출력하지 않음, 하지만 여전히 Luigi의 Task 구조에서는 output을 요구할 수 있으므로 비어 있는 파일 지정
-        return luigi.LocalTarget('workflow/working/found_files_dummy.txt')
+        # 파일 목록을 저장할 파일을 지정
+        return luigi.LocalTarget(f'{self.output_dir}/found_files.txt')
 
     def run(self):
-        # print(f"### FindFiles run / index_name = {str(self.index_name)}")
-        
         # 경로에서 파일을 찾아 리스트로 저장
-        self.file_list = []
+        file_list = []
         for root, dirs, files in os.walk(self.project_dir):
             for file in files:
                 if file.endswith(tuple(self.extensions)):
-                    self.file_list.append(os.path.join(root, file))
+                    file_list.append(os.path.join(root, file))
 
-        # 결과 확인을 위한 파일 출력
+        # 결과를 output 파일에 저장
         with self.output().open('w') as f:
-            for file_path in self.file_list:
+            for file_path in file_list:
                 f.write(file_path + '\n')
-
-    def get_file_list(self):
-        return self.file_list
-
 
 
 # Luigi Task: 각 파일 파싱
 class ParseFile(luigi.Task):
     file_path = luigi.Parameter()
-    # faiss_info_id = luigi.Parameter()
+    output_dir = luigi.Parameter()  # 중간 디렉토리 경로 전달
     
     session = SessionLocal()
 
     def output(self):
-        output_file = f'workflow/working/parsed_{os.path.basename(self.file_path)}.txtt'
+        # output_file = f'workflow/working/parsed_{os.path.basename(self.file_path)}.txtt'
+        output_file = f'{self.output_dir}/parsed_{os.path.basename(self.file_path)}.txtt'
         return luigi.LocalTarget(output_file)
 
     def run(self):
-        if self.file_path.endswith('.java'):
-            class_info, functions = self.parse_java()
-
-            # OrgRSrc에 저장
+        try:
+            # 원본 파일 정보 저장
             org_resrc = OrgRSrc(
-                resrc_name = class_info.get('class_name'), 
+                resrc_name = os.path.basename(self.file_path),  # 파일명
                 resrc_type = '01',  # 가정
                 resrc_path = self.file_path,
                 resrc_desc = 'Parsed Java class',
                 # last_modified_time = class_info.get('last_modified'), # 추후 어떤 값을 셋팅 할지 확인 필요
             )
             self.session.add(org_resrc)
-            self.session.commit()
-            
-            # OrgRSrcCode에 저장
-            org_resrc_code = OrgRSrcCode(
-                project_info = '', # 추후 어떤 값을 셋팅 할지 확인 필요
-                package_name = class_info.get('package'),
-                class_type = class_info.get('class_type'),
-                class_name = class_info.get('class_name'),
-                class_extends = class_info.get('extends'),
-                class_implements = class_info.get('implements'),
-                class_imports = ', '.join(class_info.get('imports', [])),  # 기본값을 빈 리스트로
-                class_attributes = ', '.join([f"{field['type']} {field['name']}" for field in class_info.get('fields', [])]),  # 기본값 빈 리스트
-                # class_methods_cnt = class_info.get('method_count', 0)  # 기본값 0
-            )
-            self.session.add(org_resrc_code)
-            self.session.commit()
-            
+            self.session.flush() # org_resrc.id를 얻기 위해 flush를 한다. but commit 되기 전임
 
-            print(f"#### 함수 갯수 = {len(functions)}")
-            for idx, method in enumerate(functions):
+            # 파일 chunking
+            chunk_list = chunk_file(self.file_path)
+            
+            # chunking 데이터 저장
+            for idx, chunk in enumerate(chunk_list, start=1):
+                if chunk is None:
+                    continue
+                
+                if isinstance(chunk, JavaChunkMeta):
+                    data_name = chunk.function_name # 함수명
+                    data_type = 'code'  # 데이터 유형 (예: code)
+                    context_chunk = chunk.summary  # 컨텍스트 청크
+                    document_metadata = chunk.summary   # 문서의 메타데이터
+                else: # 알 수 없는 유형의 데이터
+                    data_name = 'unknown'
+                    data_type = 'unknown'
+                    context_chunk = 'unknown'
+                    document_metadata = 'unknown'
+
                 chunked_data = ChunkedData(
-                    seq=idx + 1,  # 순번
-                    org_resrc_id=org_resrc.id,  # OrgRSrc의 외래키
-                    data_name=method.get('name'),  # 함수명
-                    data_type='function',  # 데이터 유형 (예: function)
-                    content=method.get('code'),  # 함수 내용
+                    seq = idx + 1,  # 순번
+                    org_resrc_id = org_resrc.id,  # OrgRSrc의 외래키
+                    data_name = data_name,
+                    data_type = data_type,
+                    content = chunk.chunk_content,  # 내용
+                    context_chunk = context_chunk,
+                    document_metadata = document_metadata
                     # faiss_info_id = self.faiss_info_id,
                 )
                 self.session.add(chunked_data)
@@ -105,33 +94,22 @@ class ParseFile(luigi.Task):
             # 세션 커밋
             self.session.commit()            
             
-            result = functions
+            # 파일로 작성
+            with self.output().open('w') as f:
+                for item in chunk_list:
+                    f.write(item.get('code', '') + '\n==============================')  # get으로 변경
 
-        else:
-            # 해당 조건에 맞지 않으면 무시
-            print(f"Skipping file: {self.file_path}")
-            result = ""
+        except Exception as e:
+            self.session.rollback()
+            print(f"### Error processing file {self.file_path}: {e}")        
         
-        # 파일로 작성
-        with self.output().open('w') as f:
-            for item in result:
-                f.write(item.get('code', '') + '\n==============================')  # get으로 변경
-
-    # Java 파일 파싱 (함수별로 split)
-    def parse_java(self):
-        with open(self.file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        # 간단한 함수 추출 패턴
-        # pattern = r'public\s+.*?\s+(\w+)\(.*?\)\s*\{'
-        # functions = re.findall(pattern, content)
         
-        class_info, methods = parse_java_file(self.file_path)
-        
-        # 각 메서드의 코드만 배열에 담기
-        # functions = [method['code'] for method in methods]
 
-        return class_info, methods
+    # # Java 파일 파싱 (함수별로 split)
+    # def parse_java(self):
+    #     class_info, methods = parse_java_file(self.file_path)
+        
+    #     return class_info, methods
 
     # XML 파일 파싱 (MyBatis 형식)
     def parse_xml(self):
@@ -158,13 +136,24 @@ class ParseFile(luigi.Task):
 class ProcessAllFiles(luigi.Task):
     project_dir = luigi.Parameter()
     index_name = luigi.Parameter()
-    
 
     def requires(self):
-        return FindFiles(self.project_dir)
+        return FindFiles(self.project_dir, output_dir=self.output_dir())
 
     def output(self):
-        return luigi.LocalTarget('workflow/working/all_files_parsed.txt')
+        # return luigi.LocalTarget('workflow/working/all_files_parsed.txt')
+        return luigi.LocalTarget(f'{self.output_dir()}/all_files_parsed.txt')
+
+    def output_dir(self):
+        # 오늘 날짜 + 시분초로 중간 디렉토리 생성
+        current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_dir = f'workflow/working/{current_time}'
+
+        # 디렉토리가 없으면 생성
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        return output_dir
 
     def run(self):
         print(f"### ProcessAllFiles run / index_name = {str(self.index_name)}")
@@ -175,21 +164,27 @@ class ProcessAllFiles(luigi.Task):
         #                                        index_name=self.index_name, 
         #                                        index_desc='프로그램 분석')
 
-        # FindFiles Task로부터 파일 경로 리스트를 메모리에서 가져옴
+        # FindFiles 작업에서 생성한 파일 목록을 읽어들임
         find_files_task = self.requires()
-        file_paths = find_files_task.get_file_list()
-
-        # 각 파일을 처리하는 ParseFile Task 실행 (yield 대신 직접 호출)
-        for file_path in file_paths:
-            parse_task = ParseFile(file_path=file_path)
-            luigi.build([parse_task], local_scheduler=True)
-
+        
+        # 파일 목록을 읽기
+        with find_files_task.output().open('r') as f:
+            for file_path in f:
+                file_path = file_path.strip()
+                parse_task = ParseFile(file_path=file_path, output_dir=self.output_dir())
+                luigi.build([parse_task], local_scheduler=True)
+                
         # 모든 파일 처리가 완료되면 완료 파일 생성
         with self.output().open('w') as f:
             f.write('All files have been parsed.\n')
 
-
 # Luigi 실행: 프로젝트 폴더 지정
 if __name__ == "__main__":
-    luigi.build([ProcessAllFiles(project_dir="/app/rag_data/is_modon_proto", index_name="is_modon_proto")], local_scheduler=True)
+    # /app/rag_data/is_modon_proto
+    dir = "/app/rag_data/is_modon_proto//src/main/java/com/modon/control/weather/controller"
+    luigi.build([ProcessAllFiles(project_dir=dir, index_name="is_modon_proto")], local_scheduler=True)
+
+
     
+# python workflow_parse_code.py ProcessAllFiles --project-dir /your/project/path --index-name your_index_name --local-scheduler
+# python -m workflow.workflow_parse_code

@@ -32,9 +32,6 @@ Follow these steps to process the code chunk and add contextual information:
    - [Feature 3]
    </features>
    </metadata>
-   <code>
-   [Insert the original code chunk here]
-   </code>
    </augmented_chunk>
 
 Here's an example of how your output should look:
@@ -49,19 +46,10 @@ Here's an example of how your output should look:
 - In-place reversal for memory efficiency
 </features>
 </metadata>
-<code>
-def reverse_string(s: str) -> str:
-    chars = list(s)
-    left, right = 0, len(chars) - 1
-    while left < right:
-        chars[left], chars[right] = chars[right], chars[left]
-        left += 1
-        right -= 1
-    return ''.join(chars)
-</code>
 </augmented_chunk>
 
 Process the given code chunk and produce the augmented chunk with added contextual information. Ensure that your analysis is accurate and the added information is relevant and helpful for understanding the code's purpose and functionality.
+summary와 features는 한국말로 답변해줘
 """)
 
 CODE_ASSIST_PROMPT = PromptTemplate.from_template("""
