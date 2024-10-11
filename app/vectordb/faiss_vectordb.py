@@ -85,28 +85,30 @@ class PostgresDocstore:
 
 class FaissVectorDB:
     
-    # 임베딩 모델 가져오기
-    embeddings = get_embedding_model()
+    def __init__(self) -> None:
+        # 임베딩 모델 가져오기
+        self.embeddings = get_embedding_model()
 
-    # index 셋팅
-    # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
-    # •	IndexFlatIP: 내적 기반 유사도 계산, 코사인 유사도와 유사한 결과 제공.
-    # •	IndexLSH: 근사 검색을 위한 해싱 기반 방법으로 대규모 데이터에 적합.
-    # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
-    # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
-    # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
-    index = faiss.IndexFlatL2(len(embeddings.embed_query("임베딩 벡터 차원")))
-    
-    
-    psql_docstore = PostgresDocstore(SessionLocal())
+        # index 셋팅
+        # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
+        # •	IndexFlatIP: 내적 기반 유사도 계산, 코사인 유사도와 유사한 결과 제공.
+        # •	IndexLSH: 근사 검색을 위한 해싱 기반 방법으로 대규모 데이터에 적합.
+        # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
+        # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
+        # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
+        self.index = faiss.IndexFlatL2(len(self.embeddings.embed_query("임베딩 벡터 차원")))
+        
+        
+        self.psql_docstore = PostgresDocstore(SessionLocal())
 
-    # FAISS vector store 선언
-    vector_store = FAISS(
-        embedding_function=embeddings,
-        index=index,
-        docstore=psql_docstore,
-        index_to_docstore_id={},
-    )
+        # FAISS vector store 선언
+        self.vector_store = FAISS(
+            embedding_function=self.embeddings,
+            index=self.index,
+            docstore=self.psql_docstore,
+            index_to_docstore_id={},
+        )
+        pass
     
     
     def as_retriever(self, search_kwargs):

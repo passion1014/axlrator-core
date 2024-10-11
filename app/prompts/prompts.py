@@ -15,11 +15,12 @@ MERGE_QUESTION_PROMPT = PromptTemplate.from_template(
 )
 
 
-ANSWER_PROMPT = ChatPromptTemplate.from_template(
+ANSWER_PROMPT = PromptTemplate.from_template(
     """다음 [내용]을 기준으로 [질문]에 답변해줘.
 [내용]: {context}
 
 [질문]: {question}"""
 )
+
 
 DEFAULT_DOCUMENT_PROMPT = PromptTemplate.from_template(template="{page_content}")

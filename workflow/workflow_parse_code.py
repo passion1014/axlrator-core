@@ -4,7 +4,7 @@ import re
 import xml.etree.ElementTree as ET
 import luigi
 
-from app.process.content_chunker import JavaChunkMeta, chunk_file
+from app.process.content_chunker import JavaChunkMeta, SQLChunkMeta, chunk_file
 from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData
 from app.db_model.database import SessionLocal
 from app.vectordb.faiss_vectordb import FaissVectorDB
@@ -15,7 +15,7 @@ class FindFiles(luigi.Task):
     project_dir = luigi.Parameter()
     output_dir = luigi.Parameter()  # 중간 디렉토리 경로 전달
 
-    extensions = ['.java', '.xml', '.js']
+    extensions = ['.java', '.xml', '.js', '.ddl_simple']
 
     def output(self):
         # 파일 목록을 저장할 파일을 지정
@@ -43,7 +43,6 @@ class ParseFile(luigi.Task):
     session = SessionLocal()
 
     def output(self):
-        # output_file = f'workflow/working/parsed_{os.path.basename(self.file_path)}.txtt'
         output_file = f'{self.output_dir}/parsed_{os.path.basename(self.file_path)}.txtt'
         return luigi.LocalTarget(output_file)
 
@@ -73,6 +72,13 @@ class ParseFile(luigi.Task):
                     data_type = 'code'  # 데이터 유형 (예: code)
                     context_chunk = chunk.summary  # 컨텍스트 청크
                     document_metadata = chunk.summary   # 문서의 메타데이터
+                    
+                elif isinstance(chunk, SQLChunkMeta):
+                    data_name = chunk.table_name + f"({chunk.table_korean_name})" # 함수명
+                    data_type = 'DDL'  # 데이터 유형 (예: code)
+                    context_chunk = chunk.summary  # 컨텍스트 청크
+                    document_metadata = chunk.summary   # 문서의 메타데이터
+                    
                 else: # 알 수 없는 유형의 데이터
                     data_name = 'unknown'
                     data_type = 'unknown'
@@ -135,7 +141,7 @@ class ParseFile(luigi.Task):
 # Luigi Task: 모든 파일을 처리하는 메인 Task
 class ProcessAllFiles(luigi.Task):
     project_dir = luigi.Parameter()
-    index_name = luigi.Parameter()
+    # index_name = luigi.Parameter()
 
     def requires(self):
         return FindFiles(self.project_dir, output_dir=self.output_dir())
@@ -156,14 +162,6 @@ class ProcessAllFiles(luigi.Task):
         return output_dir
 
     def run(self):
-        print(f"### ProcessAllFiles run / index_name = {str(self.index_name)}")
-        
-        # # FAISS_INFO에 저장 및 .index 파일 생성
-        # faissVectorDB = FaissVectorDB()
-        # faiss_info = faissVectorDB.write_index(file_path=f'data/vector/{self.index_name}.index',
-        #                                        index_name=self.index_name, 
-        #                                        index_desc='프로그램 분석')
-
         # FindFiles 작업에서 생성한 파일 목록을 읽어들임
         find_files_task = self.requires()
         
@@ -180,9 +178,9 @@ class ProcessAllFiles(luigi.Task):
 
 # Luigi 실행: 프로젝트 폴더 지정
 if __name__ == "__main__":
-    # /app/rag_data/is_modon_proto
-    dir = "/app/rag_data/is_modon_proto//src/main/java/com/modon/control/weather/controller"
-    luigi.build([ProcessAllFiles(project_dir=dir, index_name="is_modon_proto")], local_scheduler=True)
+    # dir = "/app/rag_data/is_modon_proto//src/main/java/com/modon/control/weather/controller"
+    dir = "/app/rag_data/DDL"
+    luigi.build([ProcessAllFiles(project_dir=dir)], local_scheduler=True)
 
 
     

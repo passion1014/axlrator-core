@@ -28,8 +28,8 @@ def test_read_index():
     print(f"### Distance between stored vector and query vector: {distance}")
     '''
     
-    faissVectorDB.read_index(file_path='data/vector/is_modon_proto.index')
-    search_result = faissVectorDB.search_similar_documents(query="public static Character toChar(String str)", k=10)
+    faissVectorDB.read_index(index_name="cg_code_assist")
+    search_result = faissVectorDB.search_similar_documents(query="whether", k=10)
     print(f"### search_result = {search_result}")
 
 if __name__ == '__main__':

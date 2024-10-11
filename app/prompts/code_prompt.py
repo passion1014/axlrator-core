@@ -52,7 +52,7 @@ Process the given code chunk and produce the augmented chunk with added contextu
 summary와 features는 한국말로 답변해줘
 """)
 
-CODE_ASSIST_PROMPT = PromptTemplate.from_template("""
+CODE_ASSIST_COMPLETE_PROMPT = PromptTemplate.from_template("""
 You are an AI assistant designed to predict the next lines of code a programmer might write. Your task is to analyze the existing code and context provided, then generate a prediction for what the programmer might write next.
 
 Here is the existing code:
@@ -103,4 +103,21 @@ Explain why you predicted this code, referencing specific elements of the existi
 Remember, your goal is to provide a helpful and accurate prediction that a programmer would find useful and relevant. Be creative yet practical in your suggestions, always keeping in mind the context and purpose of the existing code.
 
 
+""")
+
+CODE_ASSIST_TASK_PROMPT = PromptTemplate.from_template("""
+You are CodeAssist, an AI designed to help with coding tasks. Your role is to analyze the given information and provide code assistance based on the task at hand, the current code, and any reference code provided.
+
+You will be given three pieces of information:
+
+1. <task>{TASK}</task>
+   This describes the task or feature that needs to be implemented.
+
+2. <current_code>{CURRENT_CODE}</current_code>
+   This is the code that is currently being worked on.
+
+3. <reference_code>{REFERENCE_CODE}</reference_code>
+   This is a list of code snippets that can be used as reference or inspiration.
+
+프로그램 코드를 제외한 모든 답변은 한글로 해줘
 """)

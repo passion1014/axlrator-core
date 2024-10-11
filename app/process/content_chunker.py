@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import os
+import re
 
 from app.chain import create_summary_chain
 from app.formatter.code_formatter import parse_augmented_chunk
@@ -71,6 +72,28 @@ class JavaChunkMeta(BaseChunkMeta):
         return json.dumps(base_data)
 
 
+class SQLChunkMeta(BaseChunkMeta):
+    def __init__(self, chunk_content, table_name=None, table_korean_name=None ):
+        super().__init__(chunk_content=chunk_content, type="DDL")
+        self.table_name = table_name
+        self.table_korean_name = table_korean_name
+        self.set_summary(f"DDL 테이블 '{self.table_name}'")
+
+    def __repr__(self):
+        return (f"SQLChunkMeta:{self.to_json()}")
+
+    def to_json(self):
+        """청크 메타 정보를 JSON 문자열로 변환"""
+        # BaseChunkMeta의 to_json을 활용하여 확장
+        base_data = json.loads(super().to_json())
+        base_data.update({
+            "table_name": self.table_name,
+            "table_korean_name": self.table_korean_name,
+        })
+        return json.dumps(base_data)
+
+
+
 def read_file(file_path):
     """Read the content of the given file path."""
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -104,6 +127,40 @@ def split_java_file(content:str) -> list[BaseChunkMeta]:
             parameters=method['parameters']
         )
         chunks.append(code_chunk)
+    
+    return chunks
+
+def split_ddl_simple(content:str) -> list[BaseChunkMeta]:
+    # '### '로 텍스트를 split해서 리스트로 반환
+    split_text = content.split('### ')
+    
+    # 첫 번째 요소는 비어있을 수 있으므로 제거
+    if split_text[0] == '':
+        split_text = split_text[1:]
+    
+    # 각 요소 앞에 'TABLE '를 붙여서 원래 구조를 유지
+    split_text = ['TABLE ' + section.strip() for section in split_text]
+    
+    
+    # chunks 선언
+    chunks = []
+    for text in split_text:
+        match = re.search(r'TABLE (\w+)\(([^)]+)\)', text)
+        if match:
+            table_name = match.group(1)  # 영문 테이블명
+            table_korean_name = match.group(2)  # 한글명
+        
+        # BaseChunkMeta 객체 생성
+        chunk = SQLChunkMeta(
+            chunk_content=text,
+            table_name=table_name,
+            table_korean_name=table_korean_name,
+        )
+        
+        # 추가 정보 설정
+        # chunk.set_summary(f"DDL Simple 테이블: {table_name}")
+        
+        chunks.append(chunk)
     
     return chunks
 
@@ -141,6 +198,9 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     # 파일 확장자에 따라 청크 분할 로직 선택
     if extension == ".java":
         chunks = split_java_file(content)
+
+    elif extension == ".ddl_simple":
+        chunks = split_ddl_simple(content)
         
     elif extension == ".xml":
         print(f"xml 파일 처리 예정")
@@ -154,10 +214,9 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
 
     # summary 추가
     for chunk in chunks:
-        summary = make_summary_with_llm(chunk)
-        chunk.set_summary(summary)
-    # summary = make_summary_with_llm(chunks[0])
-    # print(f"####### {summary}")
+        if extension == ".java":
+            summary = make_summary_with_llm(chunk)
+            chunk.set_summary(summary)
     
     # 청크 정보 저장
     # save_chunks(chunks, extension, last_modified)

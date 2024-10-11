@@ -32,7 +32,7 @@ class EmbedData(luigi.Task):
         session = SessionLocal()
 
         # faiss 인덱스 정보 셋팅 (추후 별도 관리하도록 수정 필요)
-        index_name = 'cg_code_assist'
+        index_name = 'cg_text_to_sql' #'cg_code_assist'
         faiss_index_file_path = f'data/vector/{index_name}.index'
 
         # FAISS_INFO 저장 (있으면 조회)
@@ -45,7 +45,7 @@ class EmbedData(luigi.Task):
         else:
             print(f"-------------------- {index_name}에 대한 FAISS 정보가 이미 존재합니다.")
 
-        # OrgRSrc 테이블에서 is_vectorize가 True가 아닌 항목만 조회
+        # OrgRSrc 테이블에서 is_vector가 True가 아닌 항목만 조회
         org_resrc_list = session.query(OrgRSrc).filter(OrgRSrc.is_vector.isnot(True)).all()
         print(f"-------------------- org_resrc_list = {org_resrc_list}")
         
