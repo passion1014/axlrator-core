@@ -1,17 +1,74 @@
 import os
 import re
 from typing import Optional
-# Java 파일에서 주석을 제거하는 함수
-def remove_comments(java_code: str) -> str:
-    """
-    주어진 Java 코드에서 주석을 제거합니다.
 
-    :param java_code: Java 코드 문자열
-    :return: 주석이 제거된 Java 코드 문자열
+def remove_comments(code: str) -> str:
     """
-    # 블록 주석 /* ... */ 및 라인 주석 // ... 을 제거
-    pattern = r'//.*?$|/\*.*?\*/'
-    return re.sub(pattern, '', java_code, flags=re.DOTALL | re.MULTILINE)
+    Java 코드에서 주석을 제거하는 함수입니다.
+
+    이 함수는 다음과 같은 작업을 수행합니다:
+    1. AppLog.info를 포함하는 줄을 제거합니다.
+    2. 단일 줄 주석 (//)을 제거합니다. 단, 문자열 내부의 '//'는 제거하지 않습니다.
+    3. 여러 줄 주석 (/* */)을 제거합니다.
+
+    Args:
+        code (str): 주석을 제거할 Java 코드 문자열
+
+    Returns:
+        str: 주석이 제거된 Java 코드 문자열
+    """
+    def is_within_string(line, index):
+        # Check if the index falls within a string (either single or double quotes)
+        quote_chars = ['"', "'"]
+        inside_string = False
+        quote_char = None
+        for i, char in enumerate(line):
+            if char in quote_chars:
+                if inside_string and char == quote_char:
+                    inside_string = False
+                elif not inside_string:
+                    inside_string = True
+                    quote_char = char
+            if i == index:
+                return inside_string
+        return inside_string
+
+    # Step 1: Remove lines containing `AppLog.info`
+    lines = code.splitlines()
+    filtered_lines = [line for line in lines if 'AppLog.info' not in line]
+
+    # Step 2: Remove single-line comments first
+    comment_removed_lines = []
+    
+    single_line_comment_pattern = re.compile(r'//.*?$')
+
+    for line in filtered_lines:
+        # Remove single-line comments, but check if it's inside a string
+        result = []
+        start = 0
+
+        for match in single_line_comment_pattern.finditer(line):
+            if not is_within_string(line, match.start()):
+                # Add the part before the comment
+                result.append(line[start:match.start()])
+                start = match.end()
+
+        result.append(line[start:])  # Append the remaining part of the line
+        final_line = ''.join(result)
+
+        if final_line.strip():  # Avoid empty lines
+            comment_removed_lines.append(final_line)
+
+    # Step 3: Remove multi-line block comments
+    cleaned_code = '\n'.join(comment_removed_lines)
+
+    # Use regular expression to handle block comments
+    block_comment_pattern = re.compile(r'/\*[\s\S]*?\*/', re.MULTILINE)
+    cleaned_code = re.sub(block_comment_pattern, '', cleaned_code)
+
+    return cleaned_code
+
+
 
 # 클래스 정보 추출
 def extract_class_info(java_code: str) -> dict[str, Optional[str]]:
@@ -124,7 +181,7 @@ def extract_methods_from_java(java_code: str) -> list[dict[str, str]]:
     methods = []
 
     # 메서드 시그니처 찾기 (public, private, protected 등 접근제어자 포함)
-    method_pattern = re.compile(r'(public|private|protected)?\s*(static)?\s*([\w<>\[\]]+)\s+(\w+)\s*\(([^)]*)\)\s*{')
+    method_pattern = re.compile(r'\b(public|private|protected)?\s*(static)?\s*([\w<>\[\]]+)\s+(\w+)\s*\([^)]*\)\s*(throws\s+[\w\s,]+)?\s*\{')
 
     for match in method_pattern.finditer(java_code):
         return_type = match.group(3)
@@ -158,6 +215,13 @@ def parse_java_file(java_code: str) -> tuple[dict[str, Optional[str]], list[dict
     """
     # 주석 제거
     java_code = remove_comments(java_code)
+    
+    # 파일 열기 (쓰기 모드)
+    with open("java_x_comment.java", "w") as file:
+        # 파일에 쓰기
+        file.write(java_code)
+
+
 
     # 클래스 정보 추출
     class_info = extract_class_info(java_code)
@@ -215,9 +279,15 @@ def parse_java_directory(directory_path: str, output_file: str) -> None:
 
 # 테스트용 메인 함수
 if __name__ == '__main__':
-    directory_path = "/Users/passion1014/project/langchain/rag_data"  # 실제 Java 파일 경로
-
+    directory_path = "/app/rag_server/data/input/program"  # 실제 Java 파일 경로
     output_file = "output.txt"  # 결과를 저장할 출력 파일 경로
 
     # 디렉토리 내 모든 Java 파일에 대해 파싱 수행 및 결과를 파일에 쓰기
     parse_java_directory(directory_path, output_file)
+    
+    # # Java 파일 읽기
+    # with open("java_x_comment.java", 'r', encoding='utf-8') as f:
+    #     java_code = f.read()
+        
+    #     extract_methods_from_java(java_code)
+

@@ -201,11 +201,13 @@ class FaissVectorDB:
         
         # return faiss_info
         
-        
-        
     def read_index(self, index_name=None):
         # PostgresDocstore에서 FAISS 정보 가져오기
         faiss_info = self.psql_docstore.get_faiss_info(index_name)
+
+        if faiss_info == None:
+            return None
+
         self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
 
         print(f"----------- PostgresDocstore에서 FAISS 정보 읽기 >> index_name={index_name}, index_file_path={faiss_info.index_file_path}")

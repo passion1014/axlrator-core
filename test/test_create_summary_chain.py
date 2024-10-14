@@ -7,8 +7,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # 테스트 코드
 from app.chain import create_summary_chain
 
-# LangSmith 로그 업로드 비활성화 설정 추가
-os.environ["LANGSMITH_LOGGING"] = "False"
 
 def test_create_summary_chain():
     """Test the create_summary_chain function by providing a code chunk."""
