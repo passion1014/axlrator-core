@@ -77,7 +77,7 @@ def create_rag_chain():
 
     def get_context(state: AgentState) -> AgentState:
         print(f"------------------------ get_context state['question'] = {state['question']}")
-        docs = faissVectorDB.search_similar_documents(query=state['question'], k=10)
+        docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
         print(f"### search_result = {docs}")
 
         state['context'] = docs # state['context'] = combine_documents(docs)
@@ -120,7 +120,7 @@ def create_text_to_sql_chain():
 
     def get_context(state: AgentState) -> AgentState:
         print(f"------------------------ get_context state['question'] = {state['question']}")
-        docs = faissVectorDB.search_similar_documents(query=state['question'], k=10)
+        docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
         print(f"### search_result = {docs}")
 
         state['context'] = docs # state['context'] = combine_documents(docs)
