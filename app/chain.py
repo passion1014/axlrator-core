@@ -76,19 +76,18 @@ def create_rag_chain():
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
     def get_context(state: AgentState) -> AgentState:
-        print(f"------------------------ get_context state['question'] = {state['question']}")
+        print(f" ------------------------ get_context state['question'] = {state['question']}")
         docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
         print(f"### search_result = {docs}")
 
         state['context'] = docs # state['context'] = combine_documents(docs)
         return state
 
-    def generate_response(state: AgentState) -> AgentState:        
-        prompt = CODE_ASSIST_TASK_PROMPT.format(REFERENCE_CODE=state['context'], TASK=state['question'], CURRENT_CODE='') 
-        response = model.invoke(prompt) 
+    def generate_response(state: AgentState) -> AgentState:
+        prompt = CODE_ASSIST_TASK_PROMPT.format(REFERENCE_CODE=state['context'], TASK=state['question'], CURRENT_CODE='')
+        response = model.invoke(prompt)
         
         state['response'] = response
-
         return state
 
     workflow = StateGraph(AgentState)
@@ -106,6 +105,7 @@ def create_rag_chain():
     chain.with_config(callbacks=[CallbackHandler()])
     
     return chain
+
 
 # text_to_sql 체인 생성
 def create_text_to_sql_chain():

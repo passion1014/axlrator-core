@@ -1,0 +1,75 @@
+{% extends 'common/frame.html' %}
+
+{% block title %}텍스트 입력 화면{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 메인 콘텐츠 영역 -->
+    <div class="col-md-9 col-lg-8">
+        <div class="mt-4">
+            <div class="section text-area-group">
+                <h2 class="mb-4">텍스트 입력</h2>
+                <form>
+                    <div class="form-group mb-3">
+                        <label for="question">질문:</label>
+                        <textarea class="form-control" id="question" name="question" rows="5"></textarea>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="context">컨텍스트:</label>
+                        <textarea class="form-control" id="context" name="context" rows="5"></textarea>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="reference-context">참고 컨텍스트:</label>
+                        <textarea class="form-control" id="reference-context" name="reference-context" rows="5"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">제출</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오른쪽 사이드바 -->
+    <div class="col-md-3 col-lg-4">
+        <nav id="rightSidebar" class="bg-light sidebar">
+            <div class="position-sticky pt-3 sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="collapse" href="#treeMenu1" role="button" aria-expanded="false" aria-controls="treeMenu1">
+                            <span data-feather="folder"></span>
+                            질문의 대분류1
+                        </a>
+                        <div class="collapse" id="treeMenu1">
+                            <ul class="nav flex-column ms-3">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <span data-feather="file"></span>
+                                        질문의 중분류 1-1
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="collapse" href="#subTreeMenu1" role="button" aria-expanded="false" aria-controls="subTreeMenu1">
+                                        <span data-feather="folder"></span>
+                                        질문의 중분류 1-2
+                                    </a>
+                                    <div class="collapse" id="subTreeMenu1">
+                                        <ul class="nav flex-column ms-3">
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="#">
+                                                    <span data-feather="file"></span>
+                                                    질문 소분류
+                                                </a>
+                                            </li>
+                                            <!-- 추가 하위 메뉴 항목들 -->
+                                        </ul>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <!-- 추가 루트 메뉴 항목들 -->
+                </ul>
+            </div>
+        </nav>
+    </div>
+</div>
+{% endblock %}

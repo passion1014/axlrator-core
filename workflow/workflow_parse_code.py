@@ -98,7 +98,7 @@ class ParseFile(luigi.Task):
                 self.session.add(chunked_data)
 
             # 세션 커밋
-            self.session.commit()            
+            self.session.commit()
             
             # 파일로 작성
             with self.output().open('w') as f:
@@ -107,7 +107,7 @@ class ParseFile(luigi.Task):
 
         except Exception as e:
             self.session.rollback()
-            print(f"### Error processing file {self.file_path}: {e}")        
+            print(f"### Error processing file {self.file_path}: {e}")
         
         
 

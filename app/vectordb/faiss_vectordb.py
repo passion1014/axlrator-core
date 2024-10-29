@@ -62,13 +62,13 @@ class PostgresDocstore:
         return None
     
 
-    def get_document_by_index(self, vector_index) -> Optional[Dict[str, any]]:
+    def get_document_by_index(self, faiss_info_id, vector_index) -> Optional[Dict[str, any]]:
         """vector_index 조회"""
         
         # Numpy int64 값을 Python의 int로 변환
         vector_index = int(vector_index) 
         
-        stmt = select(ChunkedData).where(ChunkedData.vector_index == vector_index)
+        stmt = select(ChunkedData).where((ChunkedData.vector_index == vector_index) & (ChunkedData.faiss_info_id == faiss_info_id))
         result = self.session.execute(stmt).scalar_one_or_none()
         if result:
             return {"content": result.content, "metadata": result.document_metadata}
@@ -158,7 +158,7 @@ class FaissVectorDB:
         return faiss_index
 
 
-    def search_similar_documents(self, query, k=10):
+    def search_similar_documents(self, faiss_info_id, query, k=10):
         # 쿼리를 임베딩으로 변환
         query_embedding = self.embeddings.embed_query(query)
         
@@ -179,7 +179,7 @@ class FaissVectorDB:
         
         # PostgreSQL에서 문서 가져오기
         results = [
-            self.psql_docstore.get_document_by_index(idx)
+            self.psql_docstore.get_document_by_index(faiss_info_id, idx)
             for idx in indices[0] # 현재는 1개의 쿼리만을 사용하기 때문에 하드코딩, 다중 쿼리를 사용할 경우 수정되어야 함
             if idx != -1  # 유효하지 않은 인덱스 (-1) 무시
         ]

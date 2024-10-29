@@ -7,6 +7,7 @@ from app.config import STATIC_DIR
 from app.routes.upload_routes import router as upload_router
 from app.routes.faiss_routes import router as faiss_router
 from app.routes.eclipse_routes import router as eclipse_router
+from app.routes.sample_routes import router as sample_router
 
 import uvicorn
 
@@ -20,8 +21,6 @@ webServerApp = FastAPI(
 # 정적 파일 경로 및 Jinja2 템플릿 설정
 webServerApp.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# 
-os.environ["LANGCHAIN_HANDLER"] = "null"
 
 # ---------------------------------------
 # 라우터 등록
@@ -29,6 +28,7 @@ os.environ["LANGCHAIN_HANDLER"] = "null"
 webServerApp.include_router(upload_router, prefix="/upload") # 업로드 라우터 등록
 webServerApp.include_router(faiss_router, prefix="/faiss") # faiss 라우터 등록
 webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록
+webServerApp.include_router(sample_router, prefix="/sample")
 
 # 체인 등록
 add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
@@ -37,7 +37,6 @@ add_routes(webServerApp, create_openai_chain(), path="/openai", enable_feedback_
 add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 
 # 플러그인 용
-
 
 # ---------------------------------------
 # SQLAlchemy 데이터베이스 설정 및 초기화

@@ -167,6 +167,11 @@ def split_ddl_simple(content:str) -> list[BaseChunkMeta]:
 def make_summary_with_llm(chunk:BaseChunkMeta):
     """chunk를 받아서 LLM을 사용하여 summary를 만듬"""
 
+    # check - Dao클래스는 패스 (건설공제 기준)
+    if isinstance(chunk, JavaChunkMeta):
+        chunk.
+    
+
     # create_summary_chain 호출
     summary_chain = create_summary_chain()
     
@@ -192,6 +197,7 @@ def make_summary_with_llm(chunk:BaseChunkMeta):
 
 def chunk_file(file_path) -> list[BaseChunkMeta]:
     """Main function to chunk a file based on its extension."""
+    file_name = os.path.basename(file_path)
     content = read_file(file_path)
     extension = get_file_extension(file_path)
 
@@ -213,8 +219,11 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     last_modified = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
 
     # summary 추가
+    if "Dao.java" not in file_name:
+        print(f"{file_name}에 Dao.java가 포함되어 있습니다.")
+    
     for chunk in chunks:
-        if extension == ".java":
+        if isinstance(chunk, JavaChunkMeta):
             summary = make_summary_with_llm(chunk)
             chunk.set_summary(summary)
     
@@ -224,11 +233,5 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
 
 
 
-if __name__ == "__main__":
-    file_path = input("Enter the path to the file you want to chunk: ").strip()
-    if os.path.isfile(file_path):
-        chunk_file(file_path)
-    else:
-        print("Invalid file path. Please check and try again.")
 
 
