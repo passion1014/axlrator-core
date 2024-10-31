@@ -9,6 +9,7 @@ from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData
 from app.db_model.database import SessionLocal
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from app.process.java_parser import parse_java_file
+from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
 
 
 class FindFiles(luigi.Task):
@@ -49,15 +50,18 @@ class ParseFile(luigi.Task):
     def run(self):
         try:
             # 원본 파일 정보 저장
-            org_resrc = OrgRSrc(
-                resrc_name = os.path.basename(self.file_path),  # 파일명
-                resrc_type = '01',  # 가정
-                resrc_path = self.file_path,
-                resrc_desc = 'Parsed Java class',
-                # last_modified_time = class_info.get('last_modified'), # 추후 어떤 값을 셋팅 할지 확인 필요
-            )
-            self.session.add(org_resrc)
-            self.session.flush() # org_resrc.id를 얻기 위해 flush를 한다. but commit 되기 전임
+            orgRSrcRepository = OrgRSrcRepository(session=self.session)
+            org_resrc = orgRSrcRepository.create_org_resrc(file_path=self.file_path, type="01", desc="JAVA")
+
+            # org_resrc = OrgRSrc(
+            #     resrc_name = os.path.basename(self.file_path),  # 파일명
+            #     resrc_type = '01',  # 가정
+            #     resrc_path = self.file_path,
+            #     resrc_desc = 'Parsed Java class',
+            #     # last_modified_time = class_info.get('last_modified'), # 추후 어떤 값을 셋팅 할지 확인 필요
+            # )
+            # self.session.add(org_resrc)
+            # self.session.flush() # org_resrc.id를 얻기 위해 flush를 한다. but commit 되기 전임
 
             # 파일 chunking
             chunk_list = chunk_file(self.file_path)
@@ -85,18 +89,14 @@ class ParseFile(luigi.Task):
                     context_chunk = 'unknown'
                     document_metadata = 'unknown'
 
-                chunked_data = ChunkedData(
-                    seq = idx + 1,  # 순번
-                    org_resrc_id = org_resrc.id,  # OrgRSrc의 외래키
-                    data_name = data_name,
-                    data_type = data_type,
-                    content = chunk.chunk_content,  # 내용
-                    context_chunk = context_chunk,
-                    document_metadata = document_metadata
-                    # faiss_info_id = self.faiss_info_id,
-                )
-                self.session.add(chunked_data)
-
+                chunkedDataRepository = ChunkedDataRepository(session=self.session)
+                chunked_data = chunkedDataRepository.create_chunked_data(idx + 1
+                                                                        , org_resrc.id
+                                                                        , data_name
+                                                                        , data_type
+                                                                        , chunk.chunk_content
+                                                                        , context_chunk
+                                                                        , document_metadata)
             # 세션 커밋
             self.session.commit()
             
