@@ -216,12 +216,10 @@ def parse_java_file(java_code: str) -> tuple[dict[str, Optional[str]], list[dict
     # 주석 제거
     java_code = remove_comments(java_code)
     
-    # 파일 열기 (쓰기 모드)
-    with open("java_x_comment.java", "w") as file:
-        # 파일에 쓰기
-        file.write(java_code)
-
-
+    # # 파일 열기 (쓰기 모드)
+    # with open("java_x_comment.java", "w") as file:
+    #     # 파일에 쓰기
+    #     file.write(java_code)
 
     # 클래스 정보 추출
     class_info = extract_class_info(java_code)

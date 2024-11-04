@@ -14,26 +14,28 @@ from app.utils import get_embedding_model
 
 
 class PostgresDocstore:
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: Session, index_name: str):
         """SQLAlchemy 세션을 주입받음"""
         self.session = db_session
+        self.index_name = index_name
+        self.index_file_path = f'data/vector/{self.index_name}.index' # ex) cg_text_to_sql, cg_code_assist
         
-    def get_faiss_info(self, index_name: str) -> FaissInfo:
+    def get_faiss_info(self) -> FaissInfo:
         """인덱스 이름으로 FAISS 정보를 조회합니다."""
-        stmt = select(FaissInfo).where(FaissInfo.index_name == index_name)
+        stmt = select(FaissInfo).where(FaissInfo.index_name == self.index_name)
         result = self.session.execute(stmt).scalar_one_or_none()
         
         if result:
             return result
         return None
         
-    def insert_faiss_info(self, index_name: str, index_desc: str, index_file_path: str) -> FaissInfo:
+    def insert_faiss_info(self, index_desc: str = '') -> FaissInfo:
         """FAISS 인덱스 정보 저장"""
         
         faiss_info = FaissInfo(
-            index_name=index_name,
+            index_name=self.index_name,
             index_desc=index_desc,
-            index_file_path=index_file_path,
+            index_file_path=self.index_file_path,
         )
         self.session.add(faiss_info)
         self.session.commit()
@@ -84,8 +86,11 @@ class PostgresDocstore:
 
 
 class FaissVectorDB:
-    
-    def __init__(self) -> None:
+    def __init__(self, db_session: Session, index_name: str):
+        self.session = db_session
+        self.index_name = index_name
+        self.index_file_path = f'data/vector/{self.index_name}.index' # ex) cg_text_to_sql, cg_code_assist
+
         # 임베딩 모델 가져오기
         self.embeddings = get_embedding_model()
 
@@ -99,7 +104,7 @@ class FaissVectorDB:
         self.index = faiss.IndexFlatL2(len(self.embeddings.embed_query("임베딩 벡터 차원")))
         
         
-        self.psql_docstore = PostgresDocstore(SessionLocal())
+        self.psql_docstore = PostgresDocstore(db_session, index_name=self.index_name)
 
         # FAISS vector store 선언
         self.vector_store = FAISS(
@@ -187,33 +192,22 @@ class FaissVectorDB:
         return results
     
     
-    def write_index(self, file_path, index_name=None, index_desc=None):
+    def write_index(self):
         # FAISS 인덱스를 디스크에 저장
-        faiss.write_index(self.vector_store.index, file_path)
+        faiss.write_index(self.vector_store.index, self.index_file_path)
         
-        # # index_name이 없을 경우 파일명으로 사용
-        # if not index_name:
-        #     filename = os.path.basename(file_path)
-        #     index_name = os.path.splitext(filename)[0]
         
-        # # DB 업데이트
-        # faiss_info = self.psql_docstore.insert_faiss_info(index_name=index_name, index_desc=index_desc, index_file_path=file_path)
-        
-        # return faiss_info
-        
-    def read_index(self, index_name=None):
+    def read_index(self):
         # PostgresDocstore에서 FAISS 정보 가져오기
-        faiss_info = self.psql_docstore.get_faiss_info(index_name)
+        faiss_info = self.psql_docstore.get_faiss_info()
 
         if faiss_info == None:
             return None
 
         self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
 
-        print(f"----------- PostgresDocstore에서 FAISS 정보 읽기 >> index_name={index_name}, index_file_path={faiss_info.index_file_path}")
-
-        
         # 인덱스의 기본 정보 출력
+        print(f"### PostgresDocstore에서 FAISS 정보 읽기 >> index_name={self.index_name}, index_file_path={faiss_info.index_file_path}")
         print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력
         print(f"### Dimension of vectors: {self.vector_store.index.d}")  # 벡터의 차원 출력
 
@@ -226,17 +220,14 @@ class FaissVectorDB:
         # else:
         #     print("### Index is empty.")
 
-    def restore_index_to_docstore_id(self):
-        # 데이터베이스 세션 생성
-        session = self.psql_docstore.session
+    # def restore_index_to_docstore_id(self):
+    #     # 모든 ChunkedData 레코드 조회
+    #     results = self.session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
         
-        # 모든 ChunkedData 레코드 조회
-        results = session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
+    #     # 매핑 정보 재구성
+    #     self.vector_store.index_to_docstore_id = {vector_index: org_resrc_id for vector_index, org_resrc_id in results}
         
-        # 매핑 정보 재구성
-        self.vector_store.index_to_docstore_id = {vector_index: org_resrc_id for vector_index, org_resrc_id in results}
-        
-        print("### index_to_docstore_id mapping restored")
+    #     print("### index_to_docstore_id mapping restored")
 
 
     # 예제) 유사한 문서 검색

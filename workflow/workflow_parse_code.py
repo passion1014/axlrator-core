@@ -4,12 +4,8 @@ import re
 import xml.etree.ElementTree as ET
 import luigi
 
-from app.process.content_chunker import JavaChunkMeta, SQLChunkMeta, chunk_file
-from app.db_model.database_models import OrgRSrc, OrgRSrcCode, ChunkedData
+from app.process.content_chunker import JavaChunkMeta, SQLChunkMeta, chunk_file, file_chunk_and_save
 from app.db_model.database import SessionLocal
-from app.vectordb.faiss_vectordb import FaissVectorDB
-from app.process.java_parser import parse_java_file
-from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
 
 
 class FindFiles(luigi.Task):
@@ -49,56 +45,10 @@ class ParseFile(luigi.Task):
 
     def run(self):
         try:
-            # 원본 파일 정보 저장
-            orgRSrcRepository = OrgRSrcRepository(session=self.session)
-            org_resrc = orgRSrcRepository.create_org_resrc(file_path=self.file_path, type="01", desc="JAVA")
-
-            # org_resrc = OrgRSrc(
-            #     resrc_name = os.path.basename(self.file_path),  # 파일명
-            #     resrc_type = '01',  # 가정
-            #     resrc_path = self.file_path,
-            #     resrc_desc = 'Parsed Java class',
-            #     # last_modified_time = class_info.get('last_modified'), # 추후 어떤 값을 셋팅 할지 확인 필요
-            # )
-            # self.session.add(org_resrc)
-            # self.session.flush() # org_resrc.id를 얻기 위해 flush를 한다. but commit 되기 전임
-
-            # 파일 chunking
-            chunk_list = chunk_file(self.file_path)
-            
-            # chunking 데이터 저장
-            for idx, chunk in enumerate(chunk_list, start=1):
-                if chunk is None:
-                    continue
-                
-                if isinstance(chunk, JavaChunkMeta):
-                    data_name = chunk.function_name # 함수명
-                    data_type = 'code'  # 데이터 유형 (예: code)
-                    context_chunk = chunk.summary  # 컨텍스트 청크
-                    document_metadata = chunk.summary   # 문서의 메타데이터
-                    
-                elif isinstance(chunk, SQLChunkMeta):
-                    data_name = chunk.table_name + f"({chunk.table_korean_name})" # 함수명
-                    data_type = 'DDL'  # 데이터 유형 (예: code)
-                    context_chunk = chunk.summary  # 컨텍스트 청크
-                    document_metadata = chunk.summary   # 문서의 메타데이터
-                    
-                else: # 알 수 없는 유형의 데이터
-                    data_name = 'unknown'
-                    data_type = 'unknown'
-                    context_chunk = 'unknown'
-                    document_metadata = 'unknown'
-
-                chunkedDataRepository = ChunkedDataRepository(session=self.session)
-                chunked_data = chunkedDataRepository.create_chunked_data(idx + 1
-                                                                        , org_resrc.id
-                                                                        , data_name
-                                                                        , data_type
-                                                                        , chunk.chunk_content
-                                                                        , context_chunk
-                                                                        , document_metadata)
-            # 세션 커밋
-            self.session.commit()
+            # 파일을 청크로 분할하고 DB에 저장
+            # chunk_list에는 JavaChunkMeta 또는 SQLChunkMeta 객체들이 담김
+            # chunk_list의 각 객체는 코드 조각과 메타데이터(함수명, 테이블명 등)를 포함
+            org_resrc, chunk_list = file_chunk_and_save(self.file_path, session=self.session)
             
             # 파일로 작성
             with self.output().open('w') as f:
@@ -108,35 +58,6 @@ class ParseFile(luigi.Task):
         except Exception as e:
             self.session.rollback()
             print(f"### Error processing file {self.file_path}: {e}")
-        
-        
-
-    # # Java 파일 파싱 (함수별로 split)
-    # def parse_java(self):
-    #     class_info, methods = parse_java_file(self.file_path)
-        
-    #     return class_info, methods
-
-    # XML 파일 파싱 (MyBatis 형식)
-    def parse_xml(self):
-        tree = ET.parse(self.file_path)
-        root = tree.getroot()
-
-        # MyBatis 매퍼 추출 예시 (select, insert, update 등 태그)
-        queries = []
-        for elem in root.findall('.//select'):
-            queries.append(ET.tostring(elem, encoding='unicode'))
-        return queries
-
-    # JS 파일 파싱 (함수별로 split)
-    def parse_js(self):
-        with open(self.file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        # 간단한 함수 추출 패턴 (function 키워드 사용)
-        pattern = r'function\s+(\w+)\s*\(.*?\)\s*\{'
-        functions = re.findall(pattern, content)
-        return functions
 
 # Luigi Task: 모든 파일을 처리하는 메인 Task
 class ProcessAllFiles(luigi.Task):

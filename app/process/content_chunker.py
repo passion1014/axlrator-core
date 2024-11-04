@@ -4,6 +4,9 @@ import os
 import re
 
 from app.chain import create_summary_chain
+from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
+from app.db_model.database import SessionLocal
+from app.db_model.database_models import OrgRSrc
 from app.formatter.code_formatter import parse_augmented_chunk
 from app.process.java_parser import parse_java_file
 
@@ -168,10 +171,9 @@ def make_summary_with_llm(chunk:BaseChunkMeta):
     """chunk를 받아서 LLM을 사용하여 summary를 만듬"""
 
     # check - Dao클래스는 패스 (건설공제 기준)
-    if isinstance(chunk, JavaChunkMeta):
-        chunk.
+    # if isinstance(chunk, JavaChunkMeta):
+    #     chunk.
     
-
     # create_summary_chain 호출
     summary_chain = create_summary_chain()
     
@@ -219,7 +221,7 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     last_modified = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
 
     # summary 추가
-    if "Dao.java" not in file_name:
+    if "Dao.java" in file_name:
         print(f"{file_name}에 Dao.java가 포함되어 있습니다.")
     
     for chunk in chunks:
@@ -231,7 +233,98 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     # save_chunks(chunks, extension, last_modified)
     return chunks
 
+def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
+    """
+    파일을 청크로 분할하고 DB에 저장합니다.
+    
+    Args:
+        file_path: 파일 경로
+        org_resrc_id: 원본 리소스 ID
+        session: DB 세션
+        
+    Returns:
+        청크 리스트
+    """
+    
+    if session is None:
+        session = SessionLocal()
+        
+    chunk_list = []
+    try:
+        # 원본 파일 정보 저장
+        orgRSrcRepository = OrgRSrcRepository(session=session)
+        org_resrc = orgRSrcRepository.create_org_resrc(file_path=file_path, type="01", desc="JAVA")
+        
+        print(f" ### org_resrc = {str(org_resrc)}")
+
+        # 파일 chunking
+        chunk_list = chunk_file(file_path)
+        
+        # chunking 데이터 저장
+        for idx, chunk in enumerate(chunk_list, start=1):
+            if chunk is None:
+                continue
+            
+            if isinstance(chunk, JavaChunkMeta):
+                data_name = chunk.function_name # 함수명
+                data_type = 'code'  # 데이터 유형 (예: code)
+                context_chunk = chunk.summary  # 컨텍스트 청크
+                document_metadata = chunk.summary   # 문서의 메타데이터
+                
+            elif isinstance(chunk, SQLChunkMeta):
+                data_name = chunk.table_name + f"({chunk.table_korean_name})" # 함수명
+                data_type = 'DDL'  # 데이터 유형 (예: code)
+                context_chunk = chunk.summary  # 컨텍스트 청크
+                document_metadata = chunk.summary   # 문서의 메타데이터
+                
+            else: # 알 수 없는 유형의 데이터
+                data_name = 'unknown'
+                data_type = 'unknown'
+                context_chunk = 'unknown'
+                document_metadata = 'unknown'
+
+            chunkedDataRepository = ChunkedDataRepository(session=session)
+            chunked_data = chunkedDataRepository.create_chunked_data(idx + 1
+                                                                    , org_resrc.id
+                                                                    , data_name
+                                                                    , data_type
+                                                                    , chunk.chunk_content
+                                                                    , context_chunk
+                                                                    , document_metadata)
+        # 세션 커밋
+        session.commit()
+        
+    except Exception as e:
+        session.rollback()
+        print(f"### Error processing file {file_path}: {e}")
+    
+    return org_resrc, chunk_list
 
 
 
+    # # Java 파일 파싱 (함수별로 split)
+    # def parse_java(self):
+    #     class_info, methods = parse_java_file(self.file_path)
+        
+    #     return class_info, methods
 
+    # # XML 파일 파싱 (MyBatis 형식)
+    # def parse_xml(self):
+    #     tree = ET.parse(self.file_path)
+    #     root = tree.getroot()
+
+    #     # MyBatis 매퍼 추출 예시 (select, insert, update 등 태그)
+    #     queries = []
+    #     for elem in root.findall('.//select'):
+    #         queries.append(ET.tostring(elem, encoding='unicode'))
+    #     return queries
+
+    # # JS 파일 파싱 (함수별로 split)
+    # def parse_js(self):
+    #     with open(self.file_path, 'r', encoding='utf-8') as f:
+    #         content = f.read()
+
+    #     # 간단한 함수 추출 패턴 (function 키워드 사용)
+    #     pattern = r'function\s+(\w+)\s*\(.*?\)\s*\{'
+    #     functions = re.findall(pattern, content)
+    #     return functions

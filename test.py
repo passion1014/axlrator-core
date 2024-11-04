@@ -8,9 +8,11 @@ import os
 import uuid  # 청크 ID를 생성하기 위해 사용
 from uuid import uuid4
 from langchain_core.documents import Document
+from app.db_model.database import SessionLocal
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
-faissVectorDB = FaissVectorDB()
+session = SessionLocal()
+faissVectorDB = FaissVectorDB(session, index_name="cg_code_assist")
 
 
 def test_read_index():
@@ -28,7 +30,7 @@ def test_read_index():
     print(f"### Distance between stored vector and query vector: {distance}")
     '''
     
-    faissVectorDB.read_index(index_name="cg_code_assist")
+    faissVectorDB.read_index()
     search_result = faissVectorDB.search_similar_documents(query="whether", k=10)
     print(f"### search_result = {search_result}")
 

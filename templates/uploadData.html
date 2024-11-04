@@ -91,9 +91,9 @@
 
             // 선택된 체크박스가 있는지 확인
             const selectedCheckboxes = document.querySelectorAll('.select-checkbox:checked');
-            if (selectedCheckboxes.length === 0) {
+            if (selectedCheckboxes.length !== 1) {
                 alertBox.style.display = 'block';
-                alertBox.textContent = '그리드에서 하나 이상의 항목을 선택해주세요.';
+                alertBox.textContent = '그리드에서 하나의 항목을 선택해주세요.';
                 return;
             }
 
@@ -109,11 +109,12 @@
             for (const file of fileInput.files) {
                 formData.append('files', file);
             }
-            // 선택된 FAISS ID 추가
-            formData.append('selectedIds', JSON.stringify(selectedIds));
+            // 선택된 FAISS ID 추가 (단건)
+            const selectedId = document.querySelector('.select-checkbox:checked').dataset.id;
+            formData.append('selectedId', JSON.stringify(selectedId));
 
             // 비동기 요청으로 파일 업로드
-            fetch('/api/upload/uploadFile', {
+            fetch('/upload/api/uploadFile', {
                 method: 'POST',
                 body: formData
             })

@@ -4,6 +4,7 @@ from typing import List, Tuple, TypedDict
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 from langserve.pydantic_v1 import BaseModel, Field
+from app.db_model.database import SessionLocal
 from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT, CODE_SUMMARY_GENERATE_PROMPT
 from app.prompts.sql_prompt import SQL_QUERY_PROMPT
 from langgraph.graph import StateGraph, END
@@ -69,8 +70,10 @@ class AgentState(TypedDict):
 def create_rag_chain():
     # retriever 선언
     # retriever = load_vector_database()
-    faissVectorDB = FaissVectorDB()
-    faissVectorDB.read_index(index_name="cg_code_assist")
+    session = SessionLocal()
+    
+    faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
+    faissVectorDB.read_index()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
@@ -112,8 +115,10 @@ def create_text_to_sql_chain():
     """
     text를 받아서 sql을 만들어줌
     """
-    faissVectorDB = FaissVectorDB()
-    faissVectorDB.read_index(index_name="cg_text_to_sql")
+    session = SessionLocal()
+
+    faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_text_to_sql")
+    faissVectorDB.read_index()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])

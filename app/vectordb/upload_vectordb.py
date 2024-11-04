@@ -26,6 +26,8 @@ def load_and_detect_encoding(file_path):
         text = file.read()
     return text
 
+
+# 이건 테스트를 위한 함수. - 사용하지 않음
 def vector_upload(file_path, index_name):
     # 파일 내용 로드 및 처리
     text = load_and_detect_encoding(file_path)
@@ -65,5 +67,4 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
 
-
-    vector_upload(args.file_path, args.index_name)
+    # vector_upload(args.file_path, args.index_name)
