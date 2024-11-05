@@ -25,8 +25,13 @@
                 <label for="file-upload">파일 업로드:</label>
                 <input type="file" id="file-upload" name="files" multiple class="form-control-file">
             </div>
-
-                    <!-- FAISS Info Table -->
+            
+            <!-- 프로그레스 바 추가 -->
+            <div class="progress mb-3" style="display:none;" id="progress-container">
+                <div id="upload-progress" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            
+            <!-- FAISS Info Table -->
             <h2>FAISS 인덱스 정보</h2>
             <div class="table-responsive">
                 <table class="table table-bordered" id="faiss-info-table">
@@ -113,20 +118,38 @@
             const selectedId = document.querySelector('.select-checkbox:checked').dataset.id;
             formData.append('selectedId', JSON.stringify(selectedId));
 
+            // 프로그레스 바 표시
+            const progressBar = document.getElementById('upload-progress');
+            progressBar.style.display = 'block';
+            progressBar.value = 0;
+
             // 비동기 요청으로 파일 업로드
-            fetch('/upload/api/uploadFile', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-                fetchFaissInfo();  // 파일 업로드 후 데이터 갱신
-            })
-            .catch((error) => {
-                console.error('Error:', error);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload/api/uploadFile');
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.value = percentComplete;
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    console.log('Success:', data);
+                    fetchFaissInfo();  // 파일 업로드 후 데이터 갱신
+                    progressBar.style.display = 'none';
+                }
+            };
+
+            xhr.onerror = () => {
+                console.error('Error:', xhr.statusText);
+                progressBar.style.display = 'none';
                 // 오류 처리 (ex: 오류 메시지 표시)
-            });
+            };
+
+            xhr.send(formData);
         }
     </script>
 </body>

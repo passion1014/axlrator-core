@@ -96,6 +96,27 @@ class SQLChunkMeta(BaseChunkMeta):
         return json.dumps(base_data)
 
 
+class TermsDataChunkMeta(BaseChunkMeta):
+    def __init__(self, chunk_content, code=None, value=None ):
+        super().__init__(chunk_content=chunk_content, type="TERMS")
+        self.code = code
+        self.value = value
+        self.set_summary(f"{self.code} = {self.value}")
+
+    def __repr__(self):
+        return (f"TermsDataChunkMeta:{self.to_json()}")
+
+    def to_json(self):
+        """청크 메타 정보를 JSON 문자열로 변환"""
+        # BaseChunkMeta의 to_json을 활용하여 확장
+        base_data = json.loads(super().to_json())
+        base_data.update({
+            "code": self.code,
+            "value": self.value,
+        })
+        return json.dumps(base_data)
+
+
 
 def read_file(file_path):
     """Read the content of the given file path."""
@@ -167,6 +188,39 @@ def split_ddl_simple(content:str) -> list[BaseChunkMeta]:
     
     return chunks
 
+def split_terms(content:str) -> list[BaseChunkMeta]:
+    # 라인별로 split
+    split_text = content.splitlines()
+    
+    # 빈 라인 제거
+    split_text = [line for line in split_text if line.strip()]
+    
+    # 첫 번째 요소는 비어있을 수 있으므로 제거 
+    if split_text[0] == '':
+        split_text = split_text[1:]
+    
+    # 각 요소 앞에 'TERMS '를 붙여서 원래 구조를 유지
+    # split_text = ['TERMS ' + section.strip() for section in split_text]
+    
+    # chunks 선언
+    chunks = []
+    for text in split_text:
+        parts = text.split('=')
+        code = parts[0]  # 영문 용어명
+        value = parts[1]  # 한글명
+        
+        # TermsDataChunkMeta 객체 생성
+        chunk = TermsDataChunkMeta(
+            chunk_content=text,
+            code=code,
+            value=value,
+        )
+        
+        chunks.append(chunk)
+    
+    return chunks
+
+
 def make_summary_with_llm(chunk:BaseChunkMeta):
     """chunk를 받아서 LLM을 사용하여 summary를 만듬"""
 
@@ -209,6 +263,9 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
 
     elif extension == ".ddl_simple":
         chunks = split_ddl_simple(content)
+
+    elif extension == ".terms":
+        chunks = split_terms(content)
         
     elif extension == ".xml":
         print(f"xml 파일 처리 예정")
@@ -265,6 +322,8 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
             if chunk is None:
                 continue
             
+            print(f"청크 타입: {type(chunk)}")
+            
             if isinstance(chunk, JavaChunkMeta):
                 data_name = chunk.function_name # 함수명
                 data_type = 'code'  # 데이터 유형 (예: code)
@@ -276,7 +335,13 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
                 data_type = 'DDL'  # 데이터 유형 (예: code)
                 context_chunk = chunk.summary  # 컨텍스트 청크
                 document_metadata = chunk.summary   # 문서의 메타데이터
-                
+
+            elif isinstance(chunk, TermsDataChunkMeta):
+                data_name = chunk.code # 함수명
+                data_type = 'terms'  # 데이터 유형 (예: javascript)
+                context_chunk = chunk.summary  # 컨텍스트 청크
+                document_metadata = chunk.summary   # 문서의 메타데이터
+
             else: # 알 수 없는 유형의 데이터
                 data_name = 'unknown'
                 data_type = 'unknown'

@@ -63,15 +63,8 @@ async def upload_file(files: list[UploadFile] = File(...), selectedId: str = For
     # faiss_info 조회
     faiss_info = faissinfo_repository.get_faiss_info_by_id(faiss_info_id=selected_id)
     
-    # faiss_vector_db = FaissVectorDB(db_session=session, index_name=index_name)
-    # faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
-    # if faiss_info is None:
-    #     faiss_info = faiss_vector_db.psql_docstore.insert_faiss_info()
-    #     print(f"# 기저장된 {index_name}의 FAISS 정보가 없습니다. 생성합니다.")
-
     # 벡터처리
     process_vectorize(index_name=faiss_info.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
-
 
     # 벡터 업로드 로직
     # if saved_files and selected_ids:
