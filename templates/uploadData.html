@@ -50,8 +50,18 @@
                 </table>
             </div>
 
-            <!-- Save Button -->
-            <button type="button" class="btn btn-primary" onclick="handleSubmit()">저장</button>
+            <!-- Buttons Container -->
+            <div class="d-flex justify-content-between mt-3">
+                <!-- Left Buttons Group -->
+                <div class="left-buttons">
+                    <button type="button" class="btn btn-success" onclick="handleGenerate()">FAISS생성</button>
+                </div>
+                
+                <!-- Right Buttons Group -->
+                <div class="right-buttons">
+                    <button type="button" class="btn btn-primary" onclick="handleSubmit()">저장</button>
+                </div>
+            </div>
         </form>
 
     </div>
@@ -151,6 +161,29 @@
 
             xhr.send(formData);
         }
+
+        function openFaissCreatePopup() {
+            // 팝업 창의 크기와 위치 설정
+            const width = 800;
+            const height = 600;
+            const left = (window.innerWidth - width) / 2;
+            const top = (window.innerHeight - height) / 2;
+
+            // 팝업 창 열기
+            window.open('/faiss/createFaissPop', 'FAISS 생성',
+                `width=${width},
+                height=${height},
+                left=${left},
+                top=${top},
+                location=no,
+                menubar=no,
+                toolbar=no,
+                status=no,
+                scrollbars=yes,
+                resizable=yes`
+            );
+        }
+        
     </script>
 </body>
 
