@@ -162,6 +162,42 @@ class FaissVectorDB:
         
         return faiss_index
 
+    def get_all_documents(self):
+        """
+        벡터 스토어에 저장된 모든 문서들의 목록을 반환합니다.
+
+        Returns:
+            list: 저장된 모든 문서 목록. 각 문서는 딕셔너리 형태로 반환됩니다.
+        """
+        try:
+            # 전체 벡터 개수 확인
+            total_vectors = self.vector_store.index.ntotal
+            print(f"### 전체 벡터 개수: {total_vectors}")
+            
+            # 모든 문서 정보를 저장할 리스트
+            all_documents = []
+            
+            # 각 인덱스에 대해 문서 정보 조회
+            for idx in range(total_vectors):
+                # docstore_id 가져오기 
+                docstore_id = self.vector_store.index_to_docstore_id.get(idx)
+                print(f"##### docstore_id = {docstore_id}")
+                
+                if docstore_id:
+                    # PostgreSQL에서 문서 정보 조회
+                    document = self.psql_docstore.get_document_by_index(
+                        faiss_info_id=self.psql_docstore.get_faiss_info().id,
+                        faiss_index=idx
+                    )
+                    if document:
+                        all_documents.append(document)
+            
+            return all_documents
+            
+        except Exception as e:
+            print(f"### 문서 목록 조회 중 오류 발생: {str(e)}")
+            return []
+
 
     def search_similar_documents(self, faiss_info_id, query, k=10):
         # 쿼리를 임베딩으로 변환

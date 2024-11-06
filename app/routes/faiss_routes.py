@@ -30,6 +30,55 @@ async def get_faiss_info(db: Session = Depends(get_db)):
             "created_at": info.created_at,
             "modified_by": info.modified_by,
             "created_by": info.created_by} for info in faiss_info_list]
+    
+# FAISS 벡터 조회를 위한 엔드포인트
+@router.post("/api/search")
+async def search_faiss_vector(request: Request, db: Session = Depends(get_db)):
+    try:
+        # 요청 데이터 파싱
+        data = await request.json()
+        
+        index_name = data.get('index_name')
+        search_text = data.get('search_text')
+        top_k = data.get('top_k', 5) # 기본값 5
+        
+        # 필수 파라미터 체크
+        if not index_name or not search_text:
+            return {
+                "success": False,
+                "message": "index_name과 search_text는 필수 파라미터입니다."
+            }
+
+        # FAISS 벡터 DB 초기화
+        faiss_vector_db = FaissVectorDB(db_session=db, index_name=index_name)
+        faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
+        print(f"### FAISS 정보 >> id={faiss_info.id}, index_name={faiss_info.index_name}, index_desc={faiss_info.index_desc}, index_file_path={faiss_info.index_file_path}")
+        
+        # 유사도 검색 실행
+        # search_results = faiss_vector_db.search_similar_documents(faiss_info_id=faiss_info.id, query=search_text, k=top_k)
+        faiss_vector_db.read_index() 
+        search_results = faiss_vector_db.get_all_documents()
+        
+        # 전체 문서 목록 출력
+        print(f"### 전체 문서 목록: {len(search_results)}")
+        for doc in search_results:
+            print(f"문서 ID: {doc['id']}, 내용: {doc['content']}, 메타데이터: {doc['metadata']}")
+
+        
+        # 결과 반환
+        return {
+            "success": True,
+            "message": "검색이 성공적으로 완료되었습니다.",
+            "data": search_results
+        }
+
+    except Exception as e:
+        logger.error(f"FAISS 검색 중 오류 발생: {str(e)}")
+        return {
+            "success": False, 
+            "message": f"검색 중 오류가 발생했습니다: {str(e)}"
+        }
+
 
 # FAISS 저장을 위한 엔드포인트
 @router.post("/api/create")
