@@ -93,6 +93,7 @@ class FaissVectorDB:
 
         # 임베딩 모델 가져오기
         self.embeddings = get_embedding_model()
+        self.embedding_dimension = self.embeddings.embed_query("임베딩 벡터 차원")
 
         # index 셋팅
         # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
@@ -101,8 +102,7 @@ class FaissVectorDB:
         # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
         # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
         # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
-        self.index = faiss.IndexFlatL2(len(self.embeddings.embed_query("임베딩 벡터 차원")))
-        
+        self.index = faiss.IndexFlatL2(len(self.embedding_dimension))
         
         self.psql_docstore = PostgresDocstore(db_session, index_name=self.index_name)
 
@@ -238,7 +238,7 @@ class FaissVectorDB:
         faiss_info = self.psql_docstore.get_faiss_info()
 
         if faiss_info == None:
-            return None
+            raise ValueError(f"{self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")
 
         self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
 
