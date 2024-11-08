@@ -1,0 +1,62 @@
+{% extends 'common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+<script>
+  $(document).ready(function () {
+    $("#search-btn").on("click", function () {
+      const term = $("#term-input").val();
+
+      $.ajax({
+        url: "/completion/api/terms",
+        type: "GET",
+        contentType: "application/json",
+        data: JSON.stringify({ term: term }),
+        success: function (data) {
+          $("#result-container").empty();
+
+          data.forEach((item, index) => {
+            const title = `<h5>${index + 1}. ${item.title}</h5>`;
+            const items = item.items
+              .map(
+                (val) => `
+                                <div class="d-flex align-items-center mb-2">
+                                    <span>●</span><span class="data" style="cursor: pointer;"> ${val}</span>                                    
+                                </div>
+                            `
+              )
+              .join("");
+
+            $("#result-container").append(title + items);
+          });
+
+          $(".d-flex").on("click", function () {
+            const text = $(this).find("span.data").text();
+            navigator.clipboard.writeText(text);
+            alert(`${text} 복사 완료!`);
+          });
+        },
+      });
+    });
+  });
+</script>
+
+<div class="row">
+  <!-- 메인 콘텐츠 영역 -->
+  <div class="col-md-9 col-lg-8">
+    <div class="mt-4">
+      <div class="section text-area-group">
+        <h2 class="mb-4">용어 변환</h2>
+        <div class="input-group mb-3">
+          <input
+            type="text"
+            id="term-input"
+            class="form-control"
+            placeholder="검색어를 입력하세요. (콤마로 다건입력가능)"
+          />
+          <button id="search-btn" class="btn btn-primary">조회</button>
+        </div>
+        <div id="result-container"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
