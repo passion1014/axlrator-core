@@ -1,17 +1,20 @@
-import json
-import re
+import os
 from dotenv import load_dotenv
-from typing import TypedDict
+from typing import List, Tuple, TypedDict
+from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
+from langserve.pydantic_v1 import BaseModel, Field
 from app.db_model.database import SessionLocal
 from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT, CODE_SUMMARY_GENERATE_PROMPT
 from app.prompts.sql_prompt import SQL_QUERY_PROMPT
 from langgraph.graph import StateGraph, END
-from app.prompts.term_conversion_prompt import TERM_CONVERSION_PROMPT
-from app.utils import get_llm_model
+from langchain_community.vectorstores import FAISS
+from app.prompts.prompts import ANSWER_PROMPT
+from app.utils import combine_documents, merge_chat_history, get_embedding_model, get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from .config import setup_logging
 from langfuse.callback import CallbackHandler
+from langchain_core.output_parsers import StrOutputParser
 from langchain_anthropic import ChatAnthropic
 
 # .env 파일 로드
@@ -150,68 +153,12 @@ def create_text_to_sql_chain():
     chain = workflow.compile()
     chain.with_config(callbacks=[CallbackHandler()])    
     
-    return chain
-
-
-# 용어변환 체인 생성
-def create_term_conversion_chain():
-    """
-    용어를 변환하기 위한 체인을 생성합니다
-    """
-    session = SessionLocal()
-
-    faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_terms") 
-    faissVectorDB.read_index()
-    
-    # 모델 선언
-    model = get_llm_model().with_config(callbacks=[CallbackHandler()])
-
-    def get_context(state: AgentState) -> AgentState:
-        print(f"------------------------ get_context state['question'] = {state['question']}")
-        docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
-        print(f"### search_result = {docs}")
-
-        state['context'] = docs
-        return state
-
-    def generate_response(state: AgentState) -> AgentState:        
-        prompt = TERM_CONVERSION_PROMPT.format(korean_term=state['question'], related_info=state['context'])
-        response = model.invoke(prompt)
-        
-        # AIMessage 객체에서 텍스트 콘텐츠 추출
-        response_text = response.content if hasattr(response, 'content') else str(response)
-
-        # <answer> 태그 안의 내용 추출 및 JSON 형태로 변환
-        pattern = r"<answer>\s*snake_case:\s*(\w+)\s*camelCase:\s*(\w+)\s*</answer>"
-        match = re.search(pattern, response_text)
-        
-        if match:
-            parsed_response = {
-                "snake_case": match.group(1),
-                "camel_case": match.group(2)
-            }
-            state['response'] = json.dumps(parsed_response, ensure_ascii=False)
-        else:
-            state['response'] = json.dumps({"error": "No valid answer found"}, ensure_ascii=False)
-        
-        return state
-    
-    workflow = StateGraph(AgentState)
-
-    # 노드 정의
-    workflow.add_node("get_context", get_context)
-    workflow.add_node("generate_response", generate_response)
-
-    # 워크플로우 정의 
-    workflow.set_entry_point("get_context")
-    workflow.add_edge("get_context", "generate_response")
-    workflow.add_edge("generate_response", END)
-
-    chain = workflow.compile()
-    chain.with_config(callbacks=[CallbackHandler()])
+    # prompt_chain = (
+    #     SQL_QUERY_PROMPT | get_llm_model().with_config(callbacks=[CallbackHandler()]) | StrOutputParser()
+    # )
+    # return prompt_chain
     
     return chain
-
 
 def create_summary_chain():
     """

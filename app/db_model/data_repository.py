@@ -156,18 +156,6 @@ class ChunkedDataRepository:
             session: SQLAlchemy 세션 객체
         """
         self.session = session
-        
-    def get_chunked_data_by_faiss_info_id(self, faiss_info_id: int) -> list[ChunkedData]:
-        """
-        FAISS 정보 ID로 ChunkedData 목록을 조회합니다.
-        
-        Args:
-            faiss_info_id: FAISS 정보 ID
-            
-        Returns:
-            list[ChunkedData]: ChunkedData 목록
-        """
-        return self.session.query(ChunkedData).filter(ChunkedData.faiss_info_id == faiss_info_id).all()
     
     def get_chunked_data_by_org_resrc_id(self, org_resrc_id: int) -> list[ChunkedData]:
         """
@@ -250,8 +238,6 @@ class ChunkedDataRepository:
             
         chunked_data.modified_at = datetime.now()
         chunked_data.modified_by = modified_by
-        
-        print(f"### ChunkedData 정보 >> id={chunked_data.id}, seq={chunked_data.seq}, org_resrc_id={chunked_data.org_resrc_id}, data_name={chunked_data.data_name}, data_type={chunked_data.data_type}, content={chunked_data.content}, context_chunk={chunked_data.context_chunk}, document_metadata={chunked_data.document_metadata}, faiss_info_id={chunked_data.faiss_info_id}, vector_index={chunked_data.vector_index}, modified_at={chunked_data.modified_at}, modified_by={chunked_data.modified_by}")
         
         self.session.add(chunked_data)
         self.session.flush()

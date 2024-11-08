@@ -1,6 +1,6 @@
 
 from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
-from app.vectordb.faiss_vectordb import FaissVectorDB
+from app.vectordb.faiss_vectordb import FaissVectorDB, PostgresDocstore
 
 
 def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
@@ -32,9 +32,6 @@ def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
     faiss_vector_db = FaissVectorDB(db_session=session, index_name=index_name)
     orgrsrc_repository = OrgRSrcRepository(session=session)
     chunkeddata_Repository = ChunkedDataRepository(session=session)
-    
-    # 기존에 저장된 벡터DB 불러오기
-    faiss_vector_db.read_index()
 
     # FAISS_INFO 파라미터가 없으면 조회
     if faiss_info is None:
@@ -68,6 +65,3 @@ def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
 
     # FAISS_INFO에 저장 및 .index 파일 생성
     faiss_vector_db.write_index()
-    
-    # 세션 커밋
-    session.commit()
