@@ -4,6 +4,9 @@ from langserve import add_routes
 from app.chain import create_anthropic_chain, create_openai_chain, create_rag_chain, create_text_to_sql_chain
 from fastapi import FastAPI
 from app.config import STATIC_DIR
+
+
+from app.routes.completion_routes import router as completion_router
 from app.routes.upload_routes import router as upload_router
 from app.routes.faiss_routes import router as faiss_router
 from app.routes.eclipse_routes import router as eclipse_router
@@ -29,7 +32,7 @@ webServerApp.include_router(upload_router, prefix="/upload") # 업로드 라우�
 webServerApp.include_router(faiss_router, prefix="/faiss") # faiss 라우터 등록
 webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록
 webServerApp.include_router(sample_router, prefix="/sample")
-webServerApp.include_router(sample_router, prefix="/completion")
+webServerApp.include_router(completion_router, prefix="/completion")
 
 # 체인 등록
 add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
