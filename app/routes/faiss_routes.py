@@ -49,21 +49,17 @@ async def search_faiss_vector(request: Request, db: Session = Depends(get_db)):
                 "message": "index_name과 search_text는 필수 파라미터입니다."
             }
 
+        ### 아래 내용은 조회할때 마다 초기화해서는 안되는 부분이다. 서버 로딩시 초기화할지 확인 필요 ###
+        
         # FAISS 벡터 DB 초기화
         faiss_vector_db = FaissVectorDB(db_session=db, index_name=index_name)
         faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
         print(f"### FAISS 정보 >> id={faiss_info.id}, index_name={faiss_info.index_name}, index_desc={faiss_info.index_desc}, index_file_path={faiss_info.index_file_path}")
         
         # 유사도 검색 실행
-        # search_results = faiss_vector_db.search_similar_documents(faiss_info_id=faiss_info.id, query=search_text, k=top_k)
         faiss_vector_db.read_index() 
-        search_results = faiss_vector_db.get_all_documents()
-        
-        # 전체 문서 목록 출력
-        print(f"### 전체 문서 목록: {len(search_results)}")
-        for doc in search_results:
-            print(f"문서 ID: {doc['id']}, 내용: {doc['content']}, 메타데이터: {doc['metadata']}")
-
+        search_results = faiss_vector_db.search_similar_documents(query=search_text, k=top_k)
+        # search_results = faiss_vector_db.get_all_documents()
         
         # 결과 반환
         return {
