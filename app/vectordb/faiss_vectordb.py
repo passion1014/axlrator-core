@@ -63,15 +63,25 @@ class PostgresDocstore:
             return {"content": result.content, "metadata": result.document_metadata}
         return None
     
-
-    def get_document_by_index(self, faiss_info_id, vector_index) -> Optional[Dict[str, any]]:
+    def get_chunked_data_by_faiss_info_id(self, faiss_info_id: int) -> list[ChunkedData]:
         """vector_index 조회"""
-        
+
+        return self.session.query(ChunkedData).filter(ChunkedData.faiss_info_id == faiss_info_id).all()
+
+    def get_document_by_index(self, vector_index) -> Optional[Dict[str, any]]:
+        """vector_index 조회"""
         # Numpy int64 값을 Python의 int로 변환
         vector_index = int(vector_index) 
         
-        stmt = select(ChunkedData).where((ChunkedData.vector_index == vector_index) & (ChunkedData.faiss_info_id == faiss_info_id))
+        # stmt = select(ChunkedData).where((ChunkedData.vector_index == vector_index) & (ChunkedData.faiss_info_id == faiss_info_id))
+        # result = self.session.execute(stmt).scalar_one_or_none()
+        stmt = (
+            select(ChunkedData)
+            .join(FaissInfo, ChunkedData.faiss_info_id == FaissInfo.id)
+            .where((ChunkedData.vector_index == vector_index) & (FaissInfo.index_name == self.index_name))
+        )
         result = self.session.execute(stmt).scalar_one_or_none()
+        
         if result:
             return {"content": result.content, "metadata": result.document_metadata}
         return None
@@ -93,6 +103,7 @@ class FaissVectorDB:
 
         # 임베딩 모델 가져오기
         self.embeddings = get_embedding_model()
+        self.embedding_dimension = self.embeddings.embed_query("임베딩 벡터 차원")
 
         # index 셋팅
         # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
@@ -101,8 +112,7 @@ class FaissVectorDB:
         # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
         # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
         # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
-        self.index = faiss.IndexFlatL2(len(self.embeddings.embed_query("임베딩 벡터 차원")))
-        
+        self.index = faiss.IndexFlatL2(len(self.embedding_dimension))
         
         self.psql_docstore = PostgresDocstore(db_session, index_name=self.index_name)
 
@@ -173,6 +183,7 @@ class FaissVectorDB:
             # 전체 벡터 개수 확인
             total_vectors = self.vector_store.index.ntotal
             print(f"### 전체 벡터 개수: {total_vectors}")
+            print(f"### self.vector_store.index_to_docstore_id: {self.vector_store.index_to_docstore_id}")
             
             # 모든 문서 정보를 저장할 리스트
             all_documents = []
@@ -181,14 +192,11 @@ class FaissVectorDB:
             for idx in range(total_vectors):
                 # docstore_id 가져오기 
                 docstore_id = self.vector_store.index_to_docstore_id.get(idx)
-                print(f"##### docstore_id = {docstore_id}")
+                print(f"##### docstore_id = {idx}, {docstore_id}")
                 
                 if docstore_id:
                     # PostgreSQL에서 문서 정보 조회
-                    document = self.psql_docstore.get_document_by_index(
-                        faiss_info_id=self.psql_docstore.get_faiss_info().id,
-                        faiss_index=idx
-                    )
+                    document = self.psql_docstore.get_document_by_index(idx)
                     if document:
                         all_documents.append(document)
             
@@ -199,7 +207,7 @@ class FaissVectorDB:
             return []
 
 
-    def search_similar_documents(self, faiss_info_id, query, k=10):
+    def search_similar_documents(self, query, k=10):
         # 쿼리를 임베딩으로 변환
         query_embedding = self.embeddings.embed_query(query)
         
@@ -213,14 +221,14 @@ class FaissVectorDB:
         # FAISS에서 유사한 벡터 검색 (k는 찾을 유사 벡터의 수)
         distances, indices = self.vector_store.index.search(query_embedding, k)
 
-        # 검색된 인덱스와 거리 출력
-        print(f"### Distances: {distances}, Indices: {indices}")
-        # 매핑된 문서 ID 정보 출력
-        print(f"### index_to_docstore_id mapping: {self.vector_store.index_to_docstore_id}")
+        # # 검색된 인덱스와 거리 출력
+        # print(f"### Distances: {distances}, Indices: {indices}")
+        # # 매핑된 문서 ID 정보 출력
+        # print(f"### index_to_docstore_id mapping: {self.vector_store.index_to_docstore_id}")
         
         # PostgreSQL에서 문서 가져오기
         results = [
-            self.psql_docstore.get_document_by_index(faiss_info_id, idx)
+            self.psql_docstore.get_document_by_index(idx)
             for idx in indices[0] # 현재는 1개의 쿼리만을 사용하기 때문에 하드코딩, 다중 쿼리를 사용할 경우 수정되어야 함
             if idx != -1  # 유효하지 않은 인덱스 (-1) 무시
         ]
@@ -238,9 +246,16 @@ class FaissVectorDB:
         faiss_info = self.psql_docstore.get_faiss_info()
 
         if faiss_info == None:
-            return None
+            raise ValueError(f"{self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")
 
+        # 1. FAISS 인덱스 파일 로드
         self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
+
+        # 2. 데이터베이스에서 index_to_docstore_id 매핑 정보 로드
+        mappings = self.psql_docstore.get_chunked_data_by_faiss_info_id(faiss_info.id)
+        self.vector_store.index_to_docstore_id = {mapping.vector_index: mapping.id for mapping in mappings}
+
+        print("### FAISS 인덱스와 매핑 정보가 성공적으로 로드되었습니다.")
 
         # 인덱스의 기본 정보 출력
         print(f"### PostgresDocstore에서 FAISS 정보 읽기 >> index_name={self.index_name}, index_file_path={faiss_info.index_file_path}")
@@ -256,15 +271,19 @@ class FaissVectorDB:
         # else:
         #     print("### Index is empty.")
 
+    def restore_index_to_docstore_id(self):
+        # 모든 ChunkedData 레코드를 조회하여 인덱스와 docstore_id를 매핑
+        results = self.session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
+        # index_to_docstore_id 매핑 재구성
+        self.vector_store.index_to_docstore_id = {vector_index: org_resrc_id for vector_index, org_resrc_id in results}
+        print("### index_to_docstore_id 매핑이 복구되었습니다.")
+
     # def restore_index_to_docstore_id(self):
     #     # 모든 ChunkedData 레코드 조회
     #     results = self.session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
         
     #     # 매핑 정보 재구성
     #     self.vector_store.index_to_docstore_id = {vector_index: org_resrc_id for vector_index, org_resrc_id in results}
-        
-    #     print("### index_to_docstore_id mapping restored")
-
 
     # 예제) 유사한 문서 검색
     # similar_docs = search_similar_documents(vector_store, query="test document")
