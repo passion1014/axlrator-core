@@ -171,7 +171,11 @@ def create_term_conversion_chain():
         docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
         print(f"### search_result = {docs}")
 
-        state['context'] = docs
+        # content 값만 추출하여 콤마로 구분된 문자열 생성
+        context_string = ", ".join([doc['content'] for doc in docs if 'content' in doc])
+        print(f"### context_string = {context_string}")
+
+        state['context'] = context_string
         return state
 
     def generate_response(state: AgentState) -> AgentState:        

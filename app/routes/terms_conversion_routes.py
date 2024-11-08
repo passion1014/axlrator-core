@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import TEMPLATE_DIR, setup_logging
 from pydantic import BaseModel
 
-from app.chain import create_rag_chain, create_term_conversion_chain, create_text_to_sql_chain
+from app.chain import create_term_conversion_chain
 
 
 logger = setup_logging()
