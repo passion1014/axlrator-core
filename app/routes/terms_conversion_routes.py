@@ -25,6 +25,14 @@ class SQLRequest(BaseModel):
 class CodeRequest(BaseModel):
     question: str
 
+
+# 용어변환 페이지 
+@router.get("/terms", response_class=HTMLResponse)
+async def ui_code(request: Request):
+    return templates.TemplateResponse("completion/termsconversion.html", {"request": request, "message": "용어변환"})
+
+
+
 # code assist 요청 엔드포인트
 @router.post("/api/conv")
 async def term_conversion_endpoint(request: CodeRequest):
