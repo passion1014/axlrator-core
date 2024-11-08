@@ -5,8 +5,8 @@
       const term = $("#term-input").val();
 
       $.ajax({
-        url: "/completion/api/terms",
-        type: "GET",
+        url: "/termsconversion/api/conv",
+        type: "POST",
         contentType: "application/json",
         data: JSON.stringify({ term: term }),
         success: function (data) {
