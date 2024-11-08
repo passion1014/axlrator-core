@@ -26,15 +26,15 @@ webServerApp.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # 라우터 등록
 # ---------------------------------------
 webServerApp.include_router(upload_router, prefix="/upload") # 업로드 라우터 등록
-#webServerApp.include_router(faiss_router, prefix="/faiss") # faiss 라우터 등록
+webServerApp.include_router(faiss_router, prefix="/faiss") # faiss 라우터 등록
 webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록
 webServerApp.include_router(sample_router, prefix="/sample")
 webServerApp.include_router(sample_router, prefix="/completion")
 
 # 체인 등록
-#add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
-#add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
-#add_routes(webServerApp, create_openai_chain(), path="/openai", enable_feedback_endpoint=True)
+add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
+add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
+add_routes(webServerApp, create_openai_chain(), path="/openai", enable_feedback_endpoint=True)
 add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 
 # 플러그인 용
