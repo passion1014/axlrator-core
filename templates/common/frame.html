@@ -12,9 +12,43 @@
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
       feather.replace();
+
+      $("html").css("overflow", "auto");
+      function showLoading() {
+        $(".loading").css("display", "flex");
+      }
+
+      function hideLoading() {
+        $(".loading").css("display", "none");
+      }
+
+      //$(".loading").css("display", "none");
     </script>
+    <style>
+      html {
+        overflow: "hidden";
+      }
+      .loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 10;
+        transition: 0.5s ease;
+        display: none;
+        justify-content: center; /* 가로로 가운데 정렬 */
+        align-items: center; /* 세로로 가운데 정렬 */
+      }
+    </style>
   </head>
   <body>
+    <!-- 로딩 화면 -->
+    <div class="loading">
+      <div class="spinner-border" role="status"></div>
+      Loading...
+    </div>
     <div class="container-fluid">
       <div class="row">
         <!-- 사이드바 포함 -->

@@ -1,190 +1,166 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'common/frame.html' %} {% block title %}건설공제 파일 업로드 (Test버전) {% endblock %} {% block content %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Construction Guarantee</title>
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/style.css?version=1" rel="stylesheet">
-</head>
+<script>
+  // 페이지 로드 시 FAISS Info 데이터 가져오기
+  document.addEventListener("DOMContentLoaded", fetchFaissInfo);
 
-<body>
-    <div class="container mt-5 p-4 shadow-lg bg-white rounded">
-        <h1>{{ message }}</h1>
-        <p class="text-center">파일 업로드 및 VectorDB + RDB에 내용 저장을 위한 테스트 페이지</p>
+  function fetchFaissInfo() {
+    fetch("/upload/api/faiss_info")
+      .then((response) => response.json())
+      .then((data) => {
+        const tbody = document.getElementById("faiss-info-tbody");
+        tbody.innerHTML = ""; // 기존 내용 지우기
+        data.forEach((info) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                              <td><input type="checkbox" class="select-checkbox" data-id="${info.id}"></td>
+                              <td>${info.id}</td>
+                              <td>${info.index_name}</td>
+                              <td>${info.index_desc}</td>
+                              <td>${info.index_file_path}</td>
+                          `;
+          tbody.appendChild(row);
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching FAISS Info:", error);
+      });
+  }
 
-        <!-- 경고 메시지 -->
-        <div id="alert" class="alert alert-danger" role="alert" style="display:none;">
-            파일을 선택해주세요.
-        </div>
+  function handleSubmit() {
+    const fileInput = document.getElementById("file-upload");
+    const alertBox = document.getElementById("alert");
 
-        <!-- Multi File Upload Component -->
-        <form id="uploadForm">
-            <div class="form-group file-upload">
-                <label for="file-upload">파일 업로드:</label>
-                <input type="file" id="file-upload" name="files" multiple class="form-control-file">
-            </div>
-            
-            <!-- 프로그레스 바 추가 -->
-            <div class="progress mb-3" style="display:none;" id="progress-container">
-                <div id="upload-progress" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            
-            <!-- FAISS Info Table -->
-            <h2>FAISS 인덱스 정보</h2>
-            <div class="table-responsive">
-                <table class="table table-bordered" id="faiss-info-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">선택</th>
-                            <th style="width: 5%;">ID</th>
-                            <th style="width: 20%;">인덱스명</th>
-                            <th style="width: 40%;">인덱스 설명</th>
-                            <th style="width: 30%;">인덱스 파일 경로</th>
-                        </tr>
-                    </thead>
-                    <tbody id="faiss-info-tbody">
-                        <!-- 데이터는 여기로 추가됩니다. -->
-                    </tbody>
-                </table>
-            </div>
+    // 경고 메시지 숨기기
+    alertBox.style.display = "none";
 
-            <!-- Buttons Container -->
-            <div class="d-flex justify-content-between mt-3">
-                <!-- Left Buttons Group -->
-                <div class="left-buttons">
-                    <button type="button" class="btn btn-success" onclick="handleGenerate()">FAISS생성</button>
-                </div>
-                
-                <!-- Right Buttons Group -->
-                <div class="right-buttons">
-                    <button type="button" class="btn btn-primary" onclick="handleSubmit()">저장</button>
-                </div>
-            </div>
-        </form>
+    // 선택된 체크박스가 있는지 확인
+    const selectedCheckboxes = document.querySelectorAll(".select-checkbox:checked");
+    if (selectedCheckboxes.length !== 1) {
+      alertBox.style.display = "block";
+      alertBox.textContent = "그리드에서 하나의 항목을 선택해주세요.";
+      return;
+    }
 
+    // 파일이 선택되지 않았을 경우 경고 메시지 표시
+    if (fileInput.files.length === 0) {
+      alertBox.style.display = "block";
+      alertBox.textContent = "파일을 선택해주세요.";
+      return;
+    }
+
+    // FormData에 파일 데이터 추가
+    const formData = new FormData();
+    for (const file of fileInput.files) {
+      formData.append("files", file);
+    }
+    // 선택된 FAISS ID 추가 (단건)
+    const selectedId = document.querySelector(".select-checkbox:checked").dataset.id;
+    formData.append("selectedId", JSON.stringify(selectedId));
+
+    // 프로그레스 바 표시
+    showLoading();
+
+    // 비동기 요청으로 파일 업로드
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/upload/api/uploadFile");
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percentComplete = (e.loaded / e.total) * 100;
+        progressBar.value = percentComplete;
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText);
+        console.log("Success:", data);
+        fetchFaissInfo(); // 파일 업로드 후 데이터 갱신
+        hideLoading();
+      }
+    };
+
+    xhr.onerror = () => {
+      console.error("Error:", xhr.statusText);
+      hideLoading();
+      // 오류 처리 (ex: 오류 메시지 표시)
+    };
+
+    xhr.send(formData);
+  }
+
+  function openFaissCreatePopup() {
+    // 팝업 창의 크기와 위치 설정
+    const width = 800;
+    const height = 600;
+    const left = (window.innerWidth - width) / 2;
+    const top = (window.innerHeight - height) / 2;
+
+    // 팝업 창 열기
+    window.open(
+      "/faiss/createFaissPop",
+      "FAISS 생성",
+      `width=${width},
+                  height=${height},
+                  left=${left},
+                  top=${top},
+                  location=no,
+                  menubar=no,
+                  toolbar=no,
+                  status=no,
+                  scrollbars=yes,
+                  resizable=yes`
+    );
+  }
+</script>
+
+<div class="container mt-5 p-4 shadow-lg bg-white rounded">
+  <h1>{{ message }}</h1>
+  <p class="text-center">파일 업로드 및 VectorDB + RDB에 내용 저장을 위한 테스트 페이지</p>
+
+  <!-- 경고 메시지 -->
+  <div id="alert" class="alert alert-danger" role="alert" style="display: none">파일을 선택해주세요.</div>
+
+  <!-- Multi File Upload Component -->
+  <form id="uploadForm">
+    <div class="form-group file-upload">
+      <label for="file-upload">파일 업로드:</label>
+      <input type="file" id="file-upload" name="files" multiple class="form-control-file" />
     </div>
 
-    <!-- Bootstrap JS 및 종속성 -->
-    <script src="static/js/jquery-3.5.1.slim.min.js"></script>
-    <script src="static/js/popper.min.js"></script>
-    <script src="static/js/bootstrap.min.js"></script>
-    <script>
-        // 페이지 로드 시 FAISS Info 데이터 가져오기
-        document.addEventListener('DOMContentLoaded', fetchFaissInfo);
+    <!-- FAISS Info Table -->
+    <h2>FAISS 인덱스 정보</h2>
+    <div class="table-responsive">
+      <table class="table table-bordered" id="faiss-info-table">
+        <thead>
+          <tr>
+            <th style="width: 5%">선택</th>
+            <th style="width: 5%">ID</th>
+            <th style="width: 20%">인덱스명</th>
+            <th style="width: 40%">인덱스 설명</th>
+            <th style="width: 30%">인덱스 파일 경로</th>
+          </tr>
+        </thead>
+        <tbody id="faiss-info-tbody">
+          <!-- 데이터는 여기로 추가됩니다. -->
+        </tbody>
+      </table>
+    </div>
 
-        function fetchFaissInfo() {
-            fetch('/upload/api/faiss_info')
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.getElementById('faiss-info-tbody');
-                    tbody.innerHTML = ""; // 기존 내용 지우기
-                    data.forEach(info => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td><input type="checkbox" class="select-checkbox" data-id="${info.id}"></td>
-                            <td>${info.id}</td>
-                            <td>${info.index_name}</td>
-                            <td>${info.index_desc}</td>
-                            <td>${info.index_file_path}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching FAISS Info:', error);
-                });
-        }
-                
-        function handleSubmit() {
-            const fileInput = document.getElementById('file-upload');
-            const alertBox = document.getElementById('alert');
+    <!-- Buttons Container -->
+    <div class="d-flex justify-content-between mt-3">
+      <!-- Left Buttons Group -->
+      <div class="left-buttons">
+        <button type="button" class="btn btn-success" onclick="handleGenerate()">FAISS생성</button>
+      </div>
 
-            // 경고 메시지 숨기기
-            alertBox.style.display = 'none';
+      <!-- Right Buttons Group -->
+      <div class="right-buttons">
+        <button type="button" class="btn btn-primary" onclick="handleSubmit()">저장</button>
+      </div>
+    </div>
+  </form>
+</div>
 
-            // 선택된 체크박스가 있는지 확인
-            const selectedCheckboxes = document.querySelectorAll('.select-checkbox:checked');
-            if (selectedCheckboxes.length !== 1) {
-                alertBox.style.display = 'block';
-                alertBox.textContent = '그리드에서 하나의 항목을 선택해주세요.';
-                return;
-            }
-
-            // 파일이 선택되지 않았을 경우 경고 메시지 표시
-            if (fileInput.files.length === 0) {
-                alertBox.style.display = 'block';
-                alertBox.textContent = '파일을 선택해주세요.';
-                return;
-            }
-
-            // FormData에 파일 데이터 추가
-            const formData = new FormData();
-            for (const file of fileInput.files) {
-                formData.append('files', file);
-            }
-            // 선택된 FAISS ID 추가 (단건)
-            const selectedId = document.querySelector('.select-checkbox:checked').dataset.id;
-            formData.append('selectedId', JSON.stringify(selectedId));
-
-            // 프로그레스 바 표시
-            const progressBar = document.getElementById('upload-progress');
-            progressBar.style.display = 'block';
-            progressBar.value = 0;
-
-            // 비동기 요청으로 파일 업로드
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload/api/uploadFile');
-
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percentComplete = (e.loaded / e.total) * 100;
-                    progressBar.value = percentComplete;
-                }
-            };
-
-            xhr.onload = () => {
-                if (xhr.status === 200) {
-                    const data = JSON.parse(xhr.responseText);
-                    console.log('Success:', data);
-                    fetchFaissInfo();  // 파일 업로드 후 데이터 갱신
-                    progressBar.style.display = 'none';
-                }
-            };
-
-            xhr.onerror = () => {
-                console.error('Error:', xhr.statusText);
-                progressBar.style.display = 'none';
-                // 오류 처리 (ex: 오류 메시지 표시)
-            };
-
-            xhr.send(formData);
-        }
-
-        function openFaissCreatePopup() {
-            // 팝업 창의 크기와 위치 설정
-            const width = 800;
-            const height = 600;
-            const left = (window.innerWidth - width) / 2;
-            const top = (window.innerHeight - height) / 2;
-
-            // 팝업 창 열기
-            window.open('/faiss/createFaissPop', 'FAISS 생성',
-                `width=${width},
-                height=${height},
-                left=${left},
-                top=${top},
-                location=no,
-                menubar=no,
-                toolbar=no,
-                status=no,
-                scrollbars=yes,
-                resizable=yes`
-            );
-        }
-        
-    </script>
-</body>
-
-</html>
+{% endblock %}
