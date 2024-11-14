@@ -43,7 +43,7 @@ def get_llm_model():
 
     model = None
 
-    if llm_model in ['EEVE-Korean-10.8B:latest']: # ChatOllama
+    if llm_model in ['EEVE-Korean-10.8B:latest', 'gemma2:9b', 'gemma2:27b']: # ChatOllama
         from langchain_community.chat_models import ChatOllama
         model = ChatOllama(model=llm_model, base_url="http://host.docker.internal:11434")
         
