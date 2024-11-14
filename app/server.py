@@ -1,7 +1,7 @@
 import os
 from fastapi.staticfiles import StaticFiles
 from langserve import add_routes
-from app.chain import create_anthropic_chain, create_openai_chain, create_rag_chain, create_term_conversion_chain, create_text_to_sql_chain
+from app.chain import create_anthropic_chain, create_llm_chain, create_rag_chain, create_term_conversion_chain, create_text_to_sql_chain
 from fastapi import FastAPI
 from app.config import STATIC_DIR
 from app.routes.upload_routes import router as upload_routes
@@ -37,7 +37,7 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 # 체인 등록
 # add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
-# add_routes(webServerApp, create_openai_chain(), path="/openai", enable_feedback_endpoint=True)
+add_routes(webServerApp, create_llm_chain(), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 
 # 플러그인 용

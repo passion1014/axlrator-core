@@ -153,6 +153,7 @@ def create_text_to_sql_chain():
     return chain
 
 
+
 # 용어변환 체인 생성
 def create_term_conversion_chain():
     """
@@ -178,7 +179,7 @@ def create_term_conversion_chain():
         state['context'] = context_string
         return state
 
-    def generate_response(state: AgentState) -> AgentState:        
+    def generate_response(state: AgentState) -> AgentState:
         prompt = TERM_CONVERSION_PROMPT.format(korean_term=state['question'], related_info=state['context'])
         response = model.invoke(prompt)
         
@@ -228,9 +229,34 @@ def create_summary_chain():
 
 
 # openai 체인 생성
-def create_openai_chain():
-    return ChatOpenAI(model="gpt-3.5-turbo-0125")
+def create_llm_chain():
+    return get_llm_model().with_config(callbacks=[CallbackHandler()])
 
 # anthropic 체인 생성
 def create_anthropic_chain():
     return ChatAnthropic(model="claude-3-haiku-20240307")
+
+# 테스트용
+def sample_chain():
+    # 모델 선언
+    model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+
+    def generate_response(state: AgentState) -> AgentState:        
+        prompt = TERM_CONVERSION_PROMPT.format(korean_term=state['question'], related_info=state['context'])
+        response = model.invoke(prompt)
+        state['response'] = str(response)
+        return state
+    
+    workflow = StateGraph(AgentState)
+
+    # 노드 정의
+    workflow.add_node("generate_response", generate_response)
+
+    # 워크플로우 정의 
+    workflow.set_entry_point("generate_response")
+    workflow.add_edge("generate_response", END)
+
+    chain = workflow.compile()
+    chain.with_config(callbacks=[CallbackHandler()])
+    
+    return chain
