@@ -259,3 +259,16 @@ docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server -v /Users/p
 set OLLAMA_HOST=0.0.0.0
 ollama serve
 ```
+
+
+
+# 작업히스토리
+## 모델 관련
+
+### 2024-11-14
+ollama pull qwen2.5
+ollama pull gemma2
+ollama pull gemma2:27b
+ollama pull mistral-nemo
+ollama pull bge-m3
+
