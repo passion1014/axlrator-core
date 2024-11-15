@@ -263,8 +263,11 @@ ollama serve
 
 
 # 작업히스토리
-## 모델 관련
 
+### 2024-11-14 배포본 (SHA)
+   cc8312ca0662a1fc9c188655daba20ea02350f9c
+
+## 모델 관련
 ### 2024-11-14
 ollama pull qwen2.5
 ollama pull gemma2

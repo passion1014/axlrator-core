@@ -4,3 +4,4 @@
 .DS_Store
 venv
 workflow/working
+example/example/*.html
