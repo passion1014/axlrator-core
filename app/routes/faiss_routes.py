@@ -57,7 +57,7 @@ async def search_faiss_vector(request: Request, db: Session = Depends(get_db)):
         print(f"### FAISS 정보 >> id={faiss_info.id}, index_name={faiss_info.index_name}, index_desc={faiss_info.index_desc}, index_file_path={faiss_info.index_file_path}")
         
         # 유사도 검색 실행
-        faiss_vector_db.read_index() 
+        # faiss_vector_db.read_index() 
         search_results = faiss_vector_db.search_similar_documents(query=search_text, k=top_k)
         # search_results = faiss_vector_db.get_all_documents()
         
