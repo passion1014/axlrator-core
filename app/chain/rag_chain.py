@@ -1,4 +1,5 @@
 from typing import TypedDict
+from app.chain import AgentState
 from app.db_model.database import SessionLocal
 from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT
 from langgraph.graph import StateGraph, END
@@ -7,11 +8,6 @@ from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
 
 
-class AgentState(TypedDict):
-    # chat_history: List[Tuple[str, str]]
-    question: str
-    context: str
-    response: str
 
 
 def create_rag_chain():
@@ -66,17 +62,11 @@ def create_rag_chain():
 
 # Helper function: contextual_enrichment
 def contextual_enrichment(query):
-    """
-    질문에 맥락을 추가로 풍부화하는 함수.
-    """
     # LLM을 이용하여 질문의 의도를 확장하거나 관련 정보를 추가
     enriched_query = f"{query} | Additional Context: Extract function and variable relationships."
     return enriched_query
 
 # Helper function: combine_documents_with_relevance
 def combine_documents_with_relevance(docs):
-    """
-    검색된 문서를 관련성에 기반하여 결합하는 함수.
-    """
     combined_context = "\n".join([doc['content'] for doc in sorted(docs, key=lambda x: x['score'], reverse=True)])
     return combined_context

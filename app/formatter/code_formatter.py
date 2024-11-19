@@ -10,11 +10,18 @@ class AugmentedChunkMetadata(BaseModel):
 
 # Augmented Chunk 파싱 함수
 def parse_augmented_chunk(text: str) -> AugmentedChunkMetadata:
-    # <metadata> 태그 추출
+    # 함수명 추출 - <function_name> 태그 사이의 내용을 가져옴
     function_name = re.search(r"<function_name>(.*?)</function_name>", text).group(1)
+    
+    # 요약 추출 - <summary> 태그 사이의 내용을 가져옴
     summary = re.search(r"<summary>(.*?)</summary>", text).group(1)
+    
+    # features 태그 전체 내용 추출 
     features = re.findall(r"<features>\s*-(.*?)\s*</features>", text, re.DOTALL)
+    
+    # features 목록에서 각 항목('-' 로 시작하는) 추출하여 공백 제거
     features = [feature.strip() for feature in re.findall(r"- (.*?)\n", text)]
+
     # code = re.search(r"<code>(.*?)</code>", text, re.DOTALL).group(1).strip()
 
     # JSON 변환을 위한 모델 인스턴스 생성
