@@ -4,7 +4,7 @@ import re
 import xml.etree.ElementTree as ET
 import luigi
 
-from app.process.content_chunker import JavaChunkMeta, SQLChunkMeta, chunk_file, file_chunk_and_save
+from app.process.content_chunker import file_chunk_and_save
 from app.db_model.database import SessionLocal
 
 

@@ -8,7 +8,8 @@ from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepositor
 from app.db_model.database import SessionLocal
 from app.db_model.database_models import OrgRSrc
 from app.formatter.code_formatter import parse_augmented_chunk
-from app.process.java_parser import parse_java_file
+from app.process.contextual_process import generate_code_context
+from app.process.java_parser import parse_java_file, should_skip_by_line_count
 
 class BaseChunkMeta:
     def __init__(self, chunk_content, start_line=-1, end_line=-1, type="base"):
@@ -221,74 +222,69 @@ def split_terms(content:str) -> list[BaseChunkMeta]:
     return chunks
 
 
-def make_summary_with_llm(chunk:BaseChunkMeta):
-    """chunk를 받아서 LLM을 사용하여 summary를 만듬"""
+def get_file_type(file_path: str) -> str:
+    """파일 경로를 받아서 파일 타입을 반환합니다.
+    
+    Args:
+        file_path: 파일 경로
+        
+    Returns:
+        str: 파일 타입 (java, ddl, terms, xml 등)
+    """
+    extension = get_file_extension(file_path)
+    
+    # 확장자별 파일 타입 결정
+    if extension == ".java":
+        return "java"
+    elif extension == ".ddl_simple": 
+        return "ddl"
+    elif extension == ".terms":
+        return "terms"
+    elif extension == ".xml":
+        return "xml"
+    else:
+        return "unknown"
 
-    # check - Dao클래스는 패스 (건설공제 기준)
-    # if isinstance(chunk, JavaChunkMeta):
-    #     chunk.
     
-    # create_summary_chain 호출
-    summary_chain = create_summary_chain()
-    
-    # 요약 생성을 위한 프롬프트 입력
-    inputs = {
-        "CODE_CHUNK": chunk.chunk_content
-    }
-    
-    # summary_chain 실행
-    try:
-        summary_ai_message = summary_chain.invoke(inputs) # result = AIMessage 타입
-        parsed_ai_message = parse_augmented_chunk(summary_ai_message.content)
-        parsed_json_message = json.loads(parsed_ai_message.model_dump_json())  # Pydantic v2의 기본 json 메서드를 사용해 JSON으로 변환
-        result = json.dumps(parsed_json_message, ensure_ascii=False, indent=4)
-        # print(f"####### summary={result}")
-        # print(parsed_json_message.get("summary"))        
-    except Exception as e:
-        result = ""
-        print(f"에러발생-summary chain execution: {e}")
-    
-    return result
-
 
 def chunk_file(file_path) -> list[BaseChunkMeta]:
     """Main function to chunk a file based on its extension."""
     file_name = os.path.basename(file_path)
     content = read_file(file_path)
     extension = get_file_extension(file_path)
+    file_type = get_file_type(file_path)
 
     # 파일 확장자에 따라 청크 분할 로직 선택
-    if extension == ".java":
+    if file_type == "java":
         chunks = split_java_file(content)
-
-    elif extension == ".ddl_simple":
+    elif file_type == "ddl":
         chunks = split_ddl_simple(content)
-
-    elif extension == ".terms":
+    elif file_type == "terms":
         chunks = split_terms(content)
-        
-    elif extension == ".xml":
+    elif file_type == "xml":
         print(f"xml 파일 처리 예정")
-        
     else:
-        print(f"File extension '{extension}' is not supported for chunking.")
+        print(f"File type 'file_type={file_type} : extension={extension}' is not supported for chunking.")
 
     # 파일의 최종 수정일 가져오기 
     last_modified = os.path.getmtime(file_path)
     last_modified = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
 
     # summary 추가
-    if "Dao.java" in file_name:
-        print(f"{file_name}에 Dao.java가 포함되어 있습니다.")
-    
-    for chunk in chunks:
-        if isinstance(chunk, JavaChunkMeta):
-            summary = make_summary_with_llm(chunk)
-            chunk.set_summary(summary)
+    # - Dao.java로 끝나는 항목은 스킵
+    # - 함수의 바디가 없는 경우 스킵 
+    if file_type == 'java' and "Dao.java" not in file_name:
+        for chunk in chunks:
+            # 함수의 라인 수를 기준으로 건너뛸지 여부를 확인
+            if not should_skip_by_line_count(function_body=chunk.chunk_content, max_lines=3):
+                # 코드 요약정보 생성
+                summary = generate_code_context(chunk.chunk_content)
+                chunk.set_summary(summary)
     
     # 청크 정보 저장
     # save_chunks(chunks, extension, last_modified)
     return chunks
+
 
 def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
     """

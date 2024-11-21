@@ -36,7 +36,7 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 
 # 체인 등록
 # add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
-# add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
+add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
 add_routes(webServerApp, create_llm_chain(), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 

@@ -34,7 +34,7 @@ def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
     chunkeddata_Repository = ChunkedDataRepository(session=session)
     
     # 기존에 저장된 벡터DB 불러오기
-    faiss_vector_db.read_index()
+    # faiss_vector_db.read_index()
 
     # FAISS_INFO 파라미터가 없으면 조회
     if faiss_info is None:

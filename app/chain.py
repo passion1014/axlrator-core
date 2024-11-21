@@ -70,7 +70,7 @@ def create_rag_chain():
     session = SessionLocal()
     
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
-    faissVectorDB.read_index()
+    # faissVectorDB.read_index()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
@@ -115,7 +115,7 @@ def create_text_to_sql_chain():
     session = SessionLocal()
 
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_text_to_sql")
-    faissVectorDB.read_index()
+    # faissVectorDB.read_index()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
@@ -162,7 +162,7 @@ def create_term_conversion_chain():
     session = SessionLocal()
 
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_terms") 
-    faissVectorDB.read_index()
+    # faissVectorDB.read_index()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])

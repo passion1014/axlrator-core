@@ -1,8 +1,0 @@
-Parsing file: /app/rag_server/data/input/program/AdditonExtensionBCServiceImpl.java
-========================================
-Class Info:
-{'class_signature': 'public class AdditonExtensionBCServiceImpl implements AdditonExtensionBCService ', 'package': 'com.cg.sa.ag.additonextensionmgmt.service.impl', 'class_type': 'class', 'class_name': 'AdditonExtensionBCServiceImpl', 'extends': None, 'implements': ['AdditonExtensionBCService'], 'imports': ['java.util.ArrayList', 'java.util.HashMap', 'java.util.Iterator', 'java.util.List', 'java.util.Map', 'javax.annotation.Resource', 'org.springframework.stereotype.Service', 'org.springframework.util.ObjectUtils', 'com.cg.custom.cmmn.exception.CgAppUserException', 'com.cg.custom.cmmn.fw.util.DateUtil', 'com.cg.custom.cmmn.util.MapDataUtil', 'com.cg.custom.cmmn.util.UserHeaderUtil', 'com.cg.sa.ag.additonextensionmgmt.service.AdditonExtensionBCService', 'com.cg.sa.ag.common.SAAGConstants', 'com.cg.sa.gu.common.GUUtil', 'com.cg.sa.gu.common.SAGUConstants', 'com.inswave.elfw.exception.ElException', 'com.inswave.elfw.log.AppLog', 'com.inswave.ext.cg.util.CodeUtil'], 'fields': [], 'methods': [], 'method_count': 0, 'last_modified': None}
-
-Methods:
-
-

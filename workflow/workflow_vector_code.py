@@ -1,16 +1,14 @@
 from app.db_model.data_repository import OrgRSrcRepository
 from app.process.vectorize_process import process_vectorize
 import luigi
-from app.db_model.database_models import OrgRSrc, ChunkedData  # 정의된 ORM 모델들
-from datetime import datetime, time
+from datetime import datetime
 from app.db_model.database import SessionLocal
-from app.vectordb.faiss_vectordb import FaissVectorDB, PostgresDocstore  # 청크 ID를 생성하기 위해 사용
+from app.vectordb.faiss_vectordb import FaissVectorDB  # 청크 ID를 생성하기 위해 사용
 
 # 임베딩 함수: 예시로 랜덤 벡터 생성
 def embed_content(embeddings, content):
     # 텍스트를 임베딩
     embedded_vector = embeddings.embed_documents(content)
-    # print(f"### embedded_vector 결과 = {embedded_vector}")
     
     return embedded_vector
 

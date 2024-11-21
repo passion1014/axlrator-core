@@ -96,36 +96,52 @@ class PostgresDocstore:
 
 
 class FaissVectorDB:
+    # 클래스 수준의 캐시
+    _loaded_indices = {}
+
     def __init__(self, db_session: Session, index_name: str):
         self.session = db_session
         self.index_name = index_name
-        self.index_file_path = f'data/vector/{self.index_name}.index' # ex) cg_text_to_sql, cg_code_assist
+        self.index_file_path = f'data/vector/{self.index_name}.index'
 
         # 임베딩 모델 가져오기
         self.embeddings = get_embedding_model()
         self.embedding_dimension = self.embeddings.embed_query("임베딩 벡터 차원")
 
-        # index 셋팅
-        # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
-        # •	IndexFlatIP: 내적 기반 유사도 계산, 코사인 유사도와 유사한 결과 제공.
-        # •	IndexLSH: 근사 검색을 위한 해싱 기반 방법으로 대규모 데이터에 적합.
-        # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
-        # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
-        # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
-        self.index = faiss.IndexFlatL2(len(self.embedding_dimension))
-        
+        # PostgresDocstore 설정
         self.psql_docstore = PostgresDocstore(db_session, index_name=self.index_name)
 
-        # FAISS vector store 선언
-        self.vector_store = FAISS(
-            embedding_function=self.embeddings,
-            index=self.index,
-            docstore=self.psql_docstore,
-            index_to_docstore_id={},
-        )
-        pass
+        # 이미 로드된 인덱스가 있다면 메모리에서 가져옴
+        if index_name in FaissVectorDB._loaded_indices:
+            self.vector_store = FaissVectorDB._loaded_indices[index_name]
+            print(f"### {self.index_name} 인덱스를 메모리에서 로드했습니다.")
+        else:
+            # 새로운 FAISS 인덱스 생성
+            # index 셋팅
+            # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
+            # •	IndexFlatIP: 내적 기반 유사도 계산, 코사인 유사도와 유사한 결과 제공.
+            # •	IndexLSH: 근사 검색을 위한 해싱 기반 방법으로 대규모 데이터에 적합.
+            # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
+            # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
+            # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
+            self.index = faiss.IndexFlatL2(len(self.embedding_dimension))
+            self.vector_store = FAISS(
+                embedding_function=self.embeddings,
+                index=self.index,
+                docstore=self.psql_docstore,
+                index_to_docstore_id={},
+            )
+
+            # 인덱스 파일에서 로드
+            self.read_index()
+
+            # 캐시에 저장
+            FaissVectorDB._loaded_indices[index_name] = self.vector_store
+            print(f"### {self.index_name} 인덱스를 디스크에서 로드하고 캐시에 저장했습니다.")
     
-    
+
+
+
     def as_retriever(self, search_kwargs):
         return self.vector_store.as_retriever(search_kwargs=search_kwargs)
 
@@ -240,23 +256,22 @@ class FaissVectorDB:
         # FAISS 인덱스를 디스크에 저장
         faiss.write_index(self.vector_store.index, self.index_file_path)
         
-        
+
     def read_index(self):
         # PostgresDocstore에서 FAISS 정보 가져오기
         faiss_info = self.psql_docstore.get_faiss_info()
 
-        if faiss_info == None:
+        if faiss_info is None:
             raise ValueError(f"{self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")
 
-        # 1. FAISS 인덱스 파일 로드
+        # FAISS 인덱스 파일 로드
         self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
 
-        # 2. 데이터베이스에서 index_to_docstore_id 매핑 정보 로드
+        # 데이터베이스에서 index_to_docstore_id 매핑 정보 로드
         mappings = self.psql_docstore.get_chunked_data_by_faiss_info_id(faiss_info.id)
         self.vector_store.index_to_docstore_id = {mapping.vector_index: mapping.id for mapping in mappings}
 
-        print("### FAISS 인덱스와 매핑 정보가 성공적으로 로드되었습니다.")
-
+        print(f"### {self.index_name} 인덱스와 매핑 정보를 디스크에서 로드했습니다.")
         # 인덱스의 기본 정보 출력
         print(f"### PostgresDocstore에서 FAISS 정보 읽기 >> index_name={self.index_name}, index_file_path={faiss_info.index_file_path}")
         print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력
@@ -270,6 +285,7 @@ class FaissVectorDB:
         #     print(f"### Distance: {D}, Index: {I}")
         # else:
         #     print("### Index is empty.")
+        
 
     def restore_index_to_docstore_id(self):
         # 모든 ChunkedData 레코드를 조회하여 인덱스와 docstore_id를 매핑
@@ -292,3 +308,15 @@ class FaissVectorDB:
 
     # 예제) 문서 추가
     # add_document_to_store(vector_store, document_id=1, content="This is a test document.", metadata={"source": "test"})
+
+
+    @classmethod
+    def clear_cache(cls):
+        """클래스 캐시를 초기화합니다 (테스트나 필요시 호출)."""
+        cls._loaded_indices.clear()
+        print("### FAISS 인덱스 캐시가 초기화되었습니다.")
+
+
+
+# 캐시를 초기화하여 새로 로드 가능
+# FaissVectorDB.clear_cache()  
