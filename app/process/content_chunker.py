@@ -9,7 +9,7 @@ from app.db_model.database import SessionLocal
 from app.db_model.database_models import OrgRSrc
 from app.formatter.code_formatter import parse_augmented_chunk
 from app.process.contextual_process import generate_code_context
-from app.process.java_parser import parse_java_file
+from app.process.java_parser import parse_java_file, should_skip_by_line_count
 
 class BaseChunkMeta:
     def __init__(self, chunk_content, start_line=-1, end_line=-1, type="base"):
@@ -271,11 +271,15 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     last_modified = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
 
     # summary 추가
+    # - Dao.java로 끝나는 항목은 스킵
+    # - 함수의 바디가 없는 경우 스킵 
     if file_type == 'java' and "Dao.java" not in file_name:
         for chunk in chunks:
-            # 코드 요약정보 생성    
-            summary = generate_code_context(chunk.chunk_content)
-            chunk.set_summary(summary)
+            # 함수의 라인 수를 기준으로 건너뛸지 여부를 확인
+            if not should_skip_by_line_count(function_body=chunk.chunk_content, max_lines=3):
+                # 코드 요약정보 생성
+                summary = generate_code_context(chunk.chunk_content)
+                chunk.set_summary(summary)
     
     # 청크 정보 저장
     # save_chunks(chunks, extension, last_modified)

@@ -289,3 +289,41 @@ if __name__ == '__main__':
         
     #     extract_methods_from_java(java_code)
 
+
+
+def should_skip_by_line_count(function_body: str, max_lines: int = 3) -> bool:
+    """
+    함수의 라인 수를 기준으로 건너뛸지 여부를 확인합니다.
+    Args:
+        function_body (str): 함수 본문 문자열
+        max_lines (int): 건너뛰기 전 허용되는 최대 라인 수
+    
+    Returns:
+        bool: 함수를 건너뛰어야 하면 True, 그렇지 않으면 False
+    """
+    # 함수 본문을 라인 단위로 분할
+    lines = function_body.split("\n")
+    
+    # 빈 줄과 주석만 있는 줄 제거
+    meaningful_lines = [
+        line for line in lines 
+        if line.strip() and not line.strip().startswith("//")
+    ]
+
+    # 의미있는 라인 수가 max_lines 이하인지 확인
+    return len(meaningful_lines) <= max_lines
+
+# Example usage:
+if __name__ == "__main__":
+    # Sample function body as a string
+    sample_function_body = """
+    def example_function():
+        # This is an example function
+        return 42
+    """
+    # Check if the function should be skipped
+    skip = should_skip_by_line_count(sample_function_body, max_lines=3)
+    if skip:
+        print("Function skipped.")
+    else:
+        print("Function processed.")
