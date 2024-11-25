@@ -93,6 +93,8 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
     # 시맨틱 검색 수행
     semantic_results = db.search_similar_documents(query, k=num_chunks_to_recall) 
     ranked_chunk_ids = [(result['metadata']['doc_id'], result['metadata']['original_index']) for result in semantic_results]
+    # 현재 search_similar_documents 결과는 content, metadata를 넘겨주고 있으며, metadata에 값이 존재하지 않는다. TODO
+    
 
     # BM25 검색 수행
     bm25_results = es_bm25.search(query, k=num_chunks_to_recall)
@@ -102,8 +104,10 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
     chunk_ids = list(set(ranked_chunk_ids + ranked_bm25_chunk_ids))
     chunk_id_to_score = {}
 
+    # 각 청크 ID에 대해 시맨틱 검색과 BM25 검색 결과를 결합하여 최종 점수 계산
     for chunk_id in chunk_ids:
         score = 0
+        # 시맨틱 검색 결과에 있는 경우 가중치를 적용한 점수 추가
         if chunk_id in ranked_chunk_ids:
             index = ranked_chunk_ids.index(chunk_id)
             score += semantic_weight * (1 / (index + 1))  # Weighted 1/n scoring for semantic
@@ -124,6 +128,7 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
     semantic_count = 0
     bm25_count = 0
     for chunk_id in sorted_chunk_ids[:k]:
+        # db.metadata 부분 수정 필요
         chunk_metadata = next(chunk for chunk in db.metadata if chunk['doc_id'] == chunk_id[0] and chunk['original_index'] == chunk_id[1])
         is_from_semantic = chunk_id in ranked_chunk_ids
         is_from_bm25 = chunk_id in ranked_bm25_chunk_ids

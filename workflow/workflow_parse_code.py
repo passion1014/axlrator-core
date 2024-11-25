@@ -63,13 +63,17 @@ class ParseFile(luigi.Task):
 class ProcessAllFiles(luigi.Task):
     project_dir = luigi.Parameter()
     # index_name = luigi.Parameter()
+    output_path = ''
 
     def requires(self):
-        return FindFiles(self.project_dir, output_dir=self.output_dir())
+        if not self.output_path:
+            self.output_path = self.output_dir()
+            
+        
+        return FindFiles(self.project_dir, output_dir=self.output_path)
 
     def output(self):
-        # return luigi.LocalTarget('workflow/working/all_files_parsed.txt')
-        return luigi.LocalTarget(f'{self.output_dir()}/all_files_parsed.txt')
+        return luigi.LocalTarget(f'{self.output_path}/all_files_parsed.txt')
 
     def output_dir(self):
         # 오늘 날짜 + 시분초로 중간 디렉토리 생성
@@ -79,6 +83,8 @@ class ProcessAllFiles(luigi.Task):
         # 디렉토리가 없으면 생성
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+            
+        self.output_path = output_dir
 
         return output_dir
 
@@ -90,7 +96,7 @@ class ProcessAllFiles(luigi.Task):
         with find_files_task.output().open('r') as f:
             for file_path in f:
                 file_path = file_path.strip()
-                parse_task = ParseFile(file_path=file_path, output_dir=self.output_dir())
+                parse_task = ParseFile(file_path=file_path, output_dir=self.output_path)
                 luigi.build([parse_task], local_scheduler=True)
                 
         # 모든 파일 처리가 완료되면 완료 파일 생성
