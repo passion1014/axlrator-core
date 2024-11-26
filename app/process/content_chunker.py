@@ -302,7 +302,7 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
     if session is None:
         session = SessionLocal()
         
-    chunk_list = []
+    proc_chunk_list = []
     try:
         # 원본 파일 정보 저장
         orgRSrcRepository = OrgRSrcRepository(session=session)
@@ -311,10 +311,10 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
         print(f" ### org_resrc = {str(org_resrc)}")
 
         # 파일 chunking
-        chunk_list = chunk_file(file_path)
+        file_chunk_list = chunk_file(file_path)
         
         # chunking 데이터 저장
-        for idx, chunk in enumerate(chunk_list, start=1):
+        for idx, chunk in enumerate(file_chunk_list, start=1):
             if chunk is None:
                 continue
             
@@ -352,6 +352,10 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
                                                                     , chunk.chunk_content
                                                                     , context_chunk
                                                                     , document_metadata)
+            
+            # chunk 객체에 seq와 org_resrc_id 값 추가
+            proc_chunk_list.append(chunked_data)
+            
         # 세션 커밋
         session.commit()
         
@@ -359,7 +363,7 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
         session.rollback()
         print(f"### Error processing file {file_path}: {e}")
     
-    return org_resrc, chunk_list
+    return org_resrc, proc_chunk_list
 
 
 

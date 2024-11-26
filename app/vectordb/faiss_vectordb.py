@@ -261,21 +261,23 @@ class FaissVectorDB:
         # PostgresDocstore에서 FAISS 정보 가져오기
         faiss_info = self.psql_docstore.get_faiss_info()
 
-        if faiss_info is None:
-            raise ValueError(f"{self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")
+        if faiss_info is not None:
+            # FAISS 인덱스 파일 로드
+            self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
 
-        # FAISS 인덱스 파일 로드
-        self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
+            # 데이터베이스에서 index_to_docstore_id 매핑 정보 로드
+            mappings = self.psql_docstore.get_chunked_data_by_faiss_info_id(faiss_info.id)
+            self.vector_store.index_to_docstore_id = {mapping.vector_index: mapping.id for mapping in mappings}
 
-        # 데이터베이스에서 index_to_docstore_id 매핑 정보 로드
-        mappings = self.psql_docstore.get_chunked_data_by_faiss_info_id(faiss_info.id)
-        self.vector_store.index_to_docstore_id = {mapping.vector_index: mapping.id for mapping in mappings}
+            print(f"### {self.index_name} 인덱스와 매핑 정보를 디스크에서 로드했습니다.")
+            # 인덱스의 기본 정보 출력
+            print(f"### PostgresDocstore에서 FAISS 정보 읽기 >> index_name={self.index_name}, index_file_path={faiss_info.index_file_path}")
+            print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력
+            print(f"### Dimension of vectors: {self.vector_store.index.d}")  # 벡터의 차원 출력
+        else:
+            # raise ValueError(f"{self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")
+            print(f"### {self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")
 
-        print(f"### {self.index_name} 인덱스와 매핑 정보를 디스크에서 로드했습니다.")
-        # 인덱스의 기본 정보 출력
-        print(f"### PostgresDocstore에서 FAISS 정보 읽기 >> index_name={self.index_name}, index_file_path={faiss_info.index_file_path}")
-        print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력
-        print(f"### Dimension of vectors: {self.vector_store.index.d}")  # 벡터의 차원 출력
 
         # 체크하기! = 첫 번째 벡터(예시) 조회 (자기자신과 비교 할시, 거리가 0이 나와야 정상임)
         # if self.vector_store.index.ntotal > 0:

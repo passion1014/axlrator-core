@@ -14,6 +14,7 @@ from fastapi import Form
 import json
 
 from app.process.vectorize_process import process_vectorize
+from app.vectordb.bm25_search import ElasticsearchBM25, create_elasticsearch_bm25_index
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
 
@@ -42,40 +43,34 @@ async def upload_file(files: list[UploadFile] = File(...), selectedId: str = For
     saved_files = []
     
     faissinfo_repository = FaissInfoRepository(session=session)
+
+    # faiss_info 조회
+    selected_id = json.loads(selectedId) # 선택된 인덱스 ID 파싱
+    faiss_info = faissinfo_repository.get_faiss_info_by_id(faiss_info_id=selected_id)
     
     # 파일 저장 로직
     for file in files:
-        try:
+        # try:
             file_location = upload_dir / file.filename
             with file_location.open("wb") as f:
                 f.write(await file.read())
             saved_files.append(str(file_location))
-            print(f'### 처리된 파일 = {str(file_location)}')
-            org_resrc, chunk_list = file_chunk_and_save(str(file_location), session=session)
             
-        except Exception as e:
-            logger.error(f"Error saving file {file.filename}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error saving file: {file.filename}")
+            # 파일 청킹 및 RDB 저장
+            org_resrc, chunk_list = file_chunk_and_save(str(file_location), session=session)
+            print(f'### 처리된 파일 = {str(file_location)}')
 
-    # 선택된 인덱스 ID 파싱
-    selected_id = json.loads(selectedId)
-    
-    # faiss_info 조회
-    faiss_info = faissinfo_repository.get_faiss_info_by_id(faiss_info_id=selected_id)
-    
-    # 벡터처리
-    process_vectorize(index_name=faiss_info.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
+            # elasticsearch 저장
+            create_elasticsearch_bm25_index(index_name=faiss_info.index_name, org_resrc=org_resrc, chunk_list=chunk_list)
+            print('### elasticsearch 저장')
 
-    # 벡터 업로드 로직
-    # if saved_files and selected_ids:
-    #     try:
-    #         file_path = saved_files[0]
-    #         # selected_ids[0]을 사용하여 인덱스명으로 업로드 진행
-    #         index_name = selected_ids[0]
-    #         vector_upload(file_path, index_name)
-    #     except Exception as e:
-    #         logger.error(f"Error processing file {file_path}: {str(e)}")
-    #         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+            # 벡터처리 및 벡터DB에 저장
+            process_vectorize(index_name=faiss_info.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
+            print('### 벡터처리 및 벡터DB에 저장')
+            
+        # except Exception as e:
+        #     logger.error(f"Error saving file {file.filename}: {str(e)}")
+        #     raise HTTPException(status_code=500, detail=f"Error saving file: {file.filename}")
 
     return {"filenames": saved_files, "selectedIds": selected_id}
 

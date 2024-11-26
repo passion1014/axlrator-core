@@ -148,6 +148,11 @@ alembic upgrade head
 5. **마이그레이션 적용**: `alembic upgrade head` 명령어로 데이터베이스 스키마를 업데이트.
 
 
+### ElasticSearch 설치
+`docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" elasticsearch:8.8.0`
+
+
+
 ## 환경변수
 .env 참조
 
@@ -253,6 +258,12 @@ docker images
 ```bash 
 docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server -v /Users/passion1014/project/langchain/rag_data:/app/rag_data --network rag_server_alfred_network --name rag_server rag_server
 ```
+### 6. 도커 컴포즈
+```bash 
+docker compose down
+docker compose up -d
+```
+
 
 ### Ollama 포트 설정
 ```bash
@@ -278,3 +289,11 @@ ollama pull gemma2:27b
 ollama pull mistral-nemo
 ollama pull bge-m3
 
+
+### 2024-11-26
+pip install elasticsearch
+
+docker-compose.xml
+$ docker-compose up -d
+
+.env 업데이트 필요
