@@ -186,21 +186,10 @@ def create_term_conversion_chain():
         """
 
         try:
-            result = session.execute(
-                "SELECT related_info FROM terms WHERE term_name = :term_name",
-                {"term_name": state['question']}
-            ).fetchone()
-            
-            
             chunkedDataRepository = ChunkedDataRepository(session=session)
             rdb_contexts = chunkedDataRepository.get_chunked_data_by_content(data_type='terms', content=state['question'])
+            print(f"### get_chunked_data_by_content result = {rdb_contexts}")
             
-            rdb_contexts
-
-
-            if result and 'related_info' in result.keys():
-                state['context'] += f", {result['related_info']}" if state['context'] else result['related_info']
-            print(f"### RDB fetch result = {result}")
         except Exception as e:
             print(f"### Error fetching RDB data: {e}")
             state['context'] += ", Error fetching RDB data"
@@ -230,6 +219,7 @@ def create_term_conversion_chain():
         return state
     
     workflow = StateGraph(AgentState)
+
 
     # 노드 정의
     workflow.add_node("fetch_rdb_data", fetch_rdb_data)
