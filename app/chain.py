@@ -3,6 +3,7 @@ import re
 from dotenv import load_dotenv
 from typing import TypedDict
 from langchain_openai import ChatOpenAI
+from app.db_model.data_repository import ChunkedDataRepository
 from app.db_model.database import SessionLocal
 from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT, CODE_SUMMARY_GENERATE_PROMPT
 from app.prompts.sql_prompt import SQL_QUERY_PROMPT
@@ -179,6 +180,33 @@ def create_term_conversion_chain():
         state['context'] = context_string
         return state
 
+    def fetch_rdb_data(state: AgentState) -> AgentState:
+        """
+        RDB에서 데이터를 조회하여 state에 추가합니다.
+        """
+
+        try:
+            result = session.execute(
+                "SELECT related_info FROM terms WHERE term_name = :term_name",
+                {"term_name": state['question']}
+            ).fetchone()
+            
+            
+            chunkedDataRepository = ChunkedDataRepository(session=session)
+            rdb_contexts = chunkedDataRepository.get_chunked_data_by_content(data_type='terms', content=state['question'])
+            
+            rdb_contexts
+
+
+            if result and 'related_info' in result.keys():
+                state['context'] += f", {result['related_info']}" if state['context'] else result['related_info']
+            print(f"### RDB fetch result = {result}")
+        except Exception as e:
+            print(f"### Error fetching RDB data: {e}")
+            state['context'] += ", Error fetching RDB data"
+
+        return state
+
     def generate_response(state: AgentState) -> AgentState:
         prompt = TERM_CONVERSION_PROMPT.format(korean_term=state['question'], related_info=state['context'])
         response = model.invoke(prompt)
@@ -204,11 +232,14 @@ def create_term_conversion_chain():
     workflow = StateGraph(AgentState)
 
     # 노드 정의
+    workflow.add_node("fetch_rdb_data", fetch_rdb_data)
     workflow.add_node("get_context", get_context)
     workflow.add_node("generate_response", generate_response)
 
     # 워크플로우 정의 
-    workflow.set_entry_point("get_context")
+    workflow.set_entry_point("fetch_rdb_data")
+    workflow.add_edge("fetch_rdb_data", "generate_response", condition=lambda state: bool(state.get('context')))
+    workflow.add_edge("fetch_rdb_data", "get_context", condition=lambda state: not bool(state.get('context')))
     workflow.add_edge("get_context", "generate_response")
     workflow.add_edge("generate_response", END)
 
@@ -216,7 +247,6 @@ def create_term_conversion_chain():
     chain.with_config(callbacks=[CallbackHandler()])
     
     return chain
-
 
 def create_summary_chain():
     """

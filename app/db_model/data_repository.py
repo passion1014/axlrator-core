@@ -175,6 +175,15 @@ class ChunkedDataRepository:
         """
         return self.session.query(ChunkedData).filter(ChunkedData.org_resrc_id == org_resrc_id).all()
 
+    def get_chunked_data_by_content(self, data_type:str, content: str) -> list[ChunkedData]:
+        """
+        content를 포함하는 ChunkedData 목록을 조회합니다.
+        """
+        query = self.session.query(ChunkedData).filter(ChunkedData.content.like(f'%{content}%'))
+        if data_type:
+            query = query.filter(ChunkedData.data_type == data_type)
+            
+        return query.all()
 
     def create_chunked_data(self, seq: int, org_resrc_id: int, data_name: str
                             , data_type: str, content: str, context_chunk: str

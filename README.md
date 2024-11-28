@@ -278,6 +278,19 @@ docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=
 
 # 작업히스토리
 
+## 변경파일 카피하기
+
+./copy_changed_files.sh 파일에서 아래 내용을 수정
+- BASE_COMMIT="c78aa6e" # 기준 커밋 (현재는 바로 직전 커밋)
+- CURRENT_COMMIT="3a227f2" # 현재 커밋
+
+실행
+```bash
+$ ./copy_changed_files.sh
+```
+
+
+
 ### 2024-11-14 배포본 (SHA)
    cc8312ca0662a1fc9c188655daba20ea02350f9c
 
