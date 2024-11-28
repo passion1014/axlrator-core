@@ -1,18 +1,24 @@
 import os
 import json
 from typing import List, Dict, Any
+from dotenv import load_dotenv
 from tqdm import tqdm
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
+# .env 파일 로드
+load_dotenv()
+
 # BM25 검색을 위한 Elasticsearch 래퍼 클래스
 class ElasticsearchBM25:
     def __init__(self, index_name: str = "contextual_bm25_index"):
-        self.es_client = Elasticsearch("http://localhost:9200")
+        elasticsearch_host = os.getenv("ELASTICSEARCH_HOST")
+        
+        self.es_client = Elasticsearch(elasticsearch_host)
         self.index_name = index_name
-        self.create_index()
+        self.create_index() # TODO = ElasticsearchBM25 서버 시작시 한번만 초기화 하고 사용할 수 있도록 수정 필요
 
     # Elasticsearch 인덱스 생성 및 설정
     def create_index(self):
@@ -34,7 +40,9 @@ class ElasticsearchBM25:
         }
         if not self.es_client.indices.exists(index=self.index_name):
             self.es_client.indices.create(index=self.index_name, body=index_settings)
-            print(f"Created index: {self.index_name}")
+            print(f"### Created index: {self.index_name}")
+        else :
+            print(f"### Index already exists: {self.index_name}")
 
     # 문서 인덱싱 함수
     def index_documents(self, documents: List[Dict[str, Any]]):
@@ -80,9 +88,25 @@ class ElasticsearchBM25:
         ]
     
 # Elasticsearch BM25 인덱스 생성 함수
-def create_elasticsearch_bm25_index(db: ContextualVectorDB):
-    es_bm25 = ElasticsearchBM25()
-    es_bm25.index_documents(db.metadata) # TODO : metadata?
+# def create_elasticsearch_bm25_index(db: ContextualVectorDB):
+def create_elasticsearch_bm25_index(index_name: str, org_resrc, chunk_list: List):
+    documents = [
+        {
+            "_index": index_name,
+            "original_content": chunk.content,
+            "contextualized_content": chunk.context_chunk,
+            "doc_id": org_resrc.id,
+            "chunk_id": chunk.id,
+            "original_index": chunk.seq, # 문서의 순서
+        }
+        for chunk in chunk_list
+    ]
+    
+    print(f"### create_elasticsearch_bm25_index = {documents}")
+
+    es_bm25 = ElasticsearchBM25(index_name=index_name)
+    es_bm25.index_documents(documents)
+    
     return es_bm25
 
 # 고급 검색 함수 - 시맨틱 검색과 BM25 검색 결과를 결합
@@ -93,7 +117,8 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
     # 시맨틱 검색 수행
     semantic_results = db.search_similar_documents(query, k=num_chunks_to_recall) 
     ranked_chunk_ids = [(result['metadata']['doc_id'], result['metadata']['original_index']) for result in semantic_results]
-
+    # 현재 search_similar_documents 결과는 content, metadata를 넘겨주고 있으며, metadata에 값이 존재하지 않는다. TODO
+    
     # BM25 검색 수행
     bm25_results = es_bm25.search(query, k=num_chunks_to_recall)
     ranked_bm25_chunk_ids = [(result['doc_id'], result['original_index']) for result in bm25_results]
@@ -102,8 +127,10 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
     chunk_ids = list(set(ranked_chunk_ids + ranked_bm25_chunk_ids))
     chunk_id_to_score = {}
 
+    # 각 청크 ID에 대해 시맨틱 검색과 BM25 검색 결과를 결합하여 최종 점수 계산
     for chunk_id in chunk_ids:
         score = 0
+        # 시맨틱 검색 결과에 있는 경우 가중치를 적용한 점수 추가
         if chunk_id in ranked_chunk_ids:
             index = ranked_chunk_ids.index(chunk_id)
             score += semantic_weight * (1 / (index + 1))  # Weighted 1/n scoring for semantic
@@ -124,7 +151,9 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
     semantic_count = 0
     bm25_count = 0
     for chunk_id in sorted_chunk_ids[:k]:
-        chunk_metadata = next(chunk for chunk in db.metadata if chunk['doc_id'] == chunk_id[0] and chunk['original_index'] == chunk_id[1])
+        # db.metadata 부분 수정 필요
+        # chunk_metadata = next(chunk for chunk in db.metadata if chunk['doc_id'] == chunk_id[0] and chunk['original_index'] == chunk_id[1])
+        chunk_metadata = next(chunk for chunk in db.metadata if chunk['doc_id'] == chunk_id[0])
         is_from_semantic = chunk_id in ranked_chunk_ids
         is_from_bm25 = chunk_id in ranked_bm25_chunk_ids
         final_results.append({
@@ -152,7 +181,8 @@ def load_jsonl(file_path: str) -> List[Dict[str, Any]]:
     
 
 # 고급 데이터베이스 평가 함수
-def evaluate_db_advanced(db: ContextualVectorDB, original_jsonl_path: str, k: int):
+# def evaluate_db_advanced(db: ContextualVectorDB, original_jsonl_path: str, k: int):
+def evaluate_db_advanced(db: FaissVectorDB, original_jsonl_path: str, k: int):
     original_data = load_jsonl(original_jsonl_path)
     es_bm25 = create_elasticsearch_bm25_index(db)
     
@@ -229,6 +259,8 @@ def evaluate_db_advanced(db: ContextualVectorDB, original_jsonl_path: str, k: in
             es_bm25.es_client.indices.delete(index=es_bm25.index_name)
             print(f"Deleted Elasticsearch index: {es_bm25.index_name}")
             
+
+
 
 
 

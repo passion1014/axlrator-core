@@ -31,7 +31,7 @@ def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
 
     faiss_vector_db = FaissVectorDB(db_session=session, index_name=index_name)
     orgrsrc_repository = OrgRSrcRepository(session=session)
-    chunkeddata_Repository = ChunkedDataRepository(session=session)
+    chunked_data_Repository = ChunkedDataRepository(session=session)
     
     # 기존에 저장된 벡터DB 불러오기
     # faiss_vector_db.read_index()
@@ -45,7 +45,7 @@ def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
         raise ValueError(f"# 기저장된 {index_name}의 FAISS 정보가 없습니다.")
 
     # org_resrc.id로 ChunkedData 를 조회
-    chunked_data_list = chunkeddata_Repository.get_chunked_data_by_org_resrc_id(org_resrc_id=org_resrc.id)
+    chunked_data_list = chunked_data_Repository.get_chunked_data_by_org_resrc_id(org_resrc_id=org_resrc.id)
 
     # 각각의 ChunkedData에 대해 처리
     for data in chunked_data_list:
@@ -54,7 +54,7 @@ def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
         try:
             # 벡터 인덱스 생성 및 업데이트
             faiss_index = faiss_vector_db.add_embedded_content_to_index(data.id, data.content, metadata)
-            chunkeddata_Repository.update_chunked_data(chunked_data=data, 
+            chunked_data_Repository.update_chunked_data(chunked_data=data, 
                                                     faiss_info_id=faiss_info.id, 
                                                     vector_index=faiss_index, 
                                                     document_metadata=metadata,

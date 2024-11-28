@@ -9,7 +9,7 @@ Here is the Korean term you need to convert:
 {korean_term}
 </korean_term>
 
-Only use the words in <related_info> for the conversion, and if there are no applicable words, do not convert.
+Only use the words in <related_info> for the conversion, and if there are no applicable words, do not convert. exact match only.
 
 <related_info>
 {related_info}

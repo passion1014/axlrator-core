@@ -40,20 +40,31 @@ services:
   rag_server:
     image: rag_server  # 빌드된 이미지 이름
     container_name: rag_server
-    depends_on:
-      langfuse-server:
-        condition: service_healthy
+    # depends_on:
+    #   langfuse-server:
+    #     condition: service_healthy
     ports:
       - "8000:8000"
       - "11434:11434"
     volumes:
       - /Users/passion1014/project/langchain/rag_server:/app/rag_server
       - /Users/passion1014/project/langchain/rag_data:/app/rag_data
-
     networks:
       - alfred_network
     stdin_open: true  # -i 옵션 (인터랙티브 모드)
     tty: true  # -t 옵션 (터미널 할당)
+  
+  elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false  # 보안 비활성화
+    networks:
+      - alfred_network  # 네트워크 연결 추가
 
 networks:
   alfred_network:

@@ -41,7 +41,38 @@
             "request": "launch",
             "module": "app.server",
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "Run test_bm24_search",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "test.test_bm24_search",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "env": {
+                "POETRY_ACTIVE": "1",
+                "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
+            },
+            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Test compound_word_splitter",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "test.test_word_seperate",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "env": {
+                "POETRY_ACTIVE": "1",
+                "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
+            },
+            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "cwd": "${workspaceFolder}"
+        }        
+
     ]
 }
 // employees.sql

@@ -5,6 +5,7 @@ from app.config import TEMPLATE_DIR, setup_logging
 from pydantic import BaseModel
 
 from app.chain import create_term_conversion_chain
+from app.process.compound_word_splitter import CompoundWordSplitter
 
 
 logger = setup_logging()
@@ -36,6 +37,12 @@ async def ui_code(request: Request):
 # code assist 요청 엔드포인트
 @router.post("/api/conv")
 async def term_conversion_endpoint(request: CodeRequest):
+    split_result = CompoundWordSplitter.split_compound_word(request.question)
+    
+    # split_result 값이 있으면 return
+    if split_result and len(split_result) > 0:
+        return {"response": split_result}
+    
     chain = create_term_conversion_chain()
     state = {"question": request.question}
     response = chain.invoke(state)
