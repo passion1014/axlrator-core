@@ -19,6 +19,7 @@ class FindFiles(luigi.Task):
         return luigi.LocalTarget(f'{self.output_dir}/found_files.txt')
 
     def run(self):
+
         # 경로에서 파일을 찾아 리스트로 저장
         file_list = []
         for root, dirs, files in os.walk(self.project_dir):
@@ -68,8 +69,7 @@ class ProcessAllFiles(luigi.Task):
     def requires(self):
         if not self.output_path:
             self.output_path = self.output_dir()
-            
-        
+
         return FindFiles(self.project_dir, output_dir=self.output_path)
 
     def output(self):
@@ -105,8 +105,7 @@ class ProcessAllFiles(luigi.Task):
 
 # Luigi 실행: 프로젝트 폴더 지정
 if __name__ == "__main__":
-    dir = "/app/rag_server/data/input/program"
-    # dir = "/app/rag_data/DDL"
+    dir = "/app/rag_data/is_modon_proto/src/main/java/com/modon/control/pig"
     luigi.build([ProcessAllFiles(project_dir=dir)], local_scheduler=True)
 
 # python workflow_parse_code.py ProcessAllFiles --project-dir /your/project/path --index-name your_index_name --local-scheduler

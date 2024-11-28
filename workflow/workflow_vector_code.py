@@ -26,6 +26,8 @@ class EmbedData(luigi.Task):
         return luigi.LocalTarget(f'workflow/working/vector/embedded_data_{self.timestamp}.txt')
 
     def run(self):
+        print(f"####### index_name={self.index_name}")
+        
         session = SessionLocal()
         faiss_vector_db = FaissVectorDB(db_session=session, index_name=self.index_name)
         orgrsrc_repository = OrgRSrcRepository(session=session)
@@ -50,15 +52,17 @@ class EmbedData(luigi.Task):
         for org_resrc in org_resrc_list:
 
             # 벡터화
-            process_vectorize(session=session, org_resrc=org_resrc, faiss_info=faiss_info)
+            process_vectorize(index_name=self.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
 
 
         session.close()
 
 # Luigi Task: 전체 파이프라인 실행
 class ProcessAllData(luigi.Task):
+    index_name = luigi.Parameter()
+    
     def requires(self):
-        return EmbedData()
+        return EmbedData(index_name=self.index_name)
 
     def output(self):
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -74,7 +78,7 @@ class ProcessAllData(luigi.Task):
 
 # Luigi 실행: 프로젝트 실행
 if __name__ == "__main__":
-    luigi.build([ProcessAllData()], local_scheduler=True, log_level='DEBUG')
+    luigi.build([ProcessAllData(index_name="cg_code_assist")], local_scheduler=True, log_level='DEBUG')
 
 # 실행방법
 # export PYTHONPATH=$PYTHONPATH:/app/rag_server

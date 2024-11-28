@@ -5,3 +5,4 @@
 venv
 workflow/working
 example/example/*.html
+data/vector

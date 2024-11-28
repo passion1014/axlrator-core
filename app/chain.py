@@ -2,7 +2,6 @@ import json
 import re
 from dotenv import load_dotenv
 from typing import TypedDict
-from langchain_openai import ChatOpenAI
 from app.db_model.data_repository import ChunkedDataRepository
 from app.db_model.database import SessionLocal
 from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT, CODE_SUMMARY_GENERATE_PROMPT
@@ -169,12 +168,11 @@ def create_term_conversion_chain():
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
     def get_context(state: AgentState) -> AgentState:
-        print(f"------------------------ get_context state['question'] = {state['question']}")
         docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
         print(f"### search_result = {docs}")
 
         # content 값만 추출하여 콤마로 구분된 문자열 생성
-        context_string = ", ".join([doc['content'] for doc in docs if 'content' in doc])
+        context_string = ", ".join([doc['content'] for doc in docs if doc and 'content' in doc])
         print(f"### context_string = {context_string}")
 
         state['context'] = context_string
@@ -184,7 +182,6 @@ def create_term_conversion_chain():
         """
         RDB에서 데이터를 조회하여 state에 추가합니다.
         """
-
         try:
             chunkedDataRepository = ChunkedDataRepository(session=session)
             rdb_contexts = chunkedDataRepository.get_chunked_data_by_content(data_type='terms', content=state['question'])
@@ -220,7 +217,6 @@ def create_term_conversion_chain():
     
     workflow = StateGraph(AgentState)
 
-
     # 노드 정의
     workflow.add_node("fetch_rdb_data", fetch_rdb_data)
     workflow.add_node("get_context", get_context)
@@ -228,8 +224,9 @@ def create_term_conversion_chain():
 
     # 워크플로우 정의 
     workflow.set_entry_point("fetch_rdb_data")
-    workflow.add_edge("fetch_rdb_data", "generate_response", condition=lambda state: bool(state.get('context')))
-    workflow.add_edge("fetch_rdb_data", "get_context", condition=lambda state: not bool(state.get('context')))
+    # workflow.add_edge("fetch_rdb_data", "generate_response", condition=lambda state: bool(state.get('context')))
+    # workflow.add_edge("fetch_rdb_data", "get_context", condition=lambda state: not bool(state.get('context')))
+    workflow.add_edge("fetch_rdb_data", "get_context")
     workflow.add_edge("get_context", "generate_response")
     workflow.add_edge("generate_response", END)
 
@@ -261,7 +258,7 @@ def sample_chain():
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
-    def generate_response(state: AgentState) -> AgentState:        
+    def generate_response(state: AgentState) -> AgentState:
         prompt = TERM_CONVERSION_PROMPT.format(korean_term=state['question'], related_info=state['context'])
         response = model.invoke(prompt)
         state['response'] = str(response)
