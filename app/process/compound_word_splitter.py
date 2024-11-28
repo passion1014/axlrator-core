@@ -38,13 +38,26 @@ class CompoundWordSplitter:
                         dp[i].append(path + [sub_word])  # 이전 경로에 현재 단어 추가
 
         # 최종 결과 반환: 가능한 모든 분리 경로를 한글과 영어로 변환
+        results = []
         if dp[-1]:
-            results = []
             for path in dp[-1]:
                 korean_result = path
                 english_result = [dictionary[word] for word in path]
                 results.append({"korean": korean_result, "english": english_result})
-            return results
-        else:
-            # 분리 불가능한 경우, 원래 단어 반환
-            return [{"korean": [word], "english": [dictionary.get(word, "UNKNOWN")]}]
+            # return results
+        # else:
+        #     # 분리 불가능한 경우, 원래 단어 반환
+        #     return [{"korean": [word], "english": [dictionary.get(word, "UNKNOWN")]}]
+        
+        return cls.transform_result(results)
+
+    @classmethod
+    def transform_result(cls, result):
+        transformed = []
+        for item in result:
+            korean_part = ";".join(item['korean'])
+            english_part = "_".join(item['english'])
+            camel_case = ''.join([word.capitalize() for word in item['english']])
+            camel_case = camel_case[0].lower() + camel_case[1:]  # camelCase 변환
+            transformed.append(f"{korean_part}={english_part} ({camel_case})")
+        return transformed
