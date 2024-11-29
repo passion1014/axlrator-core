@@ -8,6 +8,7 @@ logger = setup_logging()
 router = APIRouter()
 
 class SampleRequest(BaseModel):
+    indexname: str
     question: str
 
 
@@ -19,4 +20,3 @@ async def sample_endpoint(request: SampleRequest):
     response = chain.invoke(state)
     
     return {"response": response}
-

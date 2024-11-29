@@ -1,12 +1,15 @@
 # 필요한 라이브러리 import하기
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+load_dotenv(override=True) 
+database_url = os.getenv("DATABASE_URL")
 
 # SQLAlchemy engine 생성하기
-# engine = create_engine("postgresql://ragserver:ragserver@localhost/ragserver") # 로컬에서 실행시
-engine = create_engine("postgresql://ragserver:ragserver@rag_server-db-1:5432/ragserver") # docker 실행시
+engine = create_engine(database_url) # 로컬에서 실행시
 
 # DB 세션 생성하기
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -32,11 +32,9 @@ class EmbedData(luigi.Task):
         faiss_vector_db = FaissVectorDB(db_session=session, index_name=self.index_name)
         orgrsrc_repository = OrgRSrcRepository(session=session)
 
-
         faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
         if faiss_info is None:
-            faiss_info = faiss_vector_db.psql_docstore.insert_faiss_info()
-            print(f"# 기저장된 {self.index_name}의 FAISS 정보가 없습니다. 생성합니다.")
+            raise Exception(f"# 기저장된 {self.index_name}의 FAISS 정보가 없습니다. 생성이 필요합니다.")
 
         # index_name에 따라 resrc_type 설정 (임시처리)
         if self.index_name == 'cg_code_assist':

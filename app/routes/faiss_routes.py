@@ -30,7 +30,8 @@ async def get_faiss_info(db: Session = Depends(get_db)):
             "created_at": info.created_at,
             "modified_by": info.modified_by,
             "created_by": info.created_by} for info in faiss_info_list]
-    
+
+
 # FAISS 벡터 조회를 위한 엔드포인트
 @router.post("/api/search")
 async def search_faiss_vector(request: Request, db: Session = Depends(get_db)):
@@ -74,6 +75,7 @@ async def search_faiss_vector(request: Request, db: Session = Depends(get_db)):
             "success": False, 
             "message": f"검색 중 오류가 발생했습니다: {str(e)}"
         }
+
 
 
 # FAISS 저장을 위한 엔드포인트

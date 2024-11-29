@@ -109,6 +109,7 @@ def create_elasticsearch_bm25_index(index_name: str, org_resrc, chunk_list: List
     
     return es_bm25
 
+
 # 고급 검색 함수 - 시맨틱 검색과 BM25 검색 결과를 결합
 # def retrieve_advanced(query: str, db: ContextualVectorDB, es_bm25: ElasticsearchBM25, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2):
 def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2):
@@ -116,7 +117,14 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
 
     # 시맨틱 검색 수행
     semantic_results = db.search_similar_documents(query, k=num_chunks_to_recall) 
-    ranked_chunk_ids = [(result['metadata']['doc_id'], result['metadata']['original_index']) for result in semantic_results]
+    # ranked_chunk_ids = [(result['metadata']['doc_id'], result['metadata']['original_index']) 
+    #                     for result in semantic_results 
+    #                     if result is not None and 'metadata' in result]
+    ranked_chunk_ids = [
+        (result['metadata'].get('doc_id', 'unknown_doc_id'), result['metadata'].get('original_index', -1))
+        for result in semantic_results
+        if result and 'metadata' in result
+    ]    
     # 현재 search_similar_documents 결과는 content, metadata를 넘겨주고 있으며, metadata에 값이 존재하지 않는다. TODO
     
     # BM25 검색 수행

@@ -54,33 +54,57 @@ def test_elasticsearch_bm25_and_faiss():
     # FAISS DB 및 Elasticsearch 초기화
     # db = MockFaissVectorDB(test_documents)
     
-    db = FaissVectorDB(db_session=session, index_name="cg_terms") 
-    es_bm25 = ElasticsearchBM25()
+    index_name = "cg_code_assist"
+    db = FaissVectorDB(db_session=session, index_name=index_name) 
+    es_bm25 = ElasticsearchBM25(index_name=index_name)
 
     # Elasticsearch 문서 인덱싱
-    print("Indexing documents into Elasticsearch...")
+    # print("Indexing documents into Elasticsearch...")
     es_bm25.index_documents(test_documents)
 
     # 고급 검색 실행
     print("Running advanced search...")
-    final_results, semantic_count, bm25_count = retrieve_advanced(
-        query=test_query,
-        db=db,
-        es_bm25=es_bm25,
-        k=3  # 상위 3개 결과
-    )
+    # final_results, semantic_count, bm25_count = retrieve_advanced(
+    #     query=test_query,
+    #     db=db,
+    #     es_bm25=es_bm25,
+    #     k=3  # 상위 3개 결과
+    # )
+    # # 결과 출력
+    # print("\nFinal Results:")
+    # for result in final_results:
+    #     print(f"Doc ID: {result['chunk']['doc_id']}, Score: {result['score']:.2f}")
+    #     print(f"Content: {result['chunk']['original_content']}")
+    #     print(f"From Semantic: {result['from_semantic']}, From BM25: {result['from_bm25']}")
+    #     print("-" * 40)
 
-    # 결과 출력
-    print("\nFinal Results:")
-    for result in final_results:
-        print(f"Doc ID: {result['chunk']['doc_id']}, Score: {result['score']:.2f}")
-        print(f"Content: {result['chunk']['original_content']}")
-        print(f"From Semantic: {result['from_semantic']}, From BM25: {result['from_bm25']}")
-        print("-" * 40)
+    # print(f"Semantic Results Count: {semantic_count}")
+    # print(f"BM25 Results Count: {bm25_count}")
 
-    print(f"Semantic Results Count: {semantic_count}")
-    print(f"BM25 Results Count: {bm25_count}")
+    # TEST - simply search elasticsearch 
+    bm25_results = es_bm25.search(query=test_query, k=10)
+    ranked_bm25_chunk_ids = [(result['doc_id'], result['original_index']) for result in bm25_results]
+    print(f"### ranked_bm25_chunk_ids={ranked_bm25_chunk_ids}")
+
+def test_save_to():
+    documents = [
+        {
+            "_index": 111,
+            "original_content": "this is contents",
+            "contextualized_content": "this is contextual content",
+            "doc_id": "doc_id_111",
+            "chunk_id": "chunkid_111",
+            "original_index": 1, # 문서의 순서
+        }
+    ]
+    
+    print(f"### create_elasticsearch_bm25_index = {documents}")
+
+    es_bm25 = ElasticsearchBM25(index_name="cg_code_assist")
+    es_bm25.index_documents(documents)
+
 
 # 테스트 실행
 if __name__ == "__main__":
+    # test_save_to()
     test_elasticsearch_bm25_and_faiss()

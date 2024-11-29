@@ -16,21 +16,7 @@ from langchain_anthropic import ChatAnthropic
 
 # .env 파일 로드
 load_dotenv()
-
 logger = setup_logging()
-
-
-# FAISS 인덱스 경로 설정
-# vector_index = os.getenv("VECTOR_DATABASE_INDEX")
-# FAISS_INDEX_PATH = os.path.join(os.path.dirname(__file__), f'../data/vector/{vector_index}')
-
-
-# class ChatHistory(BaseModel):
-#     chat_history: List[Tuple[str, str]] = Field(
-#         ...,
-#         extra={"widget": {"type": "chat", "input": "question"}},
-#     )
-#     question: str
 
 
 class AgentState(TypedDict):
@@ -38,30 +24,6 @@ class AgentState(TypedDict):
     question: str
     context: str
     response: str
-
-
-
-# def load_vector_database():
-#     warnings.warn("이 함수는 더 이상 사용되지 않으며 향후 버전에서 제거될 예정입니다. FaissVectorDB 클래스를 대신 사용하세요.", DeprecationWarning, stacklevel=2)
-#     '''
-#     Retriever를 반환하는 벡터 데이터베이스 로드 함수
-#     '''
-#     embeddings = get_embedding_model()
-    
-#     try:
-#         db = FAISS.load_local(FAISS_INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
-#         logger.info(f"----- FAISS index loaded from: {FAISS_INDEX_PATH}")
-        
-#     except ValueError as e:
-#         logger.error(f"Error loading FAISS index: {e}")
-#         db = FAISS.load_local(FAISS_INDEX_PATH, allow_dangerous_deserialization=True)
-#         db.embeddings = embeddings
-
-#     retriever = db.as_retriever(search_kwargs={"k": 1})    
-#     logger.info(f"----- Number of items in FAISS index: {len(db.index_to_docstore_id)}")
-    
-#     return retriever
-
 
 
 def create_rag_chain():
@@ -277,3 +239,4 @@ def sample_chain():
     chain.with_config(callbacks=[CallbackHandler()])
     
     return chain
+
