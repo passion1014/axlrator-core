@@ -61,7 +61,6 @@ services:
       - "9300:9300"
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false # 보안 비활성화
     networks:
       - alfred_network # 네트워크 연결 추가
 
