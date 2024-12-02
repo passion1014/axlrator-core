@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 from tqdm import tqdm
@@ -11,33 +12,73 @@ from app.vectordb.faiss_vectordb import FaissVectorDB
 # .env 파일 로드
 load_dotenv()
 
+
 # BM25 검색을 위한 Elasticsearch 래퍼 클래스
 class ElasticsearchBM25:
     def __init__(self, index_name: str = "contextual_bm25_index"):
         elasticsearch_host = os.getenv("ELASTICSEARCH_HOST")
         
-        self.es_client = Elasticsearch(elasticsearch_host)
+        # 로깅 설정
+        logging.basicConfig(
+            level=logging.DEBUG,  # INFO 또는 DEBUG로 설정 가능
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+
+        # Elasticsearch 요청 로그 활성화
+        es_logger = logging.getLogger("elasticsearch")
+        es_logger.setLevel(logging.DEBUG)  # DEBUG로 설정하면 요청/응답 세부사항이 출력됩니다.
+
+        # requests 및 urllib3 로깅 활성화
+        logging.getLogger("urllib3").setLevel(logging.DEBUG)
+        logging.getLogger("requests").setLevel(logging.DEBUG)
+        logging.getLogger("elasticsearch.transport").setLevel(logging.DEBUG)  # Elasticsearch transport 로깅을 DEBUG로 설정
+        
+        self.es_client = Elasticsearch(elasticsearch_host, 
+                                       verify_certs=False, #일단 인증서 오류로 False
+                                        basic_auth=('elastic', os.getenv('ELASTICSEARCH_PASSWORD', 'OF0IbgqDeNEiEJXndIa8'))
+                                       )
         self.index_name = index_name
         self.create_index() # TODO = ElasticsearchBM25 서버 시작시 한번만 초기화 하고 사용할 수 있도록 수정 필요
 
     # Elasticsearch 인덱스 생성 및 설정
     def create_index(self):
         index_settings = {
-            "settings": {
-                "analysis": {"analyzer": {"default": {"type": "english"}}},
-                "similarity": {"default": {"type": "BM25"}},
-                "index.queries.cache.enabled": False  # 쿼리 캐시 비활성화
-            },
-            "mappings": {
-                "properties": {
-                    "content": {"type": "text", "analyzer": "english"},
-                    "contextualized_content": {"type": "text", "analyzer": "english"},
-                    "doc_id": {"type": "keyword", "index": False},
-                    "chunk_id": {"type": "keyword", "index": False},
-                    "original_index": {"type": "integer", "index": False},
-                }
-            },
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "custom_nori_analyzer": {
+          "type": "custom",
+          "tokenizer": "nori_tokenizer",
+          "filter": [
+            "lowercase",
+            "korean_stop"
+          ]
         }
+      },
+      "tokenizer": {
+        "nori_tokenizer": {
+          "type": "nori_tokenizer",
+          "decompound_mode": "mixed"
+        }
+      },
+      "filter": {
+        "korean_stop": {
+          "type": "stop",
+          "stopwords": "_korean_"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "content": {
+        "type": "text",
+        "analyzer": "custom_nori_analyzer"
+      }
+    }
+  }
+}
+
         if not self.es_client.indices.exists(index=self.index_name):
             self.es_client.indices.create(index=self.index_name, body=index_settings)
             print(f"### Created index: {self.index_name}")
