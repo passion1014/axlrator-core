@@ -16,13 +16,13 @@ def code_assist_chain():
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
     def get_context(state: AgentState) -> AgentState:
-        
         # 질문의 추가 맥락 생성
-        enriched_query = contextual_enrichment(state['question'])  # 맥락을 추가로 풍부화
+        # enriched_query = contextual_enrichment(state['question'])  # 맥락을 추가로 풍부화
+        enriched_query = state['question']
         print(f"### enriched_query = {enriched_query}")
         
         # 맥락 기반 검색
-        docs = faissVectorDB.search_similar_documents(query=enriched_query, k=5)
+        docs = faissVectorDB.search_similar_documents(query=enriched_query, k=2)
         print(f"### search_result = {docs}")
         
         # 문서 결합

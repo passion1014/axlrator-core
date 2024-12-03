@@ -16,8 +16,9 @@ class CodeAssistRequest(BaseModel):
 @router.post("/api/code")
 async def sample_endpoint(request: CodeAssistRequest):
     print(f"### request = {str(request)}")
-    # chain = code_assist_chain()
-    # state = {"question": request.question}
-    # response = chain.invoke(state)
-    # return {"response": response}
-    pass
+    
+    chain = code_assist_chain()
+    
+    state = {"indexname": request.indexname, "question": request.question, "current_code": request.current_code}
+    response = chain.invoke(state)
+    return {"response": response}
