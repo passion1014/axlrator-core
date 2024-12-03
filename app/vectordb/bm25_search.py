@@ -1,15 +1,11 @@
 import os
 import json
 from typing import List, Dict, Any
-from dotenv import load_dotenv
 from tqdm import tqdm
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
 from app.vectordb.faiss_vectordb import FaissVectorDB
-
-# .env 파일 로드
-load_dotenv()
 
 # BM25 검색을 위한 Elasticsearch 래퍼 클래스
 class ElasticsearchBM25:

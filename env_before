@@ -1,28 +1,25 @@
 # API_KEY
-OPENAI_API_KEY=OPENAI_API_KEY
-ANTHROPIC_API_KEY=ANTHROPIC_API_KEY
+OPENAI_API_KEY=본인키입력
+ANTHROPIC_API_KEY=본인키입력
+
+# setting DATABASE
+DATABASE_URL=postgresql://ragserver:ragserver@rag_server-db-1:5432/ragserver
 
 # setting EMBEDDING_MODEL
-#   예) text-embedding-3-large, nomic-embed-text
-EMBEDDING_MODEL_NAME="text-embedding-3-large" 
+EMBEDDING_MODEL_NAME="text-embedding-3-large"
 
 # setting LLM_MODEL
-#   예) claude-3-sonnet-20240229(ChatAnthropic), gpt-3.5-turbo(ChatOpenAI) EEVE-Korean-10.8B:latest(ChatOllama)
-# LLM_MODEL_NAME="claude-3-sonnet-20240229"
-LLM_MODEL_NAME="EEVE-Korean-10.8B:latest"
+LLM_MODEL_NAME="claude-3-sonnet-20240229"
 
 # LANGCHAIN
-LANGCHAIN_API_KEY=LANGCHAIN_API_KEY
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
-LANGCHAIN_PROJECT=LANGSERVE_TEMPLATE
+LANGCHAIN_API_KEY=본인키입력
+LANGCHAIN_TRACING_V2=false
 
 # LANGFUSE
-LANGFUSE_SECRET_KEY=LANGFUSE_SECRET_KEY
-LANGFUSE_PUBLIC_KEY=LANGFUSE_PUBLIC_KEY
-LANGFUSE_HOST="http://langfuse-main-langfuse-server-1:3000"
-# LANGFUSE_HOST="http://host.docker.internal:3000"
-# LANGFUSE_HOST="https://us.cloud.langfuse.com" # 🇺🇸 US region
+LANGFUSE_SECRET_KEY="본인키입력"
+LANGFUSE_PUBLIC_KEY="본인키입력"
+LANGFUSE_HOST="http://rag_server-langfuse-server-1:3000"
 
-# VECTOR DATABASE
-VECTOR_DATABASE_INDEX="sin_in_christ"
+# Elasticsearch
+ELASTICSEARCH_HOST="http://elasticsearch:9200"
+

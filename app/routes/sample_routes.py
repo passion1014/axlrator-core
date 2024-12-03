@@ -1,7 +1,7 @@
 # app/routes/upload_routes.py
 from fastapi import APIRouter
 from openai import BaseModel
-from app.chain import sample_chain
+from app.chain_graph.sample_chain import sample_chain
 from app.config import setup_logging
 
 logger = setup_logging()

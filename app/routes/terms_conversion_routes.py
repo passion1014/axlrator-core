@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import TEMPLATE_DIR, setup_logging
 from pydantic import BaseModel
 
-from app.chain import create_term_conversion_chain
+from app.chain_graph.term_conversion_chain import create_term_conversion_chain
 from app.process.compound_word_splitter import CompoundWordSplitter
 
 
@@ -47,4 +47,7 @@ async def term_conversion_endpoint(request: CodeRequest):
     state = {"question": request.question}
     response = chain.invoke(state)
     
-    return {"response": response}
+    if response["response"] and not isinstance(response["response"], list):
+        response = {"response": [response["response"]]}
+    
+    return response

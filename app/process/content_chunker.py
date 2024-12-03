@@ -3,7 +3,6 @@ import json
 import os
 import re
 
-from app.chain import create_summary_chain
 from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
 from app.db_model.database import SessionLocal
 from app.db_model.database_models import OrgRSrc

@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.chain import create_rag_chain, create_term_conversion_chain, create_text_to_sql_chain
+from app.chain_graph.term_conversion_chain import create_term_conversion_chain
+from app.chain_graph.rag_chain import create_rag_chain
+from app.chain_graph.text_to_sql_chain import create_text_to_sql_chain
 from app.config import setup_logging
 
 logger = setup_logging()
