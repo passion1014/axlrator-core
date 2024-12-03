@@ -2,18 +2,12 @@ from typing import List, Tuple
 from langchain_core.prompts import format_document
 from app.prompts.prompts import DEFAULT_DOCUMENT_PROMPT
 import os
-from dotenv import load_dotenv
-
-# .env 파일 로드
-load_dotenv()
-
 
 def get_embedding_model():
     '''
     임베딩 모델 가져오기
     '''
     embedding_model = os.getenv("EMBEDDING_MODEL_NAME")
-    
     embeddings = None
 
     if embedding_model in ['nomic-embed-text']:
@@ -40,7 +34,6 @@ def get_llm_model():
     LLM 모델 가져오기
     '''
     llm_model = os.getenv("LLM_MODEL_NAME")
-
     model = None
 
     if llm_model in ['EEVE-Korean-10.8B:latest', 'gemma2:9b', 'gemma2:27b']: # ChatOllama
@@ -59,7 +52,7 @@ def get_llm_model():
             # max_tokens=1024,
             # timeout=None,
             # max_retries=2,
-        )                
+        )
     else:
         raise ValueError("ENV 환경변수가 설정되지 않았습니다.")
     

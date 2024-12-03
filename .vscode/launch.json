@@ -34,22 +34,22 @@
             "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
             "cwd": "${workspaceFolder}"
         },
-        // Langchain Server
         {
             "name": "서버 실행",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "app.server",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env.testcase"
         },
         {
-            "name": "Run test_bm24_search",
+            "name": "(테스트)elasticsearch 조회",
             "type": "debugpy",
             "request": "launch",
             "module": "test.test_bm24_search",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env",
+            "envFile": "${workspaceFolder}/.env.testcase",
             "env": {
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
@@ -58,7 +58,7 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Test compound_word_splitter",
+            "name": "(테스트)용어변환",
             "type": "debugpy",
             "request": "launch",
             "module": "test.test_word_seperate",
@@ -71,7 +71,22 @@
             },
             "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
             "cwd": "${workspaceFolder}"
-        }        
+        },
+        {
+            "name": "(테스트)컨텍스추얼 체인",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "test.test_contextual_chain",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "env": {
+                "POETRY_ACTIVE": "1",
+                "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
+            },
+            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "cwd": "${workspaceFolder}"
+        }
 
     ]
 }

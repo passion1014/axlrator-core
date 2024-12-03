@@ -1,5 +1,5 @@
 from typing import TypedDict
-from app.chain import AgentState
+from app.chain_graph.agent_state import AgentState
 from app.db_model.database import SessionLocal
 from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT
 from langgraph.graph import StateGraph, END

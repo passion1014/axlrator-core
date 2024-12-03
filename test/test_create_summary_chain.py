@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # 테스트 코드
-from app.chain import create_summary_chain
+from app.chain_graph.contexutal_retrieval_chain import create_summary_chain
 
 
 def test_create_summary_chain():

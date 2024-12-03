@@ -23,7 +23,6 @@ camel_case: [camelCase변환]
 
 """)
 
-
 # 24.11.12 이전버전
 # TERM_CONVERSION_PROMPT = PromptTemplate.from_template("""
 # You are an AI assistant specialized in conversion Korean terms into English for programming contexts. Your task is to provide appropriate English conversion that can be used as variable names, table names, column names, or class names in code.

@@ -1,7 +1,6 @@
 import os
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from dotenv import load_dotenv
 import chardet
 import argparse
 
@@ -9,9 +8,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.utils import get_embedding_model
 from langchain.docstore.document import Document
 
-# .env 파일 로드
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(dotenv_path)
 
 
 def load_and_detect_encoding(file_path):

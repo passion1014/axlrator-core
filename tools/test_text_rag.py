@@ -7,9 +7,7 @@ from langchain.embeddings import OllamaEmbeddings
 from dotenv import load_dotenv
 import argparse
 
-# .env 파일 로드
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(dotenv_path)
+load_dotenv(dotenv_path="env.testcase")
 
 def main():
     # argparse를 사용하여 명령줄 인자 파싱

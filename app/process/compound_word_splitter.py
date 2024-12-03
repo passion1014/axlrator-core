@@ -59,5 +59,5 @@ class CompoundWordSplitter:
             english_part = "_".join(item['english'])
             camel_case = ''.join([word.capitalize() for word in item['english']])
             camel_case = camel_case[0].lower() + camel_case[1:]  # camelCase 변환
-            transformed.append(f"{korean_part}={english_part} ({camel_case})")
+            transformed.append(f"{korean_part} = {english_part}({camel_case})")
         return transformed

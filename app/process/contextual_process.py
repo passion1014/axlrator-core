@@ -1,7 +1,7 @@
 
 
 import json
-from app.chain import create_summary_chain
+from app.chain_graph.contexutal_retrieval_chain import create_summary_chain
 from app.formatter.code_formatter import parse_augmented_chunk
 
 
