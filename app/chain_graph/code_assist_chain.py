@@ -33,7 +33,7 @@ def code_assist_chain():
         prompt = CODE_ASSIST_TASK_PROMPT.format(
             REFERENCE_CODE=state['context'],
             TASK=state['question'],
-            CURRENT_CODE=''
+            CURRENT_CODE=state['current_code']
         )
         response = model.invoke(prompt)
         

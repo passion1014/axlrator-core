@@ -21,6 +21,7 @@ class AgentState(TypedDict):
     question: str
     context: str
     response: str
+    current_code: str
 
 
 __all__ = [
