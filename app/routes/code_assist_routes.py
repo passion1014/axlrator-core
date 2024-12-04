@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from openai import BaseModel
-from app.chain_graph import code_assist_chain
+from app.chain_graph.code_assist_chain import code_assist_chain 
 from app.config import setup_logging
 
 logger = setup_logging()

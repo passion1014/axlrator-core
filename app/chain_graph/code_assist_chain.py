@@ -64,5 +64,6 @@ def contextual_enrichment(query):
 
 # Helper function: combine_documents_with_relevance
 def combine_documents_with_relevance(docs):
-    combined_context = "\n".join([doc['content'] for doc in sorted(docs, key=lambda x: x['score'], reverse=True)])
+    # combined_context = "\n".join([doc['content'] for doc in sorted(docs, key=lambda x: x['score'], reverse=True)])
+    combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context
