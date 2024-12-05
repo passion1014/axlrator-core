@@ -1,3 +1,6 @@
+import re
+
+
 class CompoundWordSplitter:
     # 클래스 변수 (모든 인스턴스가 공유)
     _cached_dictionary = None
@@ -21,6 +24,12 @@ class CompoundWordSplitter:
                     cls._cached_dictionary[key] = value
 
         return cls._cached_dictionary
+
+    @classmethod
+    def conv_compound_word(cls, word):
+        words = cls.split_compound_word(word)
+        return cls.transform_result(words)
+
 
     @classmethod
     def split_compound_word(cls, word):
@@ -49,7 +58,7 @@ class CompoundWordSplitter:
         #     # 분리 불가능한 경우, 원래 단어 반환
         #     return [{"korean": [word], "english": [dictionary.get(word, "UNKNOWN")]}]
         
-        return cls.transform_result(results)
+        return results
 
     @classmethod
     def transform_result(cls, result):
@@ -61,3 +70,44 @@ class CompoundWordSplitter:
             camel_case = camel_case[0].lower() + camel_case[1:]  # camelCase 변환
             transformed.append(f"{korean_part} = {english_part}({camel_case})")
         return transformed
+
+    @classmethod
+    def extract_korean_words(cls, text):
+        """
+        입력된 텍스트에서 한글 단어만 추출하는 함수
+        :param text: 입력 텍스트 (str)
+        :return: 한글 단어 리스트
+        """
+        korean_words = re.findall(r'[가-힣]+', text)
+        return korean_words
+
+
+
+
+    @classmethod
+    def merge_translations(cls, data):
+        """
+        주어진 데이터를 한글-영어 매핑으로 통합하는 함수
+        """
+        result = {}
+        for item in data:
+            # item이 딕셔너리가 아닐 경우 예외 처리
+            if not isinstance(item, dict):
+                print(f"잘못된 데이터 형식: {item}")
+                continue
+            
+            korean = item.get('korean', [])
+            english = item.get('english', [])
+            
+            # korean과 english 길이 확인
+            if len(korean) != len(english):
+                print(f"키와 값의 길이가 다릅니다: {item}")
+                continue
+            
+            k = "".join(item['korean'])
+            e = "_".join(item['english'])
+
+            if k not in result: # 중복제거
+                result[k] = e
+            
+        return result

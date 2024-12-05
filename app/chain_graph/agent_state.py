@@ -21,7 +21,8 @@ class AgentState(TypedDict):
     question: str
     context: str
     response: str
-    current_code: str
+    current_code: str # code assist를 위한 항목
+    
 
 
 __all__ = [

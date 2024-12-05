@@ -119,5 +119,5 @@ You will be given three pieces of information:
 3. <reference_code>{REFERENCE_CODE}</reference_code>
    This is a list of code snippets that can be used as reference or inspiration.
 
-프로그램 코드를 제외한 모든 답변은 한글로 해줘
+Write only the source code without any explanation!!
 """)
