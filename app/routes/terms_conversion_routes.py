@@ -13,10 +13,6 @@ router = APIRouter()
 
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
-@router.get("/code", response_class=HTMLResponse)
-async def ui_code(request: Request):
-    return templates.TemplateResponse("sample/code.html", {"request": request, "message": "코드 자동 생성 (Test버전)"})
-
 
 
 # 질문을 위한 요청 모델 정의

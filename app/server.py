@@ -58,12 +58,11 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 from langserve import add_routes
 # add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
 add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
-add_routes(webServerApp, code_assist_chain(), path="/codeassist", enable_feedback_endpoint=True)
+add_routes(webServerApp, code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)
+add_routes(webServerApp, code_assist_chain(type="02"), path="/codeassist", enable_feedback_endpoint=True)
 add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 
-
-# 플러그인 용
 
 # ---------------------------------------
 # SQLAlchemy 데이터베이스 설정 및 초기화
@@ -79,3 +78,6 @@ if __name__ == "__main__":
     print(f"Starting server on {args.host}:{args.port} (debug={args.debug})")
     uvicorn.run(webServerApp, host=args.host, port=args.port, reload=args.debug)
 
+
+
+# 24.12.06

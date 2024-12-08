@@ -1,14 +1,14 @@
 from typing import TypedDict
 from app.chain_graph.agent_state import AgentState
 from app.db_model.database import SessionLocal
-from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT
+from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CODE_ASSIST_TASK_PROMPT
 from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
 
-def code_assist_chain():
-    # retriever 선언
+def code_assist_chain(type:str):
+    
     session = SessionLocal()
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
 
@@ -30,11 +30,27 @@ def code_assist_chain():
         return state
 
     def generate_response(state: AgentState) -> AgentState:
-        prompt = CODE_ASSIST_TASK_PROMPT.format(
-            REFERENCE_CODE=state['context'],
-            TASK=state['question'],
-            CURRENT_CODE=state['current_code']
-        )
+        
+        if ("01" == type) : # autocode
+            prompt = AUTO_CODE_TASK_PROMPT.format(
+                SOURCE_CODE=state['question']
+            )
+        elif ("02" == type) :
+            prompt = CODE_ASSIST_TASK_PROMPT.format(
+                REFERENCE_CODE=state['context'],
+                TASK=state['question'],
+                CURRENT_CODE=state['current_code']
+            )
+        else:
+            prompt = CODE_ASSIST_TASK_PROMPT.format(
+                REFERENCE_CODE=state['context'],
+                TASK=state['question'],
+                CURRENT_CODE=state['current_code']
+            )
+            pass
+        
+
+
         response = model.invoke(prompt)
         
         state['response'] = response
@@ -43,14 +59,33 @@ def code_assist_chain():
     workflow = StateGraph(AgentState)
 
     # 노드 정의
-    workflow.add_node("get_context", get_context)
-    workflow.add_node("generate_response", generate_response)
 
     # 워크플로우 정의
-    workflow.set_entry_point("get_context")
-    workflow.add_edge("get_context", "generate_response")
-    workflow.add_edge("generate_response", END)
+    if ("01" == type) : # autocode
+        workflow.add_node("generate_response", generate_response)
+        
+        workflow.set_entry_point("generate_response")
+        workflow.add_edge("generate_response", END)
+        pass
 
+    elif ("02" == type) :
+        workflow.add_node("get_context", get_context)
+        workflow.add_node("generate_response", generate_response)
+        
+        workflow.set_entry_point("get_context")
+        workflow.add_edge("get_context", "generate_response")
+        workflow.add_edge("generate_response", END)
+        pass
+
+    else:
+        workflow.add_node("get_context", get_context)
+        workflow.add_node("generate_response", generate_response)
+        
+        workflow.set_entry_point("get_context")
+        workflow.add_edge("get_context", "generate_response")
+        workflow.add_edge("generate_response", END)
+        pass
+    
     chain = workflow.compile()
     chain.with_config(callbacks=[CallbackHandler()])
     
@@ -67,3 +102,4 @@ def combine_documents_with_relevance(docs):
     # combined_context = "\n".join([doc['content'] for doc in sorted(docs, key=lambda x: x['score'], reverse=True)])
     combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context
+

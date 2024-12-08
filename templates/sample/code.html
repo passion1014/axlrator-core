@@ -10,19 +10,34 @@
             <div class="section text-area-group">
                 <h2 class="mb-4">텍스트 입력</h2>
                 <form>
+                    <!-- Selectbox 추가 -->
+                    <div class="form-group mb-3">
+                        <label for="category">카테고리 선택:</label>
+                        <select class="form-control" id="category" name="category">
+                            <option value="autocode">코드자동완성</option>
+                            <option value="wordconversion">용어변환</option>
+                            <option value="makecomment">주석설명 자동 생성</option>
+                        </select>
+                    </div>
+
                     <div class="form-group mb-3">
                         <label for="question">질문:</label>
                         <textarea class="form-control" id="question" name="question" rows="5"></textarea>
                     </div>
-                    <div class="form-group mb-3">
-                        <label for="context">컨텍스트:</label>
-                        <textarea class="form-control" id="context" name="context" rows="5"></textarea>
-                    </div>
+
+
                     <div class="form-group mb-4">
                         <label for="reference-context">참고 컨텍스트:</label>
                         <textarea class="form-control" id="reference-context" name="reference-context" rows="5"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">제출</button>
+                    <!-- Markdown Viewer로 변경 -->
+                    <div class="form-group mb-3">
+                        <label for="context">생성 결과 :</label>
+                        <textarea class="form-control d-none" id="context" name="context" rows="5"></textarea>
+                        <div id="markdownViewer" class="border p-3 bg-light"></div>
+                    </div>
+                    <button type="button" class="btn btn-success" id="callServiceButton">서비스 호출</button>
+                    <!-- button type="submit" class="btn btn-primary">제출</button -->
                 </form>
             </div>
         </div>
@@ -72,4 +87,125 @@
         </nav>
     </div>
 </div>
+
+<!-- JavaScript로 Markdown Viewer 구현 -->
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+        hljs.highlightAll();
+        const contextTextarea = document.getElementById('context');
+        const markdownViewer = document.getElementById('markdownViewer');
+
+        // 실시간 Markdown 렌더링
+        contextTextarea.addEventListener('input', function () {
+            const markdownText = contextTextarea.value;
+            markdownViewer.innerHTML = marked.marked(markdownText); // marked.js 사용
+        });
+
+        // 초기 렌더링
+        contextTextarea.dispatchEvent(new Event('input'));
+
+        // 서비스 호출 버튼 이벤트
+        const callServiceButton = document.getElementById('callServiceButton');
+
+        callServiceButton.addEventListener('click', function () {
+            const category = document.getElementById('category').value;
+            const question = document.getElementById('question').value;
+            const context = document.getElementById('context').value;
+            const referenceContext = document.getElementById('reference-context').value;
+
+            const payload = {
+                indexname : "",
+                current_code : "",
+                category: category,
+                question: question,
+                context: context,
+                referenceContext: referenceContext
+            };
+
+            fetch_url = "";
+            if ("autocode" == category) {
+                fetch_url = "/codeassist/api/autocode";
+            } else if ("wordconversion" == category) {
+                fetch_url = "/termsconversion/api/conv";
+            } else if ("makecomment" == category) {
+                fetch_url = "/termsconversion/api/conv";
+            }
+
+            
+            // API 호출
+            fetch(fetch_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+
+                if (data) {
+
+                    if ("autocode" == category) {
+                        var response = data.response && data.response['response'] && data.response['response']['content'] ? data.response['response']['content'] : '';
+                        
+                        var result = "```java\n\n" + question + "\n// =========== 아래가 추가된 내용 ===========\n" + response;
+                        //var result = question + response;
+
+                        setMarkdownViewer(result); // 응답 데이터를 Markdown Viewer에 렌더링
+                    } else if ("wordconversion" == category) {
+                        var result = "```java\n\n";
+
+                        var response = data.response;
+                        if (Array.isArray(response) && response.length > 0) {
+                            // 배열에 값이 있는 경우 처리 로직 추가
+                            for (let i = 0; i < response.length; i++) {
+                                result += response[i]
+                            }
+                        }
+                        setMarkdownViewer(result); // 응답 데이터를 Markdown Viewer에 렌더링
+                    }
+
+
+                } else {
+                    alert('API 호출에 실패했습니다: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('API 호출 중 오류 발생:', error);
+                alert('API 호출 중 오류가 발생했습니다.');
+            });
+        });
+    });
+
+    /**
+    * Markdown Viewer에 값을 설정하는 함수
+    * @param {string} markdownText - 렌더링할 Markdown 텍스트
+    */
+    function setMarkdownViewer(markdownText) {
+        const markdownViewer = document.getElementById('markdownViewer');
+        const contextTextarea = document.getElementById('context');
+
+        // Textarea에도 값을 동기화
+        if (contextTextarea) {
+            contextTextarea.value = markdownText;
+        }
+
+        // Markdown Viewer에 렌더링
+        if (markdownViewer) {
+            markdownViewer.innerHTML = marked.marked(markdownText); // marked.js 사용
+
+            // 코드 하이라이트 적용
+            markdownViewer.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+    }
+
+    // 예제 호출
+    setMarkdownViewer("# 제목1\n이것은 **Markdown** 예제입니다.");
+</script>
 {% endblock %}
+
+

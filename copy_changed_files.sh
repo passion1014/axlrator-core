@@ -8,8 +8,8 @@ DEST_DIR="../changed_files/$DATE" # 경로 중간에 날짜 폴더 추가
 mkdir -p "$DEST_DIR"
 
 # Git에서 변경된 파일 목록 가져오기 (기준 커밋은 사용자가 수정)
-BASE_COMMIT="2f7c1d7" # 기준 커밋 (현재는 바로 직전 커밋)
-CURRENT_COMMIT="9f6651e" # 현재 커밋 
+BASE_COMMIT="9f6651e" # 기준 커밋 (현재는 바로 직전 커밋)
+CURRENT_COMMIT="d31f7f8" # 현재 커밋 
 
 echo "기준 커밋: $BASE_COMMIT"
 echo "현재 커밋: $CURRENT_COMMIT"
