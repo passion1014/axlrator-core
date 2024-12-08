@@ -2,16 +2,11 @@ from app.chain_graph.agent_state import AgentState
 from app.db_model.data_repository import ChunkedDataRepository
 from app.db_model.database import SessionLocal
 from app.process.compound_word_splitter import CompoundWordSplitter
-from app.prompts.term_conversion_prompt import TERM_CONVERSION_PROMPT
+from app.prompts.term_conversion_prompt import TERM_CONVERSION_PROMPT1, TERM_CONVERSION_PROMPT2
 from app.utils import get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
-
-
 from langfuse.callback import CallbackHandler
 from langgraph.graph import END, StateGraph
-
-
-import json
 import re
 
 
@@ -58,19 +53,15 @@ def create_term_conversion_chain():
         return state
 
     def generate_response(state: AgentState) -> AgentState:
-        prompt = TERM_CONVERSION_PROMPT.format(korean_term=state['question'], related_info=state['context'])
+        prompt = TERM_CONVERSION_PROMPT1.format(korean_term=state['question'], related_info=state['context'])
         response = model.invoke(prompt)
 
         # AIMessage 객체에서 텍스트 콘텐츠 추출
         response_text = response.content if hasattr(response, 'content') else str(response)
 
         # <answer> 태그 안의 내용 추출 및 JSON 형태로 변환
-        # pattern = r"<answer>\s*snake_case:\s*(\w+)\s*camelCase:\s*(\w+)\s*</answer>"
         pattern = r"<answer>\s*snake_case:\s*\[?([\w_]+)\]?\s*camel_case:\s*\[?([\w_]+)\]?\s*</answer>"
         match = re.search(pattern, response_text, re.DOTALL)
-        
-        print(f"        ####### response_text={response_text}")
-        print(f"        ####### matchz={match}")
 
         if match:
             state['response'] = f"{state['question']} = {match.group(1)}({match.group(2)})"
@@ -91,6 +82,38 @@ def create_term_conversion_chain():
     workflow.set_entry_point("get_db_data")
     workflow.add_edge("get_db_data", "get_context") 
     workflow.add_edge("get_context", "generate_response")
+    workflow.add_edge("generate_response", END)
+
+    chain = workflow.compile()
+    chain.with_config(callbacks=[CallbackHandler()])
+
+    return chain
+
+
+def create_term_conversion_chain2():
+    """
+    용어를 변환하기 위한 체인을 생성합니다
+    """
+    
+    # 모델 선언
+    model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+    
+    def generate_response(state: AgentState) -> AgentState:
+        prompt = TERM_CONVERSION_PROMPT2.format(request=state['question'], context=state['context'])
+        response = model.invoke(prompt)
+
+        # AIMessage 객체에서 텍스트 콘텐츠 추출
+        state['response'] = response.content if hasattr(response, 'content') else str(response)
+
+        return state
+
+    workflow = StateGraph(AgentState)
+
+    # 노드 정의
+    workflow.add_node("generate_response", generate_response)
+
+    # 워크플로우 정의 
+    workflow.set_entry_point("generate_response")
     workflow.add_edge("generate_response", END)
 
     chain = workflow.compile()
