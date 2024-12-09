@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import os
-from app.db_model.database_models import ChunkedData, FaissInfo, OrgRSrc
+from app.db_model.database_models import ChunkedData, FaissInfo, OrgRSrc, RSrcTable, RSrcTableColumn
 
 class FaissInfoRepository:
     def __init__(self, session):
@@ -277,3 +277,19 @@ class ChunkedDataRepository:
             self.session.rollback()
             raise e
 
+
+class RSrcTableRepository:
+    def __init__(self, session):
+        self.session = session
+
+    def get_data_by_table_name(self, table_name: str) -> list[RSrcTable]:
+        return self.session.query(RSrcTable).filter(RSrcTable.table_name == table_name).all()
+
+    
+class RSrcTableColumnRepository:
+    def __init__(self, session):
+        self.session = session
+    
+    def get_data_by_table_id(self, rsrc_table_id: int) -> list[RSrcTable]:
+        return self.session.query(RSrcTableColumn).filter(RSrcTableColumn.rsrc_table_id == rsrc_table_id).all()
+    

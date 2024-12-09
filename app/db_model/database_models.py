@@ -125,3 +125,44 @@ class FaissInfo(Base):
     # ChunkedData와의 관계 설정
     chunked_data = relationship("ChunkedData", back_populates="faiss_info")
 
+class RSrcTable(Base):
+    '''
+    테이블 정보
+    '''
+    __tablename__ = "rsrc_table"
+
+    id = Column(Integer, primary_key=True, index=True, comment="primary key")  # 유일키
+    
+    table_name = Column(String, comment="테이블명")  # 테이블명
+    table_desc = Column(Text, comment="테이블 설명")  # 테이블 설명
+    
+    created_at = Column(TIMESTAMP, index=True, comment="생성시간")  # 생성시간
+    modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")  # 최종수정시간
+    created_by = Column(String(50), index=True, comment="생성자")  # 생성자
+    modified_by = Column(String(50), index=True, comment="최종수정자")  # 최종수정자
+    
+    rsrc_table_column = relationship("RSrcTableColumn", back_populates="rsrc_table")
+
+
+class RSrcTableColumn(Base):
+    '''
+    테이블 컬럼 정보
+    '''
+    __tablename__ = "rsrc_table_column"
+
+    id = Column(Integer, primary_key=True, index=True, comment="primary key")  # 유일키
+    
+    column_name = Column(String, comment="컬럼명")  # 컬럼명
+    column_korean_name = Column(String, comment="컬럼 한글명")  # 컬럼 한글명
+    column_type = Column(String, comment="컬럼 타입")  # 컬럼 타입
+    column_desc = Column(Text, comment="컬럼 설명")  # 컬럼 설명
+    
+    rsrc_table_id = Column(Integer, ForeignKey('rsrc_table.id'), comment="rsrc_table FK")  # 테이블 ID
+    
+    created_at = Column(TIMESTAMP, index=True, comment="생성시간")  # 생성시간
+    modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")  # 최종수정시간
+    created_by = Column(String(50), index=True, comment="생성자")  # 생성자
+    modified_by = Column(String(50), index=True, comment="최종수정자")  # 최종수정자
+
+    # RSrcTable와의 관계 설정
+    rsrc_table = relationship("RSrcTable", back_populates="rsrc_table_column")

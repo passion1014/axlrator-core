@@ -1,8 +1,11 @@
 # 필요한 라이브러리 import하기
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+load_dotenv(dotenv_path=".env.testcase") # .env, .env.testcase
 
 database_url = os.getenv("DATABASE_URL")
 
