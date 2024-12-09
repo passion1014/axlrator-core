@@ -1,0 +1,18 @@
+TABLE_NAME;COLUMN_NAME;DATA_TYPE;COMMENT
+rsrc_table;id;Integer;Primary Key
+rsrc_table;table_name;String;테이블명
+rsrc_table;table_desc;Text;테이블 설명
+rsrc_table;created_at;TIMESTAMP;생성시간
+rsrc_table;modified_at;TIMESTAMP;최종수정시간
+rsrc_table;created_by;String;생성자
+rsrc_table;modified_by;String;최종수정자
+rsrc_table_column;id;Integer;Primary Key
+rsrc_table_column;column_name;String;컬럼명
+rsrc_table_column;column_korean_name;String;컬럼 한글명
+rsrc_table_column;column_type;String;컬럼 타입
+rsrc_table_column;column_desc;Text;컬럼 설명
+rsrc_table_column;rsrc_table_id;Integer;rsrc_table FK
+rsrc_table_column;created_at;TIMESTAMP;생성시간
+rsrc_table_column;modified_at;TIMESTAMP;최종수정시간
+rsrc_table_column;created_by;String;생성자
+rsrc_table_column;modified_by;String;최종수정자
