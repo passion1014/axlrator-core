@@ -139,6 +139,7 @@
             }
 
             
+            showLoading();
             // API 호출
             fetch(fetch_url, {
                 method: 'POST',
@@ -149,6 +150,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                hideLoading();
                 console.log(data);
 
                 if (data) {
@@ -190,6 +192,7 @@
                 }
             })
             .catch(error => {
+                hideLoading();
                 console.error('API 호출 중 오류 발생:', error);
                 alert('API 호출 중 오류가 발생했습니다.');
             });

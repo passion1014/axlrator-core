@@ -152,17 +152,21 @@ You are a code analyzer that understands source code and explains its content to
 
 # 다음 소스코드를 이해하고 주석을 생성해줘
 MAKE_MAPDATAUTIL_PROMPT = PromptTemplate.from_template("""
-<테이블정보_LIST>
-{TABLE_DESC}
-</테이블정보_LIST>
-                                                      
-위 테이블 컬럼 정보를 사용해서 아래와 같은 소스코드를 작성해줘
-> MapDataUtil.setString(테이블명Doc(camel_case), "컬럼명(snake_case / upper_case)", 컬럼명(camel_case)); // 컬럼설명
-> 컬럼명(camel_case) = MapDataUtil.setString(테이블명Doc(camel_case), "컬럼명(snake_case / upper_case)"); // 컬럼설명
+**<Table Info List>**  
+{TABLE_DESC}  
+**</Table Info List>**  
 
+Using the table column information above, write source code like the following:  
 
-MapDataUtil의 함수는 컬럼의 데이터타입을 기준으로 <함수목록>에 있는 함수를 사용해서 작성해
-<함수목록>
+```java
+MapDataUtil.setString(TableNameDoc(camel_case), "COLUMN_NAME(snake_case / upper_case)", columnName(camel_case)); // Column Description
+columnName(camel_case) = MapDataUtil.getString(TableNameDoc(camel_case), "COLUMN_NAME(snake_case / upper_case)"); // Column Description
+```
+
+Use the functions in **<Function List>** for `MapDataUtil` based on the data type of the column.
+
+**<Function List>**  
+```text
   getString(Map, String)
   setString(Map, String, String)
   setString(Map, String, String, int)
@@ -184,11 +188,55 @@ MapDataUtil의 함수는 컬럼의 데이터타입을 기준으로 <함수목록
   setList(Map, String, List)
   getByte(Map, String)
   setByte(Map, String, byte[])
-</함수목록>
+```
 
-Example: 
-입력 : 테이블명=Person, 컬럼명=last_name, 타입=varchar(50), 코멘트=이름1
-  MapDataUtil.setString(PersonDoc, "LAST_NAME", last_name); // 이름1
-  String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // 이름1
+### Example:  
+Input: Table Name = `Person`, Column Name = `last_name`, Type = `varchar(50)`, Comment = `First Name`  
+Output:  
+```java
+MapDataUtil.setString(PersonDoc, "LAST_NAME", last_name); // First Name
+String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // First Name
+```  
 
 """)
+
+
+# <테이블정보_LIST>
+# {TABLE_DESC}
+# </테이블정보_LIST>
+                                                      
+# 위 테이블 컬럼 정보를 사용해서 아래와 같은 소스코드를 작성해줘
+# > MapDataUtil.setString(테이블명Doc(camel_case), "컬럼명(snake_case / upper_case)", 컬럼명(camel_case)); // 컬럼설명
+# > 컬럼명(camel_case) = MapDataUtil.setString(테이블명Doc(camel_case), "컬럼명(snake_case / upper_case)"); // 컬럼설명
+
+
+# MapDataUtil의 함수는 컬럼의 데이터타입을 기준으로 <함수목록>에 있는 함수를 사용해서 작성해
+# <함수목록>
+#   getString(Map, String)
+#   setString(Map, String, String)
+#   setString(Map, String, String, int)
+#   setString(Map, String, String, boolean)
+#   setString(Map, String, String, boolean, int)
+#   getInt(Map, String)
+#   getInt(Map, String, int)
+#   getLong(Map, String)
+#   setLong(Map, String, long)
+#   getBoolean(Map, String)
+#   getBoolean(Map, String, boolean)
+#   getDouble(Map, String)
+#   getDouble(Map, String, double)
+#   getBigDecimal(Map, String)
+#   setBigDecimal(Map, String, BigDecimal)
+#   getStringArray(Map, String)
+#   setStringArray(Map, String, String[])
+#   getList(Map, String)
+#   setList(Map, String, List)
+#   getByte(Map, String)
+#   setByte(Map, String, byte[])
+# </함수목록>
+
+# Example: 
+# 입력 : 테이블명=Person, 컬럼명=last_name, 타입=varchar(50), 코멘트=이름1
+#   MapDataUtil.setString(PersonDoc, "LAST_NAME", last_name); // 이름1
+#   String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // 이름1
+

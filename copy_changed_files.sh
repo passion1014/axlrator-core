@@ -9,7 +9,7 @@ mkdir -p "$DEST_DIR"
 
 # Git에서 변경된 파일 목록 가져오기 (기준 커밋은 사용자가 수정)
 BASE_COMMIT="9f6651e" # 기준 커밋 (현재는 바로 직전 커밋)
-CURRENT_COMMIT="d31f7f8" # 현재 커밋 
+CURRENT_COMMIT="7cb5b01" # 현재 커밋 7cb5b01
 
 echo "기준 커밋: $BASE_COMMIT"
 echo "현재 커밋: $CURRENT_COMMIT"
