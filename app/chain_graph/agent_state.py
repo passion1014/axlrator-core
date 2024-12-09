@@ -22,7 +22,7 @@ class AgentState(TypedDict):
     context: str
     response: str
     current_code: str # code assist를 위한 항목
-    
+    sql_request: str
 
 
 __all__ = [

@@ -200,43 +200,17 @@ String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // First Name
 
 """)
 
+TEXT_SQL_PROMPT = PromptTemplate.from_template("""
+You are a database expert specializing in generating SQL.
 
-# <테이블정보_LIST>
-# {TABLE_DESC}
-# </테이블정보_LIST>
-                                                      
-# 위 테이블 컬럼 정보를 사용해서 아래와 같은 소스코드를 작성해줘
-# > MapDataUtil.setString(테이블명Doc(camel_case), "컬럼명(snake_case / upper_case)", 컬럼명(camel_case)); // 컬럼설명
-# > 컬럼명(camel_case) = MapDataUtil.setString(테이블명Doc(camel_case), "컬럼명(snake_case / upper_case)"); // 컬럼설명
+**<Table Info List>**  
+{TABLE_DESC}  
+**</Table Info List>**  
 
+Using the **<Table Info List>**, write SQL according to the details provided in the **<SQL Request>**.
 
-# MapDataUtil의 함수는 컬럼의 데이터타입을 기준으로 <함수목록>에 있는 함수를 사용해서 작성해
-# <함수목록>
-#   getString(Map, String)
-#   setString(Map, String, String)
-#   setString(Map, String, String, int)
-#   setString(Map, String, String, boolean)
-#   setString(Map, String, String, boolean, int)
-#   getInt(Map, String)
-#   getInt(Map, String, int)
-#   getLong(Map, String)
-#   setLong(Map, String, long)
-#   getBoolean(Map, String)
-#   getBoolean(Map, String, boolean)
-#   getDouble(Map, String)
-#   getDouble(Map, String, double)
-#   getBigDecimal(Map, String)
-#   setBigDecimal(Map, String, BigDecimal)
-#   getStringArray(Map, String)
-#   setStringArray(Map, String, String[])
-#   getList(Map, String)
-#   setList(Map, String, List)
-#   getByte(Map, String)
-#   setByte(Map, String, byte[])
-# </함수목록>
+**<SQL Request>**
+{SQL_REQUEST}
+**<SQL Request>**
 
-# Example: 
-# 입력 : 테이블명=Person, 컬럼명=last_name, 타입=varchar(50), 코멘트=이름1
-#   MapDataUtil.setString(PersonDoc, "LAST_NAME", last_name); // 이름1
-#   String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // 이름1
-
+""")

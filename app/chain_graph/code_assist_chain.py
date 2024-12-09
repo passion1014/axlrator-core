@@ -2,7 +2,7 @@ from typing import TypedDict
 from app.chain_graph.agent_state import AgentState
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
-from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT
+from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
 from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
@@ -47,10 +47,10 @@ def code_assist_chain(type:str):
                     column_jsons = []
                     for column in columns:
                         column_jsons.append({
-                            'column_name': column.column_name,
-                            'column_korean_name': column.column_korean_name,
-                            'column_type': column.column_type,
-                            'column_desc': column.column_desc
+                            'name': column.column_name,
+                            # 'column_korean_name': column.column_korean_name,
+                            'type': column.column_type,
+                            'desc': column.column_desc.strip()
                         })
                     
                     table_json[table_name.strip()] = {
@@ -84,6 +84,12 @@ def code_assist_chain(type:str):
         elif ("04" == type) : # 테이블명으로 MapDataUtil 생성하기
             prompt = MAKE_MAPDATAUTIL_PROMPT.format(
                 TABLE_DESC=state['context']
+            )
+
+        elif ("05" == type) : # SQL 생성하기
+            prompt = TEXT_SQL_PROMPT.format(
+                TABLE_DESC=state['context'],
+                SQL_REQUEST=state['sql_request']
             )
 
         else:
@@ -135,6 +141,16 @@ def code_assist_chain(type:str):
         workflow.add_edge("get_table_desc", "generate_response")
         workflow.add_edge("generate_response", END)
         pass
+
+    elif ("05" == type) : # SQL 생성하기
+        workflow.add_node("get_table_desc", get_table_desc)
+        workflow.add_node("generate_response", generate_response)
+        
+        workflow.set_entry_point("get_table_desc")
+        workflow.add_edge("get_table_desc", "generate_response")
+        workflow.add_edge("generate_response", END)
+        pass
+
 
     else:
         workflow.add_node("get_context", get_context)

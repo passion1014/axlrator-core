@@ -1,6 +1,6 @@
 {% extends 'common/frame.html' %}
 
-{% block title %}텍스트 입력 화면{% endblock %}
+{% block title %}시연 테스트 화면{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -8,7 +8,7 @@
     <div class="col-md-9 col-lg-8">
         <div class="mt-4">
             <div class="section text-area-group">
-                <h2 class="mb-4">텍스트 입력</h2>
+                <h2 class="mb-4">시연 테스트</h2>
                 <form>
                     <!-- Selectbox 추가 -->
                     <div class="form-group mb-3">
@@ -19,6 +19,7 @@
                             <option value="wordconversion">용어변환</option>
                             <option value="makecomment">주석설명 자동 생성</option>
                             <option value="makemapdatautil">테이블정보 사용하여 MapDataUtil 자동 생성</option>
+                            <option value="makesql">SQL 생성하기</option>
                         </select>
                     </div>
 
@@ -28,8 +29,8 @@
                     </div>
 
 
-                    <div class="form-group mb-4">
-                        <label for="reference-context">참고 컨텍스트:</label>
+                    <div class="form-group mb-4" id='context1'>
+                        <label for="reference-context" id='lbl_context1'>참고 컨텍스트:</label>
                         <textarea class="form-control" id="reference-context" name="reference-context" rows="5"></textarea>
                     </div>
                     <!-- Markdown Viewer로 변경 -->
@@ -94,9 +95,16 @@
 <script>
 
     document.addEventListener('DOMContentLoaded', function () {
-        hljs.highlightAll();
+        const categorySelect = document.getElementById('category');
         const contextTextarea = document.getElementById('context');
+        const context1Textarea = document.getElementById('context1');
         const markdownViewer = document.getElementById('markdownViewer');
+        const context1Label = document.getElementById('lbl_context1');
+
+        // 초기화
+        document.getElementById('context1').style.display = 'none'; // 참고 컨텍스트1
+        hljs.highlightAll();
+        
 
         // 실시간 Markdown 렌더링
         contextTextarea.addEventListener('input', function () {
@@ -110,7 +118,40 @@
         // 서비스 호출 버튼 이벤트
         const callServiceButton = document.getElementById('callServiceButton');
 
-        callServiceButton.addEventListener('click', function () {
+        categorySelect.addEventListener('change', function () {
+            const selectedCategory = categorySelect.value;
+
+            context1Textarea.style.display = 'none';
+            context1Label.textContent = '참고컨텍스트';
+            
+            if (selectedCategory === "normal") {
+                console.log("Normal category selected");
+                
+            } else if (selectedCategory === "autocode") {
+                console.log("Autocode category selected");
+            } else if (selectedCategory === "wordconversion") {
+                console.log("Word Conversion category selected");
+                // 추가 로직을 여기에 작성
+            } else if (selectedCategory === "makecomment") {
+                console.log("Make Comment category selected");
+                // 추가 로직을 여기에 작성
+            } else if (selectedCategory === "makemapdatautil") {
+                console.log("Make MapDataUtil category selected");
+                // 추가 로직을 여기에 작성
+
+            } else if (selectedCategory === "makesql") {
+                console.log("Make MapDataUtil category selected");
+                context1Textarea.style.display = 'block';
+                context1Label.textContent = 'SQL생성요청';
+
+            } else {
+                console.log("Unknown category selected");
+                // 추가 로직을 여기에 작성
+            }
+        });
+        
+
+        callServiceButton.addEventListener('click', function () { 
             const category = document.getElementById('category').value;
             const question = document.getElementById('question').value;
             const context = document.getElementById('context').value;
@@ -122,7 +163,7 @@
                 category: category,
                 question: question,
                 context: context,
-                referenceContext: referenceContext
+                sql_request: referenceContext
             };
 
             fetch_url = "";
@@ -136,6 +177,9 @@
                 fetch_url = "/codeassist/api/makecomment";
             } else if ("makemapdatautil" == category) {
                 fetch_url = "/codeassist/api/makemapdatautil";
+
+            } else if ("makesql" == category) {
+                fetch_url = "/codeassist/api/makesql";
             }
 
             
@@ -184,6 +228,10 @@
                         var result = response;
                         setMarkdownViewer(result); // 응답 데이터를 Markdown Viewer에 렌더링
 
+                    } else if ("makesql" == category) {
+                        var response = data.response && data.response.response && data.response.response.content ? data.response.response.content : '';
+                        var result = "```sql\n\n" + response;
+                        setMarkdownViewer(result); // 응답 데이터를 Markdown Viewer에 렌더링
                     }
 
 
@@ -224,7 +272,7 @@
     }
 
     // 예제 호출
-    setMarkdownViewer("# 제목1\n이것은 **Markdown** 예제입니다.");
+    setMarkdownViewer("# Markdown");
 </script>
 {% endblock %}
 
@@ -316,4 +364,9 @@
     }
 
 
+
+    ZGU_GUAS_H,ZSA_CNRC_PRTY,ZCU_MMBR_CG_V3
+
+    ZGU_GUAS_H, ZSA_CNRC_PRTY, ZCU_MMBR_CG_V3 테이블을 활용하여 2024년도 보증발급 현황 조회 쿼리 작성해줘. 조회항목은 다음과 같이 작성해줘 
+다음 : 조합원번호, 당사자명, 관할영업점, 계약관리번호, 보증서번호, 보증상품, 보증금액, 수수료, 주계약명
 -->

@@ -10,6 +10,7 @@ class CodeAssistRequest(BaseModel):
     indexname: str
     question: str
     current_code: str
+    sql_request: str
 
 
 # code assist 요청 엔드포인트
@@ -41,7 +42,7 @@ async def makecomment_endpoint(request: CodeAssistRequest):
     response = code_assist_chain(type="03").invoke(state)
     return {"response": response}
 
-# 주석 생성 요청 엔드포인트
+# MapDataUtil 생성 요청 엔드포인트
 @router.post("/api/makemapdatautil")
 async def make_mapdatautil_endpoint(request: CodeAssistRequest):
     print(f"### request = {str(request)}")
@@ -49,4 +50,15 @@ async def make_mapdatautil_endpoint(request: CodeAssistRequest):
     state = {"question": request.question}
     response = code_assist_chain(type="04").invoke(state)
     return {"response": response}
+
+# SQL 생성 요청 엔드포인트
+@router.post("/api/makesql")
+async def make_sql_endpoint(request: CodeAssistRequest):
+    print(f"### request = {str(request)}")
+    
+    state = {"question": request.question, "sql_request": request.sql_request}
+    
+    response = code_assist_chain(type="05").invoke(state)
+    return {"response": response}
+
 
