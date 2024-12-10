@@ -310,3 +310,6 @@ docker-compose.xml
 $ docker-compose up -d
 
 .env 업데이트 필요
+
+
+### 2024-12-10
