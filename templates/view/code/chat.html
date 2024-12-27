@@ -1,0 +1,216 @@
+{% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+	<div class="chat-wrap">
+	
+		<div class="chat-scroll" id="chatScroll" onscroll="chatWrap.eventScroll()">
+			<div  class="chat-item type2">
+				<div class="text">alert창 사용방법</div>
+				<div class="msg-icon-btns">
+					<button class="btn"><i class="bi bi-clipboard"></i></button>
+					<button class="btn"><i class="bi bi-hand-thumbs-up"></i></button>
+					<button class="btn"><i class="bi bi-hand-thumbs-down"></i></button>
+					<button class="btn"><i class="bi bi-volume-up"></i></button>
+					<button class="btn"><i class="bi bi-arrow-counterclockwise"></i></button>
+				</div>
+			</div>
+			
+			<div  class="markdown-wrap pt-3 border-top">
+				<div id="markdownViewer">
+					<p>JavaScript의 <code>alert()</code> 함수는 웹 페이지에 팝업 창을 표시하여 메시지를 보여줍니다. 다음은 기본적인 <code>alert()</code> 함수 사용 예입니다.</p>
+					<pre>
+						<code class="language-javascript hljs"><span class="hljs-title function_">alert</span>(<span class="hljs-string">"안녕하세요! 이것은 알림창입니다."</span>);
+						</code>
+					</pre>
+					<p>위 코드를 실행하면 웹 페이지 중앙에 "안녕하세요! 이것은 알림창입니다."라는 메시지가 담긴 팝업 창이 나타납니다. 사용자는 "확인" 버튼을 클릭하여 팝업 창을 닫습니다.</p>
+					<p><strong>주의 사항:</strong></p>
+					<ul>
+					<li><code>alert()</code> 함수는 비동기적으로 실행됩니다. 즉, 알림창이 표시되고 사용자가 확인 버튼을 클릭할 때까지 다른 코드가 실행되지 않습니다.</li>
+					<li><code>alert()</code> 함수는 단순한 메시지를 표시하는 데만 사용될 수 있습니다. 사용자 입력을 받거나 복잡한 작업을 수행하기 위해서는 다른 방법 (예: <code>prompt()</code>, <code>confirm()</code>) 을 사용해야 합니다.</li>
+					</ul>
+					<p><strong>추가 예제:</strong></p>
+					<pre>
+					<code class="language-javascript hljs"><span class="hljs-comment">// 변수에 메시지를 저장하고 alert 함수에 전달</span>
+	<span class="hljs-keyword">let</span> message = <span class="hljs-string">"이것은 변수에 저장된 메시지입니다."</span>;
+	<span class="hljs-title function_">alert</span>(message);
+
+	<span class="hljs-comment">// alert 함수를 다른 함수 내에서 사용</span>
+	<span class="hljs-keyword">function</span> <span class="hljs-title function_">showMessage</span>(<span class="hljs-params"></span>) {
+  <span class="hljs-title function_">alert</span>(<span class="hljs-string">"안녕하세요! 이것은 함수 내부에서 실행되는 알림창입니다."</span>);
+	}
+	<span class="hljs-title function_">showMessage</span>();
+						</code></pre>
+				</div>
+			</div>
+			
+			<div  class="chat-item type2">
+				<div class="text">CSS 배경색 변경하기</div>
+				<div class="msg-icon-btns">
+					<button class="btn"><i class="bi bi-clipboard"></i></button>
+					<button class="btn"><i class="bi bi-hand-thumbs-up"></i></button>
+					<button class="btn"><i class="bi bi-hand-thumbs-down"></i></button>
+					<button class="btn"><i class="bi bi-volume-up"></i></button>
+					<button class="btn"><i class="bi bi-arrow-counterclockwise"></i></button>
+				</div>
+			</div>
+			
+			
+			<div  class="markdown-wrap pt-3 border-top">
+				<div id="markdownViewer2"><h2>CSS로 배경색 변경하기</h2>
+					<p>CSS를 사용하여 웹 페이지의 배경색을 변경하는 방법은 여러 가지가 있습니다. 어떤 방법을 사용할지는 웹 페이지의 구조와 디자인 요구 사항에 따라 결정됩니다. </p>
+					<p><strong>1. 전체 페이지 배경색 변경:</strong></p>
+					<pre>
+					<code class="language-css hljs"><span class="hljs-selector-tag">body</span> {
+					  <span class="hljs-attribute">background-color</span>: #yourColorCode; <span class="hljs-comment">/* 예: #FF0000 (빨강), #00FF00 (초록), #0000FF (파랑) */</span>
+					}
+					</code></pre>
+					<p><strong>2. 특정 요소의 배경색 변경:</strong></p>
+					<pre><code class="language-css hljs"><span class="hljs-comment">/* 예: h1 태그의 배경색을 노란색으로 설정 */</span>
+					<span class="hljs-selector-tag">h1</span> {
+					  <span class="hljs-attribute">background-color</span>: yellow;
+					}
+					</code></pre>
+					<p><strong>3. 배경 이미지 사용:</strong></p>
+					<pre><code class="language-css hljs"><span class="hljs-selector-tag">body</span> {
+					  <span class="hljs-attribute">background-image</span>: <span class="hljs-built_in">url</span>(<span class="hljs-string">"yourImagePath.jpg"</span>); <span class="hljs-comment">/* 이미지 경로를 입력 */</span>
+					  <span class="hljs-attribute">background-repeat</span>: no-repeat; <span class="hljs-comment">/* 이미지 반복 방지 */</span>
+					  <span class="hljs-attribute">background-size</span>: cover; <span class="hljs-comment">/* 이미지 화면 전체에 맞춤 */</span>
+					}
+					</code></pre>
+					<p><strong>4. 그라디언트 배경 사용:</strong></p>
+					<pre><code class="language-css hljs"><span class="hljs-selector-tag">body</span> {
+					  <span class="hljs-attribute">background</span>: <span class="hljs-built_in">linear-gradient</span>(to right, <span class="hljs-number">#FF0000</span>, <span class="hljs-number">#FFFF00</span>); <span class="hljs-comment">/* 빨강에서 노랑으로 변화하는 그라디언트 */</span>
+					}
+					</code></pre>
+					<p><strong>참고 사항:</strong></p>
+					<ul>
+					<li><code>#yourColorCode</code>는 원하는 색상 코드를 입력해야 합니다. 16진수 코드(예: #FF0000) 또는 색상 이름(예: red, green, blue)을 사용할 수 있습니다.</li>
+					<li>CSS 속성은 웹 페이지의 HTML 요소에 적용됩니다. 따라서 어떤 요소의 배경색을 변경하고 싶은지 명확하게 지정해야 합니다.</li>
+					<li>다양한 CSS 속성을 조합하여 원하는 효과를 얻을 수 있습니다.</li>
+					</ul>
+					<p><strong>추가 정보:</strong></p>
+					<ul>
+					<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/background-color">MDN Web Docs - background-color</a></li>
+					<li><a href="https://css-tricks.com/almanac/properties/b/">CSS Tricks - Backgrounds and Borders</a></li>
+					</ul>
+				</div>
+			</div>
+			
+			
+			<div  class="chat-item type2">
+				<div class="text">감사감사</div>
+				<div class="msg-icon-btns">
+					<button class="btn"><i class="bi bi-clipboard"></i></button>
+					<button class="btn"><i class="bi bi-hand-thumbs-up"></i></button>
+					<button class="btn"><i class="bi bi-hand-thumbs-down"></i></button>
+					<button class="btn"><i class="bi bi-volume-up"></i></button>
+					<button class="btn"><i class="bi bi-arrow-counterclockwise"></i></button>
+				</div>
+			</div>
+			
+			<div  class="markdown-wrap pt-3 border-top">
+				<div id="markdownViewer3">
+					<p>그렇구나</p>
+				</div>
+			</div>
+			
+		</div>
+		
+		<button class="btn btn-secondary btn-scroll-down d-none" onclick="chatWrap.scrollDown()"><i class="bi bi-chevron-double-down"></i></button>
+			
+		<div class="chat-msg-wrap">
+			<textarea placeholder="질문입력" class="form-control" id="textMsg" oninput="inputText()"></textarea>
+			<div class="chat-file">
+				<input type="file" class="form-control" />
+				<span class="icon-file"><i class="bi bi-paperclip"></i></span>
+			</div>
+			<div class="chat-btns">
+				<button id="btnSend" class="btn btn-primary btn-send-msg focus-ring" onclick="clickBtn()" disabled><i class="bi bi-arrow-up"></i></button>
+			</div>
+		</div>
+	
+	</div>
+	
+	
+	
+	
+
+<script>
+
+/*
+const sample = "sample.md";
+
+fetch(sample)
+.then((response) => {
+	if(!response.ok) {
+		throw new Error ("HTTP error");
+	}
+	return response.text();
+})
+.then((text) => {
+	const target = document.getElementById("markdownViewer3");
+	target.innerHTML = marked.marked(text);
+	target.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+    })
+})
+
+*/
+
+const chatWrap = {
+	el :  document.getElementById("chatScroll"),
+	getHeight() {
+		return this.el.clientHeight;
+	},
+	getScrollTop() {
+		return this.el.scrollTop;
+	},
+	getScrollHeight() {
+		return this.el.scrollHeight;
+	},
+	scrollDown() {
+		this.el.scrollTo(0, this.getScrollHeight());
+	},
+	eventScroll() {
+		const btnDown = document.querySelector(".btn-scroll-down");
+		(this.getScrollTop() + this.getHeight()) >= this.getScrollHeight() ? btnDown.classList.add("d-none") : btnDown.classList.remove("d-none");
+	}
+}
+
+const clickBtn = function() {
+	const text = document.getElementById("textMsg");
+	const btn = document.getElementById("btnSend");
+	if(!text.value) return false;
+	btn.disabled = true;
+	btn.classList.remove("btn-send-animation");
+	text.value = "";
+}
+
+const inputText = function() {
+	const btn = document.getElementById("btnSend");
+	if(event.target.value.length > 0) {
+		btn.disabled = false;
+		btn.classList.add("btn-send-animation");
+	}else {
+		btn.disabled = true;
+		btn.classList.remove("btn-send-animation");
+	}
+}
+
+//코드복사 영역
+document.querySelectorAll("pre").forEach((pre) => {
+	const divTop = document.createElement("div");
+	divTop.classList.add("code-top");
+	const copyBtn = document.createElement("button");
+	copyBtn.classList.add("btn", "text-white", "bi", "bi-clipboard");
+	copyBtn.innerText = "코드복사"
+	divTop.appendChild(copyBtn);
+	copyBtn.addEventListener("click", () => {
+		const code = divTop.parentNode.querySelector("code").textContent;
+		navigator.clipboard.writeText(code);
+	});
+	pre.insertBefore(divTop, pre.firstChild);
+});
+
+
+</script>
+	
+{% endblock %}

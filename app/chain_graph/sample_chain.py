@@ -29,5 +29,5 @@ def sample_chain():
 
     chain = workflow.compile()
     chain.with_config(callbacks=[CallbackHandler()])
-
+    
     return chain

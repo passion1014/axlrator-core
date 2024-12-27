@@ -1,4 +1,3 @@
-from typing import TypedDict
 from app.chain_graph.agent_state import AgentState
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
@@ -161,7 +160,7 @@ def code_assist_chain(type:str):
         workflow.add_edge("generate_response", END)
         pass
     
-    chain = workflow.compile()
+    chain = workflow.compile() # CompiledStateGraph
     chain.with_config(callbacks=[CallbackHandler()])
     
     return chain

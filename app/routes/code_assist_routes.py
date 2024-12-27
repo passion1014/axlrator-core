@@ -25,13 +25,37 @@ async def sample_endpoint(request: CodeAssistRequest):
     return {"response": response}
 
 # code assist 요청 엔드포인트
+# @router.post("/api/autocode")
+# async def autocode_endpoint(request: CodeAssistRequest):
+#     print(f"### request = {str(request)}")
+    
+#     state = {"question": request.question}
+#     response = code_assist_chain(type="01").invoke(state)
+#     return {"response": response}
+
+from fastapi.responses import StreamingResponse
+
 @router.post("/api/autocode")
 async def autocode_endpoint(request: CodeAssistRequest):
-    print(f"### request = {str(request)}")
-    
     state = {"question": request.question}
-    response = code_assist_chain(type="01").invoke(state)
-    return {"response": response}
+
+    async def stream_response():
+        # `ainvoke` 호출
+        result = await code_assist_chain(type="01").ainvoke(state)
+
+        # 결과가 비동기 반복 가능한 객체인지 확인
+        if isinstance(result, dict) or not hasattr(result, "__aiter__"):
+            # 단일 값 반환
+            yield str(result)
+        else:
+            # 비동기 반복 가능한 객체 처리
+            async for chunk in result:
+                yield chunk
+
+    return StreamingResponse(stream_response(), media_type="text/plain")
+
+
+
 
 # 주석 생성 요청 엔드포인트
 @router.post("/api/makecomment")

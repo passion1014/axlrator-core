@@ -1,0 +1,253 @@
+{% extends 'common/frame.html' %}
+
+{% block title %}시연 테스트 화면{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 메인 콘텐츠 영역 -->
+    <div class="col-md-9 col-lg-8">
+        <div class="mt-4">
+            <div class="section text-area-group">
+                <h2 class="mb-4">시연 테스트</h2>
+                <form>
+                    <!-- Selectbox 추가 -->
+                    <div class="form-group mb-3">
+                        <label for="category">카테고리 선택:</label>
+                        <select class="form-control" id="category" name="category">
+                            <option value="normal">심플LLM호출</option>
+                            <option value="autocode">코드자동완성</option>
+                            <option value="wordconversion">용어변환</option>
+                            <option value="makecomment">주석설명 자동 생성</option>
+                            <option value="makemapdatautil">테이블정보 사용하여 MapDataUtil 자동 생성</option>
+                            <option value="makesql">SQL 생성하기</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="question">질문:</label>
+                        <textarea class="form-control" id="question" name="question" rows="5"></textarea>
+                    </div>
+
+                    <div class="form-group mb-4" id='context1'>
+                        <label for="reference-context" id='lbl_context1'>참고 컨텍스트:</label>
+                        <textarea class="form-control" id="reference-context" name="reference-context" rows="5"></textarea>
+                    </div>
+                    <!-- Markdown Viewer로 변경 -->
+                    <div class="form-group mb-3">
+                        <label for="context">생성 결과 :</label>
+                        <textarea class="form-control d-none" id="context" name="context" rows="5"></textarea>
+                        <div id="markdownViewer" class="border p-3 bg-light"></div>
+                    </div>
+                    <button type="button" class="btn btn-success" id="callServiceButton">서비스 호출</button>
+                    <!-- button type="submit" class="btn btn-primary">제출</button -->
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오른쪽 사이드바 -->
+    <div class="col-md-3 col-lg-4">
+        <nav id="rightSidebar" class="bg-light sidebar">
+            <div class="position-sticky pt-3 sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="collapse" href="#treeMenu1" role="button" aria-expanded="false" aria-controls="treeMenu1">
+                            <span data-feather="folder"></span>
+                            질문의 대분류1
+                        </a>
+                        <div class="collapse" id="treeMenu1">
+                            <ul class="nav flex-column ms-3">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <span data-feather="file"></span>
+                                        질문의 중분류 1-1
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="collapse" href="#subTreeMenu1" role="button" aria-expanded="false" aria-controls="subTreeMenu1">
+                                        <span data-feather="folder"></span>
+                                        질문의 중분류 1-2
+                                    </a>
+                                    <div class="collapse" id="subTreeMenu1">
+                                        <ul class="nav flex-column ms-3">
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="#">
+                                                    <span data-feather="file"></span>
+                                                    질문 소분류
+                                                </a>
+                                            </li>
+                                            <!-- 추가 하위 메뉴 항목들 -->
+                                        </ul>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <!-- 추가 루트 메뉴 항목들 -->
+                </ul>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<!-- JavaScript로 Markdown Viewer 구현 -->
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const categorySelect = document.getElementById('category');
+        const contextTextarea = document.getElementById('context');
+        const context1Textarea = document.getElementById('context1');
+        const markdownViewer = document.getElementById('markdownViewer');
+        const context1Label = document.getElementById('lbl_context1');
+
+        // 초기화
+        document.getElementById('context1').style.display = 'none'; // 참고 컨텍스트1
+        hljs.highlightAll();
+        
+
+        // 실시간 Markdown 렌더링
+        contextTextarea.addEventListener('input', function () {
+            const markdownText = contextTextarea.value;
+            markdownViewer.innerHTML = marked.marked(markdownText); // marked.js 사용
+        });
+
+        // 초기 렌더링
+        contextTextarea.dispatchEvent(new Event('input'));
+
+        // 서비스 호출 버튼 이벤트
+        const callServiceButton = document.getElementById('callServiceButton');
+
+        categorySelect.addEventListener('change', function () {
+            const selectedCategory = categorySelect.value;
+
+            context1Textarea.style.display = 'none';
+            context1Label.textContent = '참고컨텍스트';
+            
+            if (selectedCategory === "normal") {
+                console.log("Normal category selected");
+                
+            } else if (selectedCategory === "autocode") {
+                console.log("Autocode category selected");
+            } else if (selectedCategory === "wordconversion") {
+                console.log("Word Conversion category selected");
+                // 추가 로직을 여기에 작성
+            } else if (selectedCategory === "makecomment") {
+                console.log("Make Comment category selected");
+                // 추가 로직을 여기에 작성
+            } else if (selectedCategory === "makemapdatautil") {
+                console.log("Make MapDataUtil category selected");
+                // 추가 로직을 여기에 작성
+
+            } else if (selectedCategory === "makesql") {
+                console.log("Make MapDataUtil category selected");
+                context1Textarea.style.display = 'block';
+                context1Label.textContent = 'SQL생성요청';
+
+            } else {
+                console.log("Unknown category selected");
+                // 추가 로직을 여기에 작성
+            }
+        });
+    });
+
+    callServiceButton.addEventListener('click', function () { 
+        const category = document.getElementById('category').value;
+        const question = document.getElementById('question').value;
+        const context = document.getElementById('context').value;
+        const referenceContext = document.getElementById('reference-context').value;
+    
+        const payload = {
+            indexname: "",
+            current_code: "",
+            category: category,
+            question: question,
+            context: context,
+            sql_request: referenceContext
+        };
+    
+        let fetch_url = "";
+        if ("normal" === category) {
+            // fetch_url = "/codeassist/api/autocode";
+        } else if ("autocode" === category) {
+            fetch_url = "/codeassist/api/autocode";
+        } else if ("wordconversion" === category) {
+            fetch_url = "/termsconversion/api/conv";
+        } else if ("makecomment" === category) {
+            fetch_url = "/codeassist/api/makecomment";
+        } else if ("makemapdatautil" === category) {
+            fetch_url = "/codeassist/api/makemapdatautil";
+        } else if ("makesql" === category) {
+            fetch_url = "/codeassist/api/makesql";
+        }
+    
+        showLoading();
+    
+        // API 호출
+        fetch(fetch_url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.body) {
+                throw new Error("No response body");
+            }
+    
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let result = "";
+    
+            function processChunk({ done, value }) {
+                if (done) {
+                    hideLoading();
+                    setMarkdownViewer(result);
+                    return;
+                }
+    
+                const chunk = decoder.decode(value, { stream: true });
+                console.log("Received chunk:", chunk);
+                result += chunk;
+    
+                // 청크 데이터를 실시간으로 화면에 업데이트
+                document.getElementById('context').value += chunk;
+                console.log(chunk);
+    
+                return reader.read().then(processChunk);
+            }
+    
+            return reader.read().then(processChunk);
+        });
+    });
+    
+
+
+    /**
+    * Markdown Viewer에 값을 설정하는 함수
+    * @param {string} markdownText - 렌더링할 Markdown 텍스트
+    */
+    function setMarkdownViewer(markdownText) {
+        const markdownViewer = document.getElementById('markdownViewer');
+        const contextTextarea = document.getElementById('context');
+
+        // Textarea에도 값을 동기화
+        if (contextTextarea) {
+            contextTextarea.value = markdownText;
+        }
+
+        // Markdown Viewer에 렌더링
+        if (markdownViewer) {
+            markdownViewer.innerHTML = marked.marked(markdownText); // marked.js 사용
+
+            // 코드 하이라이트 적용
+            markdownViewer.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+    }
+
+    // 예제 호출
+    setMarkdownViewer("# Markdown");
+</script>
+{% endblock %}
