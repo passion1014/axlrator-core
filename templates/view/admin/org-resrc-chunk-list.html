@@ -1,0 +1,112 @@
+{% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+	<div class="contents-wrap">
+		<div class="tit-wrap">
+			<h2 class="tit01">원본 리소스 청크 조회</h2>
+		</div>
+		
+		<div class="search-wrap mt-2">
+			<div class="row gy-2">
+				<div class="col-auto">
+					<label for="#" class="form-label">생성일 기간</label>
+					<div class="input-group">
+					  <input type="date" class="form-control">
+					  <span class="input-group-text">~</span>
+					  <input type="date" class="form-control">
+					</div>
+				</div>
+				<div class="col-auto">
+					<label for="#" class="form-label">데이터</label>
+					<input type="text" class="form-control">
+				</div>
+				<div class="col-auto">
+					<label for="#" class="form-label">데이터타입</label>
+					<input type="text" class="form-control">
+				</div>
+				<div class="col-auto">
+					<label for="#" class="form-label">인덱스</label>
+					<input type="text" class="form-control" style="width:100px">
+				</div>
+				<div class="col-auto">
+					<label for="#" class="form-label">리소스명</label>
+					<input type="text" class="form-control">
+				</div>
+				<div class="col-auto">
+					<label for="#" class="form-label">리소스타입</label>
+					<input type="text" class="form-control">
+				</div>
+				
+				<div class="col align-self-end">
+					<button type="button" class="btn btn-primary">조회</button>
+				</div>
+			</div>
+		</div>
+		
+		
+		<table class="table table-bordered table-sm mt-4">
+			<thead class="table-secondary">
+				<tr class="text-center">
+					<th>No</th>
+					<th>데이터명</th>
+					<th>데이터타입</th>
+					<th>청크데이터</th>
+					<th>메타데이터</th>
+					<th>리소스명</th>
+					<th>리소스타입</th>
+					<th>생성일</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr class="align-middle">
+					<td class="text-center" style="width:70px;">1</td>
+					<td>WRKS</td>
+					<td>terms</td>
+					<td>WRKS=공사</td>
+					<td>{}</td>
+					<td>terms_20241112.terms</td>
+					<td>01</td>
+					<td class="text-center">2024-01-01</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center" style="width:70px;">1</td>
+					<td>WRKS</td>
+					<td>terms</td>
+					<td>WRKS=공사</td>
+					<td>{}</td>
+					<td>terms_20241112.terms</td>
+					<td>01</td>
+					<td class="text-center">2024-01-01</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center" style="width:70px;">1</td>
+					<td>WRKS</td>
+					<td>terms</td>
+					<td>WRKS=공사</td>
+					<td>{}</td>
+					<td>terms_20241112.terms</td>
+					<td>01</td>
+					<td class="text-center">2024-01-01</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center" style="width:70px;">1</td>
+					<td>WRKS</td>
+					<td>terms</td>
+					<td>WRKS=공사</td>
+					<td>{}</td>
+					<td>terms_20241112.terms</td>
+					<td>01</td>
+					<td class="text-center">2024-01-01</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center" style="width:70px;">1</td>
+					<td>WRKS</td>
+					<td>terms</td>
+					<td>WRKS=공사</td>
+					<td>{}</td>
+					<td>terms_20241112.terms</td>
+					<td>01</td>
+					<td class="text-center">2024-01-01</td>
+				</tr>
+			</tbody>
+			</table>
+		</div>
+		{% endblock %}

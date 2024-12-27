@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insert title here</title>
+
+<style>
+
+html, body {padding:0; margin:0;}
+
+body {height:100vh;}
+
+.wrap {display:flex;}
+.list {flex-basis:300px; border-right:1px solid #ddd;}
+.content {flex:1; position:relative; height:100vh; display:flex; flex-direction:column}
+
+#iframe {height:100%; width:100%; margin:0; border:0; display:block; vertical-align:middle;}
+.url {height:50px; background:#ddd; padding:10px; box-sizing:border-box;}
+.url input {height:100%; width:100%; box-sizing:border-box;}
+</style>
+<script>
+	function clickLink(e) {
+		var [href1, href2] = event.target.href.split("/").reverse();
+		document.getElementById("url").value = "/"+href2+"/"+href1;
+	}
+</script>
+</head>
+<body>
+
+
+<div class="wrap">
+	<div  class="list">
+		<ul>
+			<li><a href="layout.html" target="frame" onclick="clickLink()">Layout</a></li>
+			<li><a href="template.html" target="frame" onclick="clickLink()">Template</a></li>
+			<li><a href="login.html" target="frame" onclick="clickLink()">로그인</a></li>
+			<li><a href="view01.html" target="frame" onclick="clickLink()">용어변환</a></li>
+			<li><a href="view02.html" target="frame" onclick="clickLink()">프로그램 코드 생성</a></li>
+			<li><a href="view03.html" target="frame" onclick="clickLink()">SQL 생성</a></li>
+			<li><a href="view04.html" target="frame" onclick="clickLink()">RAG 요청</a></li>
+			<li><a href="view04_ie11.html" target="frame" onclick="clickLink()">RAG 요청(IE11)</a></li>
+			<li><a href="view05.html" target="frame" onclick="clickLink()">VectorDB 조회</a></li>
+			<li><a href="view06.html" target="frame" onclick="clickLink()">VectorDB 추가/삭제(팝업)</a></li>
+			<li><a href="view07.html" target="frame" onclick="clickLink()">원본 리소스 조회</a></li>
+			<li><a href="view08.html" target="frame" onclick="clickLink()">원본 리소스 추가/삭제(팝업)</a></li>
+			<li><a href="view09.html" target="frame" onclick="clickLink()">원본 리소스 청크 조회</a></li>
+			<li><a href="view10.html" target="frame" onclick="clickLink()">VectorDB 조회</a></li>
+			<li><a href="view11.html" target="frame" onclick="clickLink()">작업 대상 조회-벌크배치작업</a></li>
+			<li><a href="view12.html" target="frame" onclick="clickLink()">작업 대상 추가/삭제 (팝업)</a></li>
+			<li><a href="view13.html" target="frame" onclick="clickLink()">프로그램 코드 생성</a></li>
+		</ul>
+	</div>
+	<div class="content">
+		<iframe id="iframe" name="frame"></iframe>
+		<div class="url">
+			<input type="text" readonly id="url" />
+		</div>
+	</div>
+</div>
+
+</body>
+</html>

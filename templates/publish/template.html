@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insert title here</title>
+<link href="../css/bootstrap.css" rel="stylesheet" />
+<link href="../icons/font/bootstrap-icons.css" rel="stylesheet" />
+<link href="../css/common.css" rel="stylesheet" />
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/color-modes.js"></script>
+</head>
+<body>
+	<div class="contents-wrap">
+		<div class="tit-wrap">
+			<h2 class="tit01">Template</h2>
+		</div>
+		
+		<h3>조회</h3>
+		<div class="search-wrap mt-2">
+			<div class="row gy-2">
+				<div class="col-auto">
+					<label for="#" class="form-label">인덱스ID</label>
+					<input type="text" class="form-control" />
+				</div>
+				<div class="col-auto">
+					<label for="#" class="form-label">인덱스 명</label>
+					<input type="text" class="form-control" />
+				</div>
+				
+				<div class="col align-self-end">
+					<button type="button" class="btn btn-primary">조회</button>
+				</div>
+			</div>
+		</div>
+		
+		<h3 class="mt-4">테이블 그리드</h3>
+		<table class="table table-bordered table-sm">
+			<thead class="table-secondary">
+				<tr class="text-center">
+					<th style="width:70px;">선택</th>
+					<th>인텍스ID</th>
+					<th>인덱스 설명</th>
+					<th>인덱스 파일 경로</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr class="align-middle">
+					<td class="text-center">
+						<div class="check-wrap">
+							<input type="checkbox" class="form-check-input" />
+						</div>
+					</td>
+					<td><a href="#" class="link-primary">CG TERMS</a></td>
+					<td>용어변환을 위한 VectorDB</td>
+					<td>datga/vector/cg_terms.index</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center">
+						<div class="check-wrap">
+							<input type="checkbox" class="form-check-input" />
+						</div>
+					</td>
+					<td><a href="#" class="link-primary">CG TERMS</a></td>
+					<td>용어변환을 위한 VectorDB</td>
+					<td>datga/vector/cg_terms.index</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center">
+						<div class="check-wrap">
+							<input type="checkbox" class="form-check-input" />
+						</div>
+					</td>
+					<td><a href="#" class="link-primary">CG TERMS</a></td>
+					<td>용어변환을 위한 VectorDB</td>
+					<td>datga/vector/cg_terms.index</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center">
+						<div class="check-wrap">
+							<input type="checkbox" class="form-check-input" />
+						</div>
+					</td>
+					<td><a href="#" class="link-primary">CG TERMS</a></td>
+					<td>용어변환을 위한 VectorDB</td>
+					<td>datga/vector/cg_terms.index</td>
+				</tr>
+				<tr class="align-middle">
+					<td class="text-center">
+						<div class="check-wrap">
+							<input type="checkbox" class="form-check-input" />
+						</div>
+					</td>
+					<td><a href="#" class="link-primary">CG TERMS</a></td>
+					<td>용어변환을 위한 VectorDB</td>
+					<td>datga/vector/cg_terms.index</td>
+				</tr>
+			</tbody>
+			</table>
+			
+			<div class="row mt-2 btn-wrap">
+				<div class="d-flex justify-content-end gap-2">
+					<button type="button" class="btn btn-secondary">삭제</button>
+					<button type="button" class="btn btn-primary">등록</button>
+				</div>
+			</div>
+			
+			
+			<h3 class="mt-4">폼</h3>
+			<div class="row">
+				<div class="col">
+					<div class="form-wrap">
+						<div class="row">
+							<div class="col-12">
+								<label for="#" class="form-label">Input</label>
+								<input type="text" class="form-control" />
+							</div>
+							<div class="col-6 mt-3">
+								<label for="#" class="form-label">Input + button</label>
+								<div class="input-group">
+								  <input type="text" class="form-control">
+								  <button class="btn btn-outline-secondary" type="button" id="button-addon2">버튼</button>
+								</div>
+							</div>
+							<div class="col-6 mt-3">
+								<label for="#" class="form-label">검색</label>
+								<div class="input-group">
+								  <input type="text" class="form-control" placeholder="검색어">
+								  <button class="btn btn-outline-secondary" type="button" id="button-addon2"><i class="bi bi-search"></i></button>
+								</div>
+							</div>
+							<div class="col-12 mt-3">
+								<span class="form-label d-inline-block">Link</span>
+								<div><a href="#" class="link-primary">링크</a></div>
+							</div>
+							<div class="col-12 mt-3">
+								<span class="form-label d-inline-block">Text</span>
+								<div>변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과</div>
+							</div>
+							<div class="col-12 mt-3">
+								<label for="#" class="form-label">파일첨부</label>
+								<input type="file" class="form-control" />
+								<p class="form-text text-danger mb-0">한 줄 경고 문구는 여기에</p>
+							</div>
+							<div class="col-6 mt-3">
+								<label for="#" class="form-label">Date</label>
+								<input type="date" class="form-control" />
+							</div>
+							<div class="col-6 mt-3">
+								<label for="#" class="form-label">기간</label>
+								<div class="input-group">
+								  <input type="date" class="form-control">
+								  <span class="input-group-text">~</span>
+								  <input type="date" class="form-control">
+								</div>
+							</div>
+							<div class="col-12 mt-3">
+								<label for="#" class="form-label">Selectbox</label>
+								<select class="form-select" aria-label="Default select example">
+									<option selected>Open this select menu</option>
+									<option value="1">One</option>
+									<option value="2">Two</option>
+									<option value="3">Three</option>
+								</select>
+							</div>
+							<div class="col-12 mt-3">
+								<label for="#" class="form-label">Textarea</label>
+								<textarea class="form-control" rows="5"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col">
+					<div class="form-wrap">
+						<div class="row">
+							<div class="col-12">
+								<label for="#" class="form-label">Checkbox</label>
+								<div>
+								  <input class="form-check-input" type="checkbox" value="">
+								</div>
+								<div class="form-check">
+								  <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+								  <label class="form-check-label" for="flexCheckDefault">Check 1</label>
+								</div>
+								<div class="form-check">
+								  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked>
+								  <label class="form-check-label" for="flexCheckChecked">Check 2</label>
+								</div>
+							</div>
+							<div class="col-12 mt-3">
+								<span class="form-label d-inline-block">Checkbox Inline</span>
+								<div>
+									<div class="form-check form-check-inline">
+									  <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="option1">
+									  <label class="form-check-label" for="inlineCheckbox1">1</label>
+									</div>
+									<div class="form-check form-check-inline">
+									  <input class="form-check-input" type="checkbox" id="inlineCheckbox2" value="option2">
+									  <label class="form-check-label" for="inlineCheckbox2">2</label>
+									</div>
+									<div class="form-check form-check-inline">
+									  <input class="form-check-input" type="checkbox" id="inlineCheckbox3" value="option3" disabled>
+									  <label class="form-check-label" for="inlineCheckbox3">3 (disabled)</label>
+									</div>
+								</div>
+							</div>
+							<div class="col-12 mt-3">
+								<label for="#" class="form-label">Radio</label>
+								<div class="form-check">
+								  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
+								  <label class="form-check-label" for="flexRadioDefault1">Radio 1</label>
+								</div>
+								<div class="form-check">
+								  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" checked>
+								  <label class="form-check-label" for="flexRadioDefault2">Radio 2</label>
+								</div>
+							</div>
+							<div class="col-12 mt-3">
+								<label for="#" class="form-label">Radio Inline</label>
+								<div>
+									<div class="form-check form-check-inline">
+									  <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1">
+									  <label class="form-check-label" for="inlineRadio1">1</label>
+									</div>
+									<div class="form-check form-check-inline">
+									  <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2">
+									  <label class="form-check-label" for="inlineRadio2">2</label>
+									</div>
+									<div class="form-check form-check-inline">
+									  <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" disabled>
+									  <label class="form-check-label" for="inlineRadio3">3 (disabled)</label>
+									</div>
+								</div>
+							</div>
+							<div class="col-12 mt-3">
+								<label for="#" class="form-label">Radio Button</label>
+								<div>
+									<div class="btn-group" role="group">
+									  <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" checked>
+									  <label class="btn btn-outline-primary" for="btnradio1">Radio 1</label>
+									
+									  <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off">
+									  <label class="btn btn-outline-primary" for="btnradio2">Radio 2</label>
+									
+									  <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off">
+									  <label class="btn btn-outline-primary" for="btnradio3">Radio 3</label>
+									</div>
+								</div>
+							</div>
+							<div class="col-12 mt-3">
+								<label for="#" class="form-label">Switches</label>
+								<div class="form-check form-switch">
+								  <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault">
+								  <label class="form-check-label" for="flexSwitchCheckDefault">Default switch checkbox input</label>
+								</div>
+								<div class="form-check form-switch">
+								  <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
+								  <label class="form-check-label" for="flexSwitchCheckChecked">Checked switch checkbox input</label>
+								</div>
+								<div class="form-check form-switch">
+								  <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDisabled" disabled>
+								  <label class="form-check-label" for="flexSwitchCheckDisabled">Disabled switch checkbox input</label>
+								</div>
+								<div class="form-check form-switch">
+								  <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckCheckedDisabled" checked disabled>
+								  <label class="form-check-label" for="flexSwitchCheckCheckedDisabled">Disabled checked switch checkbox input</label>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<h3 class="mt-4">아코디언</h3>
+			<div class="accordion" id="accordionExample">
+			  <div class="accordion-item">
+			    <h2 class="accordion-header">
+			      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+			        	아코디언 타이틀 #1
+			      </button>
+			    </h2>
+			    <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+			      <div class="accordion-body">
+			        <strong>This is the first item's accordion body.</strong> It is shown by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+			      </div>
+			    </div>
+			  </div>
+			  <div class="accordion-item">
+			    <h2 class="accordion-header">
+			      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+			        	아코디언 타이틀 #2
+			      </button>
+			    </h2>
+			    <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+			      <div class="accordion-body">
+			        <strong>This is the second item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+			      </div>
+			    </div>
+			  </div>
+			  <div class="accordion-item">
+			    <h2 class="accordion-header">
+			      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+			       	 아코디언 타이틀 #3
+			      </button>
+			    </h2>
+			    <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+			      <div class="accordion-body">
+			        <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+			      </div>
+			    </div>
+			  </div>
+			</div>
+			
+			<h3 class="mt-4">탭</h3>
+			<ul class="nav nav-tabs">
+			  <li class="nav-item">
+			    <a class="nav-link active" aria-current="page" href="#">탭1</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" href="#">탭2</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" href="#">탭3</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link disabled">Disabled</a>
+			  </li>
+			</ul>
+			
+			<h3 class="mt-4">페이징</h3>
+			<nav aria-label="Page navigation example">
+			  <ul class="pagination">
+			    <li class="page-item">
+			      <a class="page-link" href="#" aria-label="Previous">
+			        <span aria-hidden="true">&laquo;</span>
+			      </a>
+			    </li>
+			    <li class="page-item"><a class="page-link" href="#">1</a></li>
+			    <li class="page-item active"><a class="page-link" href="#">2</a></li>
+			    <li class="page-item"><a class="page-link" href="#">3</a></li>
+			    <li class="page-item">
+			      <a class="page-link" href="#" aria-label="Next">
+			        <span aria-hidden="true">&raquo;</span>
+			      </a>
+			    </li>
+			  </ul>
+			</nav>
+			
+			<h3 class="mt-4">구분선</h3>
+			<hr>
+			
+			<h3 class="mt-4">프로그레스바</h3>
+			<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
+			  <div class="progress-bar" style="width: 25%"></div>
+			</div>
+			
+			
+			<h3 class="mt-4">버튼</h3>
+			<div class="row mt-2 btn-wrap">
+				<div class="col d-flex gap-2">
+					<button type="button" class="btn btn-primary">버튼</button>
+					<button type="button" class="btn btn-primary" disabled>버튼 disabled</button>
+					<button type="button" class="btn btn-secondary">버튼2</button>
+				</div>
+				<div class="col d-flex gap-2 justify-content-center">
+					<button type="button" class="btn btn-secondary">버튼</button>
+				</div>
+				<div class="col d-flex gap-2 justify-content-end">
+					<button type="button" class="btn btn-secondary">버튼2</button>
+					<button type="button" class="btn btn-primary">등록</button>
+				</div>
+			</div>
+
+		</div>
+		
+		
+		
+		
+		
+		
+
+	
+	
+	
+
+	
+	
+
+</body>
+</html>

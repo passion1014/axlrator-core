@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Stream</title>
+</head>
+<body>
+    <h1>Chat with GPT</h1>
+    <div id="chat-container">
+        <div id="chat-output"></div>
+    </div>
+    <input id="chat-input" type="text" placeholder="Type your message here..." />
+    <button id="send-button">Send</button>
+</body>
+</html>
+
+<script>
+    const chatInput = document.getElementById("chat-input");
+    const sendButton = document.getElementById("send-button");
+    const chatOutput = document.getElementById("chat-output");
+    
+    const websocket = new WebSocket(`ws://localhost:8001/sample/api/chat`);
+    
+    // 서버로부터 메세지를 수신받았을때 실행되는 이벤트 핸들러
+    websocket.onmessage = (event) => {
+        const span = document.createElement("span");
+        span.textContent = event.data;
+        chatOutput.appendChild(span);
+        chatOutput.scrollTop = chatOutput.scrollHeight; // 스크롤 하단으로 유지
+    };
+    
+    // 
+    sendButton.addEventListener("click", () => {
+        const message = chatInput.value.trim();
+        if (message) {
+            websocket.send(message);
+            // chatInput.value = "";
+        }
+    });
+</script>

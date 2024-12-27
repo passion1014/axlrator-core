@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insert title here</title>
+<link href="../css/bootstrap.css" rel="stylesheet" />
+<link href="../icons/font/bootstrap-icons.css" rel="stylesheet" />
+<link href="../css/common.css" rel="stylesheet" />
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/color-modes.js"></script>
+<script>
+
+function load() {
+	const modal = new bootstrap.Modal(document.getElementById('modalPopup'));
+	modal.show();
+}
+
+</script>
+</head>
+<body onload="load()">
+	<div class="modal fade modal-lg" tabindex="-1" id="modalPopup">
+	  <div class="modal-dialog modal-dialog-centered">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h5 class="modal-title">원본 리소스 추가/삭제</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+	      </div>
+	      <div class="modal-body">
+	        <div class="form-wrap">
+				<div class="">
+					<label class="form-label">업로드</label>
+					<div class="input-group mb-3">
+					  <input type="text" class="form-control" />
+					  <button class="btn btn-outline-secondary" type="button" id="button-addon2">등록</button>
+					</div>
+				</div>
+				<div class="mt-3">
+					<label class="form-label">리소스명</label>
+					<input type="text" class="form-control" />
+				</div>
+				<div class="mt-3">
+					<label class="form-label">리소스타입</label>
+					<select class="form-select">
+					  <option selected>용어변환</option>
+					  <option value="1">One</option>
+					  <option value="2">Two</option>
+					  <option value="3">Three</option>
+					</select>
+				</div>
+				<div class="mt-3">
+					<label class="form-label">리소스경로</label>
+					<input type="text" class="form-control" />
+				</div>
+				<div class="mt-3">
+					<label class="form-label">처리여부</label>
+					<input type="text" class="form-control" />
+				</div>
+				<div class="mt-3">
+					<label class="form-label">생성일</label>
+					<input type="text" class="form-control" />
+				</div>
+			</div>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-primary">등록</button>
+				<button type="button" class="btn btn-primary">수정</button>
+				<button type="button" class="btn btn-secondary">삭제</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>	
+
+
+
+
+		
+		
+		
+
+	
+	
+	
+
+	
+	
+
+</body>
+</html>
