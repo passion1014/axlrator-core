@@ -1,6 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
-from pathlib import Path
-
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from app.config import TEMPLATE_DIR, setup_logging
@@ -63,7 +61,7 @@ async def view_admin(request: Request):
 # 워크플로우 관리
 #     - 작업 대상 조회
 #     - 작업 대상 추가/삭제 (팝업)
-# view/batch/**
+# view/workflow/**
 @router.get("/workflow/{subpath:path}", response_class=HTMLResponse)
 async def view_workflow(request: Request):
     print(f"Requested URL path: {request.url.path}")
