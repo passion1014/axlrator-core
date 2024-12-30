@@ -4,11 +4,17 @@
 ## 1. Tech Stack
 
 **LangChain**
+
 **Langfuse**
+
 **FastAPI, Jinja2Template**
+
 **SQLAlchemy**
+
 **Luigi**
+
 **Elasticsearch**
+
 
 
 ## 2. 실행방법
