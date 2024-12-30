@@ -49,7 +49,8 @@ class CustomBaseModel(BaseModel):
 # 라우터 등록
 # ---------------------------------------
 # 웹 페이지
-webServerApp.include_router(view_routes, prefix="/view") # 업로드 라우터
+webServerApp.include_router(view_routes, prefix="/view") # 화면용 라우터
+
 # webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
 # webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
 # webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
@@ -87,5 +88,3 @@ if __name__ == "__main__":
     uvicorn.run(webServerApp, host=args.host, port=args.port, reload=args.debug)
 
 
-
-# 24.12.06

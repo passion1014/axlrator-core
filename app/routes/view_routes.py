@@ -7,12 +7,18 @@ logger = setup_logging()
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def view_login(request: Request):
+    return templates.TemplateResponse("view/member/login.html", {"request": request, "message": "로그인"})
+
+
 # 사용자(code assist)
 #     - 용어변환
 #     - 프로그램 코드 생성
 #     - SQL 생성
 #     - RAG 요청
-
 # view/code/**
 @router.get("/code/{subpath:path}", response_class=HTMLResponse)
 async def view_code(request: Request):
