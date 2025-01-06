@@ -51,11 +51,11 @@ class CustomBaseModel(BaseModel):
 # 웹 페이지
 webServerApp.include_router(view_routes, prefix="/view") # 화면용 라우터
 
-# webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
-# webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
-# webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
-# webServerApp.include_router(code_assist_routes, prefix="/codeassist") # 코드생성 위한 라우터
-# webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
+webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
+webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
+webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
+webServerApp.include_router(code_assist_routes, prefix="/codeassist") # 코드생성 위한 라우터
+webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
 
 # 아래는 삭제 - 플러그인용으로 따로 만들지 않고 도메인에 따라 관리
 # webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록

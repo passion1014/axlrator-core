@@ -1,79 +1,137 @@
-	{% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
-	<div class="contents-wrap">
-		<div class="tit-wrap">
-			<h2 class="tit01">용어변환</h2>
-		</div>
-		
-		<div class="form-wrap">
-			<div class="row">
-				<div class="col">
-					<label for="#" class="form-label">항목 입력</label>
-					<textarea class="form-control" rows="5"></textarea>
-				</div>
-			</div>
-		</div>
-		<div class="row mt-2 btn-wrap">
-			<div class="d-flex justify-content-end">
-				<button type="button" class="btn btn-primary">변환</button>
-			</div>
-		</div>
-		
-		<div class="row mt-4">
-			<div class="col">
-				<table class="table table-bordered table-sm">
-				<thead class="table-secondary">
-					<tr>
-						<th class="text-center">Camel Case</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>
-							<div class="d-flex">
-								<span class="text-break col">userName</span> 
-								<button type="button" class="btn btn-sm btn-secondary align-self-start"><i class="bi bi-clipboard-check"></i></button>
-							</div>
-						</td>
-					</tr>
-					<tr>
-						<td>
-							<div class="d-flex">
-								<span class="text-break  col">userName</span> 
-								<button type="button" class="btn btn-sm btn-secondary align-self-start"><i class="bi bi-clipboard-check"></i></button>
-							</div>
-						</td>
-					</tr>
-				</tbody>
-				</table>
-			</div>
-			<div class="col">
-				<table class="table table-bordered table-sm">
-				<thead class="table-secondary">
-					<tr>
-						<th class="text-center">Snake Case</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>
-							<div class="d-flex">
-								<span class="text-break col">user_name</span> 
-								<button type="button" class="btn btn-sm btn-secondary align-self-start"><i class="bi bi-clipboard-check"></i></button>
-							</div>
-						</td>
-					</tr>
-					<tr>
-						<td>
-							<div class="d-flex">
-								<span class="text-break col">total_price</span> 
-								<button type="button" class="btn btn-sm btn-secondary align-self-start"><i class="bi bi-clipboard-check"></i></button>
-							</div>
-						</td>
-					</tr>
-				</tbody>
-				</table>
-			</div>
-		</div>
-	</div>
+{% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+<script>
+  $(document).ready(function () {
+    $("#convBtn").on("click", function () {
+      const term = $("#iptTerm").val();
 
-	{% endblock %}
+      $.ajax({
+        url: "/termsconversion/api/conv",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ question: term }),
+        success: function (data) {
+          $("#camelCase").empty();
+          $("#snakeCase").empty();
+
+          data.response.forEach((item, index) => {
+            // const title = `<h5>${index + 1}. ${item.title}</h5>`;
+
+            const parts = item.split("=");
+            if (parts.length === 2) {
+              const functionPart = parts[1].trim(); // "USER_NM(userNm)"
+              const [camel, snake] = functionPart.split(/[()]/);
+
+              const camelHtml = `
+  		<tr>
+  			<td>
+  			<div class="d-flex">
+  				<span class="text-break col">${camel}</span>
+				  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+  				<button type="button" class="btn btn-sm btn-secondary align-self-start">
+  					<i class="bi bi-clipboard-check"></i>
+  				</button>
+  			</div>
+  			</td>
+  		</tr> `;
+              $("#camelCase").append(camelHtml);
+
+              const snamelHtml = `
+  		<tr>
+  					<td>
+  					<div class="d-flex">
+  						<span class="text-break col">${snake}</span>
+						  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+  						<button type="button" class="btn btn-sm btn-secondary align-self-start">
+  							<i class="bi bi-clipboard-check"></i>
+  						</button>
+  					</div>
+  					</td>
+  				</tr> `;
+
+              $("#snakeCase").append(snamelHtml);
+            }
+          });
+
+          $("button.btn-sm").on("click", function () {
+            const text = $(this).parent().find("span.text-break").text();
+            navigator.clipboard.writeText(text);
+
+            const copiedText = $(this)[0].previousElementSibling; // 버튼 옆의 span 요소
+            copiedText.style.display = "inline"; // 텍스트 표시
+
+            // 일정 시간 후 "COPIED" 숨기기
+            setTimeout(() => {
+              copiedText.style.display = "none";
+            }, 2000); // 2초 후에 숨김
+          });
+        },
+      });
+    });
+  });
+</script>
+<div class="contents-wrap">
+  <div class="tit-wrap">
+    <h2 class="tit01">용어변환</h2>
+  </div>
+
+  <div class="form-wrap">
+    <div class="row">
+      <div class="col">
+        <label for="#" class="form-label">항목 입력</label>
+        <textarea class="form-control" rows="5" id="iptTerm"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="row mt-2 btn-wrap">
+    <div class="d-flex justify-content-end">
+      <button type="button" class="btn btn-primary" id="convBtn">변환</button>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col">
+      <table class="table table-bordered table-sm">
+        <thead class="table-secondary">
+          <tr>
+            <th class="text-center">Camel Case</th>
+          </tr>
+        </thead>
+        <tbody id="camelCase">
+          <!-- <tr>
+            <td>
+              <div class="d-flex">
+                <span class="text-break col">userName</span>
+                <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                  <i class="bi bi-clipboard-check"></i>
+                </button>
+              </div>
+            </td>
+          </tr> -->
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <table class="table table-bordered table-sm">
+        <thead class="table-secondary">
+          <tr>
+            <th class="text-center">Snake Case</th>
+          </tr>
+        </thead>
+        <tbody id="snakeCase">
+          <!-- <tr>
+            <td>
+              <div class="d-flex">
+                <span class="text-break col">total_price</span>
+                <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                  <i class="bi bi-clipboard-check"></i>
+                </button>
+              </div>
+            </td>
+          </tr> -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
