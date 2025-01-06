@@ -58,17 +58,26 @@
       <div class="spinner-border" role="status"></div>
       Loading...
     </div>
-    <div class="container-fluid">
-      <div class="row">
-        <!-- 사이드바 포함 -->
-        {% include 'view/common/sidebar.html' %}
 
-        <!-- 메인 콘텐츠 영역 -->
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="container-fluid wrap">
+      <header class="header row justify-content-between align-items-center">
+        <div class="col left">
+          <h1 class="logo">건설공제 RAG</h1>
+        </div>
+        <div class="col-auto right">
+          <button class="btn btn-sm btn-outline-light">로그인</button>
+        </div>
+      </header>
+      <div class="row container-body">
+        {% include 'view/common/sidebar.html' %}
+        <!--  contents -->
+
+        <div class="col-10 content">
           {% block content %}
           <!-- 개별 페이지의 콘텐츠가 여기에 삽입됩니다. -->
           {% endblock %}
-        </main>
+          <!--end of contents -->
+        </div>
       </div>
     </div>
   </body>

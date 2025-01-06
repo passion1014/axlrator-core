@@ -25,7 +25,7 @@ import uvicorn
 # ---------------------------------------
 parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
 parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
-parser.add_argument("--port", type=int, default=8001, help="서버 포트")
+parser.add_argument("--port", type=int, default=8000, help="서버 포트")
 parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
 args = parser.parse_args()
 
