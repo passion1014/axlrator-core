@@ -12,7 +12,7 @@
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "pythonPath": "python",
             "cwd": "${workspaceFolder}"
         },
         // Vector Database File Load
@@ -31,7 +31,7 @@
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "pythonPath": "python",
             "cwd": "${workspaceFolder}"
         },
         {
@@ -54,40 +54,54 @@
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "pythonPath": "python",
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "(테스트)용어변환",
+            "name": "코드어시스트체인",
             "type": "debugpy",
             "request": "launch",
-            "module": "test.test_word_seperate",
+            "module": "test.test_CodeAssistChain",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env",
+            "envFile": "${workspaceFolder}/.env.testcase",
             "env": {
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
+            "pythonPath": "python",
             "cwd": "${workspaceFolder}"
         },
-        {
-            "name": "(테스트)컨텍스추얼 체인",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "test.test_contextual_chain",
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env",
-            "env": {
-                "POETRY_ACTIVE": "1",
-                "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
-            },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
-            "cwd": "${workspaceFolder}"
-        }
-
+        // {
+        //     "name": "(테스트)용어변환",
+        //     "type": "debugpy",
+        //     "request": "launch",
+        //     "module": "test.test_word_seperate",
+        //     "cwd": "${workspaceFolder}",
+        //     "console": "integratedTerminal",
+        //     "envFile": "${workspaceFolder}/.env",
+        //     "env": {
+        //         "POETRY_ACTIVE": "1",
+        //         "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
+        //     },
+        //     "pythonPath": "python",
+        //     "cwd": "${workspaceFolder}"
+        // },
+        // {
+        //     "name": "(테스트)컨텍스추얼 체인",
+        //     "type": "debugpy",
+        //     "request": "launch",
+        //     "module": "test.test_contextual_chain",
+        //     "cwd": "${workspaceFolder}",
+        //     "console": "integratedTerminal",
+        //     "envFile": "${workspaceFolder}/.env",
+        //     "env": {
+        //         "POETRY_ACTIVE": "1",
+        //         "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
+        //     },
+        //     "pythonPath": "python",
+        //     "cwd": "${workspaceFolder}"
+        // }
     ]
 }
 // employees.sql

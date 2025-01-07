@@ -3,25 +3,54 @@ from elasticsearch import Elasticsearch
 from app.vectordb.bm25_search import ElasticsearchBM25, retrieve_advanced
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
+# # 테스트 데이터 준비
+# test_documents = [
+#     {
+#         "original_content": "The quick brown fox jumps over the lazy dog.",
+#         "contextualized_content": "Foxes are swift animals that can jump high.",
+#         "doc_id": "doc1",
+#         "chunk_id": "chunk1",
+#         "original_index": 0
+#     },
+#     {
+#         "original_content": "The rain in Spain stays mainly in the plain.",
+#         "contextualized_content": "Spain experiences diverse weather patterns.",
+#         "doc_id": "doc2",
+#         "chunk_id": "chunk2",
+#         "original_index": 1
+#     },
+#     {
+#         "original_content": "A journey of a thousand miles begins with a single step.",
+#         "contextualized_content": "Great accomplishments often have humble beginnings.",
+#         "doc_id": "doc3",
+#         "chunk_id": "chunk3",
+#         "original_index": 2
+#     },
+# ]
+
+# # 테스트 쿼리
+# test_query = "What does the fox do?"
+
+
 # 테스트 데이터 준비
 test_documents = [
     {
-        "original_content": "The quick brown fox jumps over the lazy dog.",
-        "contextualized_content": "Foxes are swift animals that can jump high.",
+        "original_content": "빠른 갈색 여우가 게으른 개를 뛰어넘습니다.",
+        "contextualized_content": "여우는 빠르고 높이 뛸 수 있는 동물입니다.",
         "doc_id": "doc1",
         "chunk_id": "chunk1",
         "original_index": 0
     },
     {
-        "original_content": "The rain in Spain stays mainly in the plain.",
-        "contextualized_content": "Spain experiences diverse weather patterns.",
+        "original_content": "스페인의 비는 주로 평야에 내립니다.",
+        "contextualized_content": "스페인은 다양한 날씨 패턴을 경험합니다.",
         "doc_id": "doc2",
         "chunk_id": "chunk2",
         "original_index": 1
     },
     {
-        "original_content": "A journey of a thousand miles begins with a single step.",
-        "contextualized_content": "Great accomplishments often have humble beginnings.",
+        "original_content": "천 리 길도 한 걸음부터 시작됩니다.",
+        "contextualized_content": "위대한 성취는 종종 겸손한 시작에서 비롯됩니다.",
         "doc_id": "doc3",
         "chunk_id": "chunk3",
         "original_index": 2
@@ -29,7 +58,10 @@ test_documents = [
 ]
 
 # 테스트 쿼리
-test_query = "What does the fox do?"
+# test_query = "여우는 무엇을 하나요?"
+test_query = "스페인의 비는 어디에 내리나요?"
+
+
 
 # FAISS DB 초기화
 class MockFaissVectorDB(FaissVectorDB):
