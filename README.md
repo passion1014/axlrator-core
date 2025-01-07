@@ -13,7 +13,7 @@
 
 **Luigi**
 
-**Elasticsearch**
+**Elasticsearch/Kibana**
 <br/>
 
 # 2. 실행방법
@@ -41,7 +41,7 @@ git clone https://github.com/langfuse/langfuse.git
 cd langfuse
  
 # Start the server and database
-docker compose up
+docker compose up -d
 ```
 <br/>
 
@@ -320,37 +320,40 @@ ollama serve
 <br/>
 
 # 9. Elasticsearch 관련
-docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" elasticsearch:8.8.0
-<br/>
+**하단의 설정 내용은 재정리가 필요함. SSL 설정 필요없어보임**
 
-## 9.1 Elasticsearch 서비스 / 키바나 접속
+## 9.1 키바나 설정 (키바나 도커에서 실행)
+host를 localhost로 변경
+```bash
+sed -i 's/0.0.0.0/localhost/g' config/kibana.yml
+```
 
-1. 한글처리 플러그인 'nori' 설치
+## 9.2 Elasticsearch 서비스 / 키바나 접속
+
+### 9.2.1. 한글처리 플러그인 'nori' 설치 (elasticsearch docker 환경에서 실행)
    $ bin/elasticsearch-plugin install analysis-nori
 
-2. 토큰생성
-   $ elasticsearch-create-enrollment-token -s kibana  
+### 9.2.2. 토큰생성
+   $ elasticsearch-create-enrollment-token -s kibana
    eyJ2ZXIiOiI4LjguMCIsImFkciI6WyIxNzIuMTguMC41OjkyMDAiXSwiZmdyIjoiZjJiOWFjZDRlNTI2YWYwMWVmOTk5YjEyYTI4YjRhNzRmYWUzNmUyNzI2YjMyY2M0MzUzMGQxY2MwOTNhODFmNiIsImtleSI6IlAyYXBoWk1CU0I2NXFJXzlTVzlzOmZLMW9SVk1sUmVDWVktaFhlVGQ0aEEifQ==
 
-3. http접속 패스워드 생성
+### 9.2.3. http접속 패스워드 생성
    $ elasticsearch-reset-password -u elastic
 
-4. 키바나 접속
+### 9.2.4. 키바나 접속
    http://localhost:5601/
 
-5. 1번에서 생성한 enrollment token 입력
+### 9.2.5. 1번에서 생성한 enrollment token 입력
 
-6. Verification 번호 입력
+### 9.2.6. Verification 번호 입력
    키바나 도커의 Log탭에서 코드값 나옴
 
-7. 계정입력
+### 9.2.7. 계정입력
    username=elastic
    password=2번에서 생성된 패스워드
-
 <br/>
 
-## 9.2 Elasticsearch 전체 내용 조회 URL
-
+### 9.2.8 Elasticsearch 전체 내용 조회 URL
 curl -X GET "http://localhost:9200/[인덱스명]/\_search?pretty" -H "Content-Type: application/json" -d '
 {
 "query": {
@@ -358,8 +361,8 @@ curl -X GET "http://localhost:9200/[인덱스명]/\_search?pretty" -H "Content-T
 },
 "size": 1000
 }'
-
 <br/>
+
 
 # 10. 작업 히스토리
 <br/>

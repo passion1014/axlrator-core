@@ -27,7 +27,7 @@ async def ui_code(request: Request):
 
 @router.get("/chat", response_class=HTMLResponse)
 async def ui_chat(request: Request):
-    return templates.TemplateResponse("sample/chat.html", {"request": request, "message": "코드 자동 생성 (Test버전)"})
+    return templates.TemplateResponse("view/sample/chat.html", {"request": request, "message": "코드 자동 생성 (Test버전)"})
 
 
 # code assist 요청 엔드포인트
@@ -87,10 +87,9 @@ async def chat_websocket(websocket: WebSocket):
         async for output in chain.astream(state, stream_mode="updates"):
             # stream_mode="updates" yields dictionaries with output keyed by node name
             for key, value in output.items():
-                print(f"Output from node '{key}':")
+                print(f"Output from node '{key}':'{value}'")
                 print("---")
-                print(f"value = {value['response'].content}")
-                await websocket.send_text(value['response'].content)
-                # print(value["messages"][-1].pretty_print())
-            print("\n---\n")
+                # print(f"value = {value['response'].content}")
+                # await websocket.send_text(value['response'].content)
+            print("\n=======\n")
         
