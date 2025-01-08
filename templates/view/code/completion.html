@@ -1,48 +1,106 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
-	<div class="contents-wrap">
-		<div class="tit-wrap">
-			<h2 class="tit01">프로그램 코드 생성</h2>
-		</div>
-		<div class="row">
-			<div class="col-8">
-			
-				<div class="form-wrap">
-					<div class="row">
-						<div class="col-12">
-							<label for="#" class="form-label">컨텍스트</label>
-							<textarea class="form-control" rows="5"></textarea>
-						</div>
-						<div class="col-12 mt-3">
-							<span class="form-label d-inline-block">답변결과</span>
-							<div>답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과답변결과</div>
-						</div>
-						<div class="col-12 mt-3">
-							<label for="#" class="form-label">파일첨부</label>
-							<input type="file" class="form-control" />
-						</div>
-						<div class="col-12 mt-3">
-							<label for="#" class="form-label">질문 입력</label>
-							<textarea class="form-control" rows="5"></textarea>
-							<div class="mt-2 text-end">
-								<button type="button" class="btn btn-primary">입력</button>
-							</div>
-						</div>
-					</div>
-				</div>
-			
-			</div>
-			<div class="col-4">
-				<ul class="list-group">
-				  <li class="list-group-item">이력1</li>
-				  <li class="list-group-item">이력2</li>
-				  <li class="list-group-item">이력3</li>
-				  <li class="list-group-item">이력3</li>
-				  <li class="list-group-item">이력3</li>
-				</ul>
-			</div>
-		</div>
-	
-		
-	</div>
+<script>
+  $(document).ready(function () {
+    //입력버튼 클릭
+    $("#btnInput").on("click", function () {
+      const context = $("#iptContext").val();
+      const question = $("#iptQuestion").val();
 
-	{% endblock %}
+      if (!question) return;
+
+      $.ajax({
+        url: "/termsconversion/api/conv",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ question: term }),
+        success: function (data) {
+          $("#camelCase").empty();
+          $("#snakeCase").empty();
+
+          data.response.forEach((item, index) => {
+            // const title = `<h5>${index + 1}. ${item.title}</h5>`;
+
+            const parts = item.split("=");
+            if (parts.length === 2) {
+              const functionPart = parts[1].trim(); // "USER_NM(userNm)"
+              const [camel, snake] = functionPart.split(/[()]/);
+
+              const camelHtml = `
+				  <tr>
+					<td>
+					<div class="d-flex">
+					  <span class="text-break col">${camel}</span>
+					  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+					  <button type="button" class="btn btn-sm btn-secondary align-self-start">
+						<i class="bi bi-clipboard-check"></i>
+					  </button>
+					</div>
+					</td>
+				  </tr> `;
+              $("#camelCase").append(camelHtml);
+
+              const snamelHtml = `
+				  <tr>
+					<td>
+					<div class="d-flex">
+					  <span class="text-break col">${snake}</span>
+					  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+					  <button type="button" class="btn btn-sm btn-secondary align-self-start">
+						<i class="bi bi-clipboard-check"></i>
+					  </button>
+					</div>
+					</td>
+				  </tr> `;
+
+              $("#snakeCase").append(snamelHtml);
+            }
+          });
+        },
+      });
+    });
+  });
+</script>
+
+<div class="contents-wrap">
+  <div class="tit-wrap">
+    <h2 class="tit01">프로그램 코드 생성</h2>
+  </div>
+  <div class="row">
+    <div class="col-8">
+      <div class="form-wrap">
+        <div class="row">
+          <div class="col-12">
+            <label for="#" class="form-label">컨텍스트</label>
+            <textarea class="form-control" rows="5" id="iptContext"></textarea>
+          </div>
+          <div class="col-12 mt-3">
+            <span class="form-label d-inline-block" id="iptAnswer">답변결과</span>
+            <div></div>
+          </div>
+          <div class="col-12 mt-3">
+            <label for="#" class="form-label">파일첨부</label>
+            <input type="file" class="form-control" />
+          </div>
+          <div class="col-12 mt-3">
+            <label for="#" class="form-label">질문 입력</label>
+            <textarea class="form-control" rows="5" id="iptQuestion"></textarea>
+            <div class="mt-2 text-end">
+              <button type="button" class="btn btn-primary" id="btnInput">입력</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <ul class="list-group">
+        <li class="list-group-item">이력1</li>
+        <li class="list-group-item">이력2</li>
+        <li class="list-group-item">이력3</li>
+        <li class="list-group-item">이력3</li>
+        <li class="list-group-item">이력3</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

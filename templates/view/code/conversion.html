@@ -1,8 +1,11 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
 <script>
   $(document).ready(function () {
+    //변환버튼 클릭
     $("#convBtn").on("click", function () {
       const term = $("#iptTerm").val();
+
+      if (!term) return;
 
       $.ajax({
         url: "/termsconversion/api/conv",
@@ -22,36 +25,37 @@
               const [camel, snake] = functionPart.split(/[()]/);
 
               const camelHtml = `
-  		<tr>
-  			<td>
-  			<div class="d-flex">
-  				<span class="text-break col">${camel}</span>
-				  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
-  				<button type="button" class="btn btn-sm btn-secondary align-self-start">
-  					<i class="bi bi-clipboard-check"></i>
-  				</button>
-  			</div>
-  			</td>
-  		</tr> `;
+                <tr>
+                  <td>
+                  <div class="d-flex">
+                    <span class="text-break col">${camel}</span>
+                    <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+                    <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                      <i class="bi bi-clipboard-check"></i>
+                    </button>
+                  </div>
+                  </td>
+                </tr> `;
               $("#camelCase").append(camelHtml);
 
               const snamelHtml = `
-  		<tr>
-  					<td>
-  					<div class="d-flex">
-  						<span class="text-break col">${snake}</span>
-						  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
-  						<button type="button" class="btn btn-sm btn-secondary align-self-start">
-  							<i class="bi bi-clipboard-check"></i>
-  						</button>
-  					</div>
-  					</td>
-  				</tr> `;
+                <tr>
+                  <td>
+                  <div class="d-flex">
+                    <span class="text-break col">${snake}</span>
+                    <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+                    <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                      <i class="bi bi-clipboard-check"></i>
+                    </button>
+                  </div>
+                  </td>
+                </tr> `;
 
               $("#snakeCase").append(snamelHtml);
             }
           });
 
+          //복사버튼 클릭
           $("button.btn-sm").on("click", function () {
             const text = $(this).parent().find("span.text-break").text();
             navigator.clipboard.writeText(text);
