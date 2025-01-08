@@ -14,6 +14,17 @@ class CodeAssistRequest(BaseModel):
 
 
 # code assist 요청 엔드포인트
+@router.post("/api/predicate")
+async def predicate(request: CodeAssistRequest):
+    chain = code_assist_chain()
+    
+    state = {"indexname": request.indexname, "question": request.question, "current_code": request.current_code}
+    response = chain.invoke(state)
+    return {"response": response}
+
+
+
+# code assist 요청 엔드포인트
 @router.post("/api/code")
 async def sample_endpoint(request: CodeAssistRequest):
     print(f"### request = {str(request)}")
