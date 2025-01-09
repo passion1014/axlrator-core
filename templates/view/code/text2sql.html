@@ -6,23 +6,29 @@
       const question = $("#iptQuestion").val();
       const sql_request = $("#iptContext").val();
 
-      $.ajax({
-        url: "/codeassist/api/makesql",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({ question: question, sql_request: sql_request }),
-        success: function (data) {
-          //이력 재 조회
-          //
-          // $.ajax({
-          // 	url: "/codeassist/api/makesql",
-          // 	type: "POST",
-          // 	contentType: "application/json",
-          // 	data: JSON.stringify({ question: question, sql_request: sql_request }),
-          // 	success: function (data) {
-          // 	},
-          // });
-        },
+      const payload = {
+        indexname: "",
+        current_code: "",
+        category: "",
+        question: question,
+        context: "",
+        sql_request: sql_request,
+      };
+
+      common.postRequest("/codeassist/api/makesql", payload, function (data) {
+        const content = data?.response?.response?.content;
+        $("#iptAnswer").text(content);
+
+        //이력 재 조회
+        //
+        // $.ajax({
+        // 	url: "/codeassist/api/makesql",
+        // 	type: "POST",
+        // 	contentType: "application/json",
+        // 	data: JSON.stringify({ question: question, sql_request: sql_request }),
+        // 	success: function (data) {
+        // 	},
+        // });
       });
     });
   });

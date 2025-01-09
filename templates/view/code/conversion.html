@@ -7,24 +7,19 @@
 
       if (!term) return;
 
-      $.ajax({
-        url: "/termsconversion/api/conv",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({ question: term }),
-        success: function (data) {
-          $("#camelCase").empty();
-          $("#snakeCase").empty();
+      common.postRequest("/termsconversion/api/conv", { question: term }, function (data) {
+        $("#camelCase").empty();
+        $("#snakeCase").empty();
 
-          data.response.forEach((item, index) => {
-            // const title = `<h5>${index + 1}. ${item.title}</h5>`;
+        data.response.forEach((item, index) => {
+          // const title = `<h5>${index + 1}. ${item.title}</h5>`;
 
-            const parts = item.split("=");
-            if (parts.length === 2) {
-              const functionPart = parts[1].trim(); // "USER_NM(userNm)"
-              const [camel, snake] = functionPart.split(/[()]/);
+          const parts = item.split("=");
+          if (parts.length === 2) {
+            const functionPart = parts[1].trim(); // "USER_NM(userNm)"
+            const [camel, snake] = functionPart.split(/[()]/);
 
-              const camelHtml = `
+            const camelHtml = `
                 <tr>
                   <td>
                   <div class="d-flex">
@@ -36,9 +31,9 @@
                   </div>
                   </td>
                 </tr> `;
-              $("#camelCase").append(camelHtml);
+            $("#camelCase").append(camelHtml);
 
-              const snamelHtml = `
+            const snamelHtml = `
                 <tr>
                   <td>
                   <div class="d-flex">
@@ -51,24 +46,23 @@
                   </td>
                 </tr> `;
 
-              $("#snakeCase").append(snamelHtml);
-            }
-          });
+            $("#snakeCase").append(snamelHtml);
+          }
+        });
 
-          //복사버튼 클릭
-          $("button.btn-sm").on("click", function () {
-            const text = $(this).parent().find("span.text-break").text();
-            navigator.clipboard.writeText(text);
+        //복사버튼 클릭
+        $("button.btn-sm").on("click", function () {
+          const text = $(this).parent().find("span.text-break").text();
+          navigator.clipboard.writeText(text);
 
-            const copiedText = $(this)[0].previousElementSibling; // 버튼 옆의 span 요소
-            copiedText.style.display = "inline"; // 텍스트 표시
+          const copiedText = $(this)[0].previousElementSibling; // 버튼 옆의 span 요소
+          copiedText.style.display = "inline"; // 텍스트 표시
 
-            // 일정 시간 후 "COPIED" 숨기기
-            setTimeout(() => {
-              copiedText.style.display = "none";
-            }, 2000); // 2초 후에 숨김
-          });
-        },
+          // 일정 시간 후 "COPIED" 숨기기
+          setTimeout(() => {
+            copiedText.style.display = "none";
+          }, 2000); // 2초 후에 숨김
+        });
       });
     });
   });
