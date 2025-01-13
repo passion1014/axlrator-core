@@ -393,3 +393,10 @@ ollama pull gemma2:27b
 ollama pull mistral-nemo
 ollama pull bge-m3
 
+
+
+
+pip install --upgrade langchain-community
+pip install --upgrade langchain
+pip install --upgrade langgraph
+pip install --upgrade pydantic

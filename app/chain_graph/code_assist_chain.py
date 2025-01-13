@@ -20,21 +20,24 @@ class CodeAssistChain:
     def context_node(self, state: CodeAssistState, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
-        # VectorDB and BM25 searches
+        # VectorDB / BM25 조회
         semantic_results = self.faissVectorDB.search_similar_documents(query=question, k=50)
         bm25_results = self.es_bm25.search(query=question, k=50)
 
-
+        # VectorDB의 doc_id, original_index값 추출
         ranked_chunk_ids = [
             (result['metadata'].get('doc_id', None), result['metadata'].get('original_index', None))
             for result in semantic_results
             if 'metadata' in result and isinstance(result['metadata'], dict)
         ]
 
+        # BM25조회 결과의 doc_id, original_index값 추출
         ranked_bm25_chunk_ids = [(result['doc_id'], result['original_index']) for result in bm25_results]
+        
+        # 2개의 결과를 머지 (중복제거)
         chunk_ids = list(set(ranked_chunk_ids + ranked_bm25_chunk_ids))
 
-        # Score calculation and fusion
+        # 스코어 계산 및 랭크퓨전 (RRF와 유사함)
         chunk_id_to_score = {}
         for chunk_id in chunk_ids:
             score = 0
@@ -43,7 +46,8 @@ class CodeAssistChain:
             if chunk_id in ranked_bm25_chunk_ids:
                 score += bm25_weight * (1 / (ranked_bm25_chunk_ids.index(chunk_id) + 1))
             chunk_id_to_score[chunk_id] = score
-
+            
+        # 정렬 (score, chunk_id의 1번째, chunk_id의 2번째)
         sorted_chunk_ids = sorted(chunk_id_to_score.keys(), key=lambda x: (chunk_id_to_score[x], x[0], x[1]), reverse=True)
 
         state['context'] = [{

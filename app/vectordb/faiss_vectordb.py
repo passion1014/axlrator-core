@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 import faiss
 # import json      # 메타데이터를 JSON으로 처리하기 위한 라이브러리
 from langchain_community.vectorstores import FAISS
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, update, delete
 from langchain_core.documents import Document
 
+from app.db_model.data_repository import ChunkedDataRepository
 from app.db_model.database import SessionLocal
 from app.db_model.database_models import FaissInfo, ChunkedData
 from app.utils import get_embedding_model
@@ -83,7 +84,7 @@ class PostgresDocstore:
         result = self.session.execute(stmt).scalar_one_or_none()
         
         if result:
-            return {"content": result.content, "metadata": result.document_metadata}
+            return {"vector_index": vector_index, "content": result.content, "metadata": result.document_metadata}
         return None
 
     def delete_document(self, document_id) -> None:
@@ -91,7 +92,22 @@ class PostgresDocstore:
         stmt = delete(ChunkedData).where(ChunkedData.id == document_id)
         self.session.execute(stmt)
         self.session.commit()
+
+    def search(self, search: str) -> Union[str, Document]:
+        '''
+        langchain_community.docstore.base의 추상함수
+        -> 클래스가 faiss의 docstore에 parameter로 사용될 경우 반드시 구현해야 함
+        '''
+        print(f"### docstroe search = {search}")
+        doc = self.get_document(document_id=search)
         
+        document = Document(
+            page_content=doc.get("content"),
+            metadata=doc.get("metadata"),
+        )
+        print(f"### docstroe search result = {document}")
+        
+        return document
 
 
 
