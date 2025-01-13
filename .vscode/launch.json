@@ -2,6 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "서버 실행",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "app.server",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env.testcase"
+        },
+        {
             "name": "DB 스키마 조회",
             "type": "debugpy",
             "request": "launch",
@@ -35,14 +43,6 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "서버 실행",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "app.server",
-            "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env.testcase"
-        },
-        {
             "name": "(테스트)elasticsearch 조회",
             "type": "debugpy",
             "request": "launch",
@@ -64,7 +64,7 @@
             "module": "test.test_word_seperate",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env",
+            "envFile": "${workspaceFolder}/.env.testcase",
             "env": {
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
@@ -73,21 +73,13 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "(테스트)컨텍스추얼 체인",
+            "name": "리랭커 테스트",
             "type": "debugpy",
             "request": "launch",
-            "module": "test.test_contextual_chain",
-            "cwd": "${workspaceFolder}",
+            "module": "app.process.reranker",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env",
-            "env": {
-                "POETRY_ACTIVE": "1",
-                "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
-            },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
-            "cwd": "${workspaceFolder}"
-        }
-
+            "envFile": "${workspaceFolder}/.env.testcase",
+        },
     ]
 }
 // employees.sql

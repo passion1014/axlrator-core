@@ -185,6 +185,15 @@ class ChunkedDataRepository:
             
         return query.all()
 
+    def get_chunked_data_by_id(self, id: str) -> ChunkedData:
+        """
+        content를 포함하는 ChunkedData 목록을 조회합니다.
+        """
+        query = self.session.query(ChunkedData).filter(ChunkedData.id == id)
+            
+        return query.first()
+
+
     def create_chunked_data(self, seq: int, org_resrc_id: int, data_name: str
                             , data_type: str, content: str, context_chunk: str
                             , document_metadata: dict, created_by = '', modified_by = '') -> ChunkedData:

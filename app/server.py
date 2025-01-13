@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv(dotenv_path=".env") # .env, .env.testcase
 
 import argparse
@@ -13,7 +14,7 @@ from app.config import STATIC_DIR
 from app.routes.view_routes import router as view_routes
 from app.routes.upload_routes import router as upload_routes
 from app.routes.faiss_routes import router as faiss_routes
-# from app.routes.sample_routes import router as sample_routes
+from app.routes.sample_routes import router as sample_routes
 from app.routes.terms_conversion_routes import router as terms_conversion_routes
 # from app.routes.code_assist_routes import router as code_assist_routes
 
@@ -25,7 +26,7 @@ import uvicorn
 # ---------------------------------------
 parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
 parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
-parser.add_argument("--port", type=int, default=8000, help="서버 포트")
+parser.add_argument("--port", type=int, default=8001, help="서버 포트")
 parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
 args = parser.parse_args()
 
@@ -55,7 +56,7 @@ webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우�
 webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
 webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
 # webServerApp.include_router(code_assist_routes, prefix="/codeassist") # 코드생성 위한 라우터
-# webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
+webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
 
 # 아래는 삭제 - 플러그인용으로 따로 만들지 않고 도메인에 따라 관리
 # webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록

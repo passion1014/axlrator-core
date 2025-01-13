@@ -8,7 +8,10 @@ from app.chain_graph.code_assist_chain import code_assist_chain
 from app.chain_graph.rag_chain import create_rag_chain
 from app.chain_graph.sample_chain import sample_chain
 from app.config import TEMPLATE_DIR, setup_logging
+from app.db_model.database import SessionLocal
+from app.process.reranker import AlfredReranker
 from app.utils import get_llm_model
+from app.vectordb.faiss_vectordb import FaissVectorDB
 
 logger = setup_logging()
 router = APIRouter()
@@ -28,6 +31,36 @@ async def ui_code(request: Request):
 @router.get("/chat", response_class=HTMLResponse)
 async def ui_chat(request: Request):
     return templates.TemplateResponse("view/sample/chat.html", {"request": request, "message": "코드 자동 생성 (Test버전)"})
+
+
+
+# code assist 요청 엔드포인트
+@router.post("/api/test-rerank")
+async def sample_endpoint(request: SampleRequest):
+    print("-------------------------------")
+    
+    # 예시 쿼리와 타겟 리스트
+    query = "example query"
+    target_list = [
+        {"metadata": {"original_content": "content1", "contextualized_content": "context1"}},
+        {"metadata": {"original_content": "content2", "contextualized_content": "context2"}}
+    ]
+
+    # 예시 벡터 DB 초기화
+    session = SessionLocal()
+    vectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
+
+    # flash_rank_rerank 함수 호출
+    reranker = AlfredReranker()
+    results = reranker.cross_encoder_rerank(query, target_list, vectorDB, k=5)
+
+    # 결과 출력
+    for result in results:
+        print(f"Chunk: {result['chunk']}, Score: {result['score']}")
+
+    
+    pass
+    
 
 
 # code assist 요청 엔드포인트
