@@ -10,7 +10,7 @@ from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
 
 class CodeAssistChain:
-    def __init__(self, index_name="cg_code_assist"):
+    def __init__(self, index_name:str="cg_code_assist"):
         self.index_name = index_name
         self.db_session = SessionLocal()
         self.faissVectorDB = FaissVectorDB(db_session=self.db_session, index_name=index_name)
@@ -74,7 +74,7 @@ class CodeAssistChain:
         chain.with_config(callbacks=[CallbackHandler()])
         return chain
 
-    def code_assist_chain(self, task_type: str):
+    def get_chain(self, task_type: str):
         def get_context(state: AgentState) -> AgentState:
             enriched_query = state['question']
             docs = self.faissVectorDB.search_similar_documents(query=enriched_query, k=2)

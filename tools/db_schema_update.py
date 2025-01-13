@@ -6,13 +6,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
-# 디렉토리 경로
-project_dir = '/Users/passion1014/project/langchain/rag_server'
-# 프로젝트 루트 디렉토리 추가 (예: 'app' 디렉토리의 부모 디렉토리)
-sys.path.append(project_dir)
+# 작업디렉토리를 상위경로로 변경
+parent_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
+os.chdir(parent_dir)
 
-load_dotenv(dotenv_path=project_dir + "/" + ".env.testcase") # .env, .env.testcase
-database_url = 'postgresql://ragserver:ragserver@localhost/ragserver'
+# 환경변수 설정
+load_dotenv(dotenv_path=".env.testcase", override=True)
+database_url = os.getenv("DATABASE_URL")
+
 
 
 
