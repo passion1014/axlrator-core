@@ -3,60 +3,38 @@
   $(document).ready(function () {
     //입력버튼 클릭
     $("#btnInput").on("click", function () {
-      const context = $("#iptContext").val();
       const question = $("#iptQuestion").val();
-
       if (!question) return;
 
-      $.ajax({
-        url: "/termsconversion/api/conv",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({ question: term }),
-        success: function (data) {
-          $("#camelCase").empty();
-          $("#snakeCase").empty();
+      $("#iptAnswer").text("");
+      $("#iptQuestion").text("");
 
-          data.response.forEach((item, index) => {
-            // const title = `<h5>${index + 1}. ${item.title}</h5>`;
+      const param = {
+        indexname: "",
+        current_code: "",
+        category: "",
+        question: question,
+        context: "",
+        sql_request: "",
+      };
 
-            const parts = item.split("=");
-            if (parts.length === 2) {
-              const functionPart = parts[1].trim(); // "USER_NM(userNm)"
-              const [camel, snake] = functionPart.split(/[()]/);
+      common.postStreamRequest(
+        "/codeassist/api/autocode",
+        // "/codeassist/api/stream",
+        param,
+        function (e) {
+          const chunk = e.currentTarget.response;
+          console.log(chunk);
 
-              const camelHtml = `
-				  <tr>
-					<td>
-					<div class="d-flex">
-					  <span class="text-break col">${camel}</span>
-					  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
-					  <button type="button" class="btn btn-sm btn-secondary align-self-start">
-						<i class="bi bi-clipboard-check"></i>
-					  </button>
-					</div>
-					</td>
-				  </tr> `;
-              $("#camelCase").append(camelHtml);
-
-              const snamelHtml = `
-				  <tr>
-					<td>
-					<div class="d-flex">
-					  <span class="text-break col">${snake}</span>
-					  <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
-					  <button type="button" class="btn btn-sm btn-secondary align-self-start">
-						<i class="bi bi-clipboard-check"></i>
-					  </button>
-					</div>
-					</td>
-				  </tr> `;
-
-              $("#snakeCase").append(snamelHtml);
-            }
-          });
+          $("#iptAnswer").text(chunk); // 모든 데이터 표시
         },
-      });
+        function (data) {
+          console.log("success");
+        },
+        function (data) {
+          console.log("fail");
+        }
+      );
     });
   });
 </script>
@@ -71,7 +49,7 @@
         <div class="row">
           <div class="col-12">
             <label for="#" class="form-label">컨텍스트</label>
-            <textarea class="form-control" rows="5" id="iptContext"></textarea>
+            <textarea class="form-control" rows="5" id="iptContext" disabled></textarea>
           </div>
           <div class="col-12 mt-3">
             <span class="form-label d-inline-block" id="iptAnswer">답변결과</span>
