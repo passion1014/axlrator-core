@@ -28,7 +28,7 @@ import uvicorn
 # ---------------------------------------
 parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
 parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
-parser.add_argument("--port", type=int, default=8001, help="서버 포트")
+parser.add_argument("--port", type=int, default=8000, help="서버 포트")
 parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
 args = parser.parse_args()
 
@@ -66,12 +66,12 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 # webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록
 
 # 체인 등록
-# from langserve import add_routes
+from langserve import add_routes
+add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain(type="02"), path="/codeassist", enable_feedback_endpoint=True)
-# add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain.code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)
 

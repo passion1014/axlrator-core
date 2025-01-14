@@ -311,7 +311,7 @@ docker network connect rag_server_alfred_network nervous_poitras
 
 <br/>
 
-# 8. Ollama 포트 설정
+# 8. Ollama 포트 설정 (window에서는 cmd에서 해야 한다. **powershell 안됨**)
 ```bash
 set OLLAMA_HOST=0.0.0.0
 ollama serve

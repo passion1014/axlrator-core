@@ -8,14 +8,15 @@ def get_embedding_model():
     임베딩 모델 가져오기
     '''
     embedding_model = os.getenv("EMBEDDING_MODEL_NAME")
+    ollama_url = os.getenv("OLLAMA_URL")
     embeddings = None
 
-    if embedding_model in ['nomic-embed-text']:
+    if embedding_model in ['nomic-embed-text', 'bge-m3:latest']:
         from langchain.embeddings import OllamaEmbeddings
         
         embeddings = OllamaEmbeddings(
             model="nomic-embed-text",
-            base_url="http://host.docker.internal:11434"  # Ollama의 기본 URL입니다.
+            base_url=ollama_url  # Ollama의 기본 URL입니다.
         )
         
     elif  embedding_model in ['text-embedding-3-large']:
@@ -34,11 +35,12 @@ def get_llm_model():
     LLM 모델 가져오기
     '''
     llm_model = os.getenv("LLM_MODEL_NAME")
+    ollama_url = os.getenv("OLLAMA_URL")
     model = None
 
-    if llm_model in ['EEVE-Korean-10.8B:latest', 'gemma2:9b', 'gemma2:27b']: # ChatOllama
+    if llm_model in ['EEVE-Korean-10.8B:latest', 'gemma2:9b', 'gemma2:27b', 'llama3.3:latest', 'qwq:latest', 'phi4:latest']: # ChatOllama
         from langchain_community.chat_models import ChatOllama
-        model = ChatOllama(model=llm_model, base_url="http://host.docker.internal:11434")
+        model = ChatOllama(model=llm_model, base_url=ollama_url)
         
     elif llm_model in ['gpt-3.5-turbo']: # ChatOpenAI
         from langchain_community.chat_models import ChatOpenAI
