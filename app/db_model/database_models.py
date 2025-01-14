@@ -21,7 +21,59 @@ class ModelInfo(Base):
     modified_by = Column(String(50), index=True, comment="최종수정자")
     created_by = Column(String(50), index=True, comment="생성자")
 
+class UserInfo(Base):
+    '''
+    사용자 정보
+    '''
+    __tablename__ = "user_info"
+    
+    def __init__(self, user_id: str, password: str, email: str = None, user_name: str = None, is_active: bool = True):
+        self.user_id = user_id
+        self.password = password
+        self.email = email
+        self.user_name = user_name
+        self.is_active = is_active
 
+    id = Column(Integer, primary_key=True, index=True, comment="primary key")
+    user_id = Column(String(256), unique=True, index=True, nullable=False, comment="아이디")
+    password = Column(String(512), nullable=False, comment="비밀번호")
+    email = Column(String(256), unique=True, index=True, nullable=False, comment="이메일 주소")
+    user_name = Column(String(256), comment="전체 이름")
+    is_active = Column(Boolean, default=True, comment="활성 상태")
+
+    modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
+    created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+    modified_by = Column(String(50), index=True, comment="최종수정자")
+    created_by = Column(String(50), index=True, comment="생성자")
+    
+    # 관계 설정
+    chat_histories = relationship("ChatHistory", back_populates="user_info")
+
+
+    def __repr__(self):
+        return f"UserInfo(id={self.id}, username='{self.user_id}', email='{self.email}', is_active={self.is_active})"
+
+class ChatHistory(Base):
+    '''
+    채팅 기록
+    '''
+    __tablename__ = "chat_history"
+
+    id = Column(Integer, primary_key=True, index=True, comment="primary key")
+    data = Column(Text, comment="큰 사이즈의 텍스트 컬럼")
+    title = Column(String(200), comment="200자 사이즈 텍스트")
+    user_info_id = Column(Integer, ForeignKey("user_info.id"), comment="UserInfo FK")
+
+    modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
+    created_at = Column(TIMESTAMP, index=True, comment="생성시간")
+    modified_by = Column(String(50), index=True, comment="최종수정자")
+    created_by = Column(String(50), index=True, comment="생성자")
+
+    # 관계 설정
+    user_info = relationship("UserInfo", back_populates="chat_histories")
+
+    def __repr__(self):
+        return f"ChatHistory(id={self.id}, title='{self.title}', user_id={self.user_info_id})"
 
 class OrgRSrc(Base):
     '''

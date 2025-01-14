@@ -18,10 +18,15 @@ from app.routes.faiss_routes import router as faiss_routes
 from app.routes.sample_routes import router as sample_routes
 from app.routes.terms_conversion_routes import router as terms_conversion_routes
 from app.routes.code_assist_routes import router as code_assist_routes
+from app.routes.user_service_routes import router as user_service_routes
 
 
 from langfuse.callback import CallbackHandler
 import uvicorn
+
+import warnings
+warnings.simplefilter("always", UserWarning)
+
 
 # ---------------------------------------
 # 파라미터 처리
@@ -56,6 +61,8 @@ code_assist_chain = CodeAssistChain(index_name="cg_code_assist")
 # 웹 페이지
 webServerApp.include_router(view_routes, prefix="/view") # 화면용 라우터
 
+webServerApp.include_router(user_service_routes, prefix="/user") # 화면용 라우터
+
 webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
 webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
 webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
@@ -66,8 +73,8 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 # webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록
 
 # 체인 등록
-from langserve import add_routes
-add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
+# from langserve import add_routes
+# add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)

@@ -7,7 +7,11 @@
             "request": "launch",
             "module": "app.server",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env.testcase"
+            "envFile": "${workspaceFolder}/.env.testcase",
+            "args": [
+                "--port",
+                "8001"
+            ],
         },
         {
             "name": "DB 스키마 조회",
