@@ -34,7 +34,6 @@
           };
 
           common.postRequest("/user/api/login", param, function (data) {
-            debugger;
             if (data.message) alert(data.message);
 
             //성공

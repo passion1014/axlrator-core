@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-load_dotenv(dotenv_path=".env.testcase", override=True) # .env, .env.testcase
+load_dotenv(dotenv_path=".env", override=True) # .env, .env.testcase
 
 import argparse
 from pydantic import BaseModel
@@ -19,7 +19,7 @@ from app.routes.sample_routes import router as sample_routes
 from app.routes.terms_conversion_routes import router as terms_conversion_routes
 from app.routes.code_assist_routes import router as code_assist_routes
 from app.routes.user_service_routes import router as user_service_routes
-
+from starlette.middleware.sessions import SessionMiddleware
 
 from langfuse.callback import CallbackHandler
 import uvicorn
@@ -44,6 +44,14 @@ webServerApp = FastAPI(
     version="1.0",
     description="AI Server for Construction Guarantee Company",
 )
+
+webServerApp.add_middleware(
+    SessionMiddleware,
+    secret_key="cgcgcg",
+    session_cookie="session_cookie",
+    max_age=24 * 60 * 60  # 24시간
+)
+
 # 정적 파일 경로 및 Jinja2 템플릿 설정
 webServerApp.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -81,6 +89,7 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 # add_routes(webServerApp, code_assist_chain(type="02"), path="/codeassist", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain.code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)
+
 
 # Stream 처리를 위한 서비스 등록
 

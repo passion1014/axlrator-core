@@ -1,26 +1,28 @@
-import json
-from fastapi import FastAPI, APIRouter, Request
-from fastapi.responses import RedirectResponse, JSONResponse
-from starlette.middleware.sessions import SessionMiddleware
-from openai import BaseModel
+# import json
+# from fastapi import  APIRouter, Request, FastAPI
+# from fastapi.responses import RedirectResponse, JSONResponse
+# from starlette.middleware.sessions import SessionMiddleware
+# from starlette.middleware.sessions import SessionMiddleware
+# from openai import BaseModel
 from app.config import setup_logging
 from app.db_model.data_repository import UserInfoRepository
 from app.db_model.database import SessionLocal
 from app.db_model.database_models import UserInfo
-from uuid import uuid4
+# from uuid import uuid4
+from fastapi import FastAPI, APIRouter, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
+from pydantic import BaseModel
+from typing import Optional
 
-logger = setup_logging()
+
+# 라우터 정의
 router = APIRouter()
+
 
 class LoginRequest(BaseModel):
     user_id: str
     password: str
-
-# FastAPI 앱 생성
-app = FastAPI()
-
-# 세션 미들웨어 추가
-app.add_middleware(SessionMiddleware, secret_key="cgcgcg")    
 
 @router.post("/api/login")
 async def login(request: Request, loginRequest: LoginRequest):
@@ -37,8 +39,7 @@ async def login(request: Request, loginRequest: LoginRequest):
                 "user_id": user_info.user_id,
                 "email": user_info.email,
             }
-
-            return ""
+            return {"message": ""}
         else:
             return JSONResponse(
                 content={"message": "비밀번호가 일치하지 않습니다."},
@@ -46,7 +47,11 @@ async def login(request: Request, loginRequest: LoginRequest):
             )
     else:
         # 없으면 사용자 정보 저장
-        user_info = UserInfo(user_id=loginRequest.user_id, password=loginRequest.password, email=f"{loginRequest.user_id}@temp.com")
+        user_info = UserInfo(
+            user_id=loginRequest.user_id, 
+            password=loginRequest.password, 
+            email=f"{loginRequest.user_id}@temp.com"
+        )
         user_info = user_service.create_user(user_info)
         # 사용자 정보를 세션에 저장
         request.session["user_info"] = {
@@ -54,6 +59,18 @@ async def login(request: Request, loginRequest: LoginRequest):
             "email": user_info.email,
         }
         return {"message": f"계정 {loginRequest.user_id}이 생성 되었습니다."}
+
+@router.post("/api/logout")
+async def login(request: Request):
+
+    # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+    if user_info:
+        # 세션에서 사용자 정보 제거
+        del request.session['user_info']
+    
+    return {"message": "로그아웃 되었습니다."}
+
 class UserService:
     def __init__(self):
         self.session = SessionLocal()
@@ -126,4 +143,3 @@ class UserService:
         """
         self.user_info_repository.delete_user(user_id)
 
-app.include_router(router)        

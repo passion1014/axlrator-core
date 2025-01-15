@@ -11,8 +11,19 @@ const common = {
       success: function (data) {
         if (successFunc) successFunc(data);
       },
-      fail: function (data) {
+      error: function (data) {
+        hideLoading();
+        console.log("fail:" + data);
+        alert(data.responseJSON.message);
         if (failFunc) failFunc(data);
+
+        if (data?.responseJSON?.message) {
+          alert(data.responseJSON.message);
+        } else if (data?.responseText) {
+          alert(data.responseText);
+        } else {
+          alert("처리 중 오류가 발생하였습니다.");
+        }
       },
       complete: function () {
         hideLoading(); // 요청 완료 후 로딩 숨김
@@ -31,7 +42,18 @@ const common = {
       success: function (data) {
         if (successFunc) successFunc(data);
       },
-      fail: function (data) {
+      error: function (data) {
+        hideLoading();
+        debugger;
+        console.log("fail:" + data);
+        if (data?.responseJSON?.message) {
+          alert(data.responseJSON.message);
+        } else if (data?.responseText) {
+          alert(data.responseText);
+        } else {
+          alert("처리 중 오류가 발생하였습니다.");
+        }
+
         if (failFunc) failFunc(data);
       },
       complete: function () {
