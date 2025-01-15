@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from openai import BaseModel
@@ -12,26 +12,32 @@ from uuid import uuid4
 logger = setup_logging()
 router = APIRouter()
 
-session_data = {}
-# 세션 미들웨어
-# app = FastAPI()
-# app.add_middleware(SessionMiddleware, secret_key="cgcgcg")
-
 class LoginRequest(BaseModel):
     user_id: str
     password: str
 
+# FastAPI 앱 생성
+app = FastAPI()
+
+# 세션 미들웨어 추가
+app.add_middleware(SessionMiddleware, secret_key="cgcgcg")    
 
 @router.post("/api/login")
-async def login(request: LoginRequest):
-    print(f"### {request}")
+async def login(request: Request, loginRequest: LoginRequest):
+    print(f"### {loginRequest}")
 
     user_service = UserService()
     
     # user_id로 조회
-    user_info = user_service.get_user_by_id(request.user_id)
+    user_info = user_service.get_user_by_id(loginRequest.user_id)
     if user_info:
-        if user_info.password == request.password:
+        if user_info.password == loginRequest.password:
+            # 사용자 정보를 세션에 저장
+            request.session["user_info"] = {
+                "user_id": user_info.user_id,
+                "email": user_info.email,
+            }
+
             return ""
         else:
             return JSONResponse(
@@ -40,27 +46,14 @@ async def login(request: LoginRequest):
             )
     else:
         # 없으면 사용자 정보 저장
-        user_info = UserInfo(user_id=request.user_id, password=request.password, email=f"{request.user_id}@temp.com")
+        user_info = UserInfo(user_id=loginRequest.user_id, password=loginRequest.password, email=f"{loginRequest.user_id}@temp.com")
         user_info = user_service.create_user(user_info)
-    
         # 사용자 정보를 세션에 저장
-        session_id = str(uuid4())
-        session_data[session_id] = user_info
-         # 쿠키로 세션 아이디를 전달
-        # response = {"session_id": session_id}
-        response = {"message": f"계정 {request.user_id}이 생성 되었습니다."}
-        # 쿠키에 HttpOnly 속성을 추가하여 JavaScript에서 접근할 수 없게 만듦
-        cookie = f"session_id={session_id}; Path=/; HttpOnly"
-        # return response, {"headers": {"Set-Cookie": cookie}}
-        return {"message": f"계정 {request.user_id}이 생성 되었습니다."}
-
-        # request.session['user_info'] = user_info
-
-        # user_dict = {key: value for key, value in user_info.__dict__.items() if not key.startswith('_')} # 인스턴스를 딕셔너리로 변환
-        # user_json = json.dumps(user_dict, ensure_ascii=False) # 딕셔너리를 JSON으로 변환
-        # return {"message": f"계정 {request.user_id}이 생성 되었습니다."}
-    
-
+        request.session["user_info"] = {
+            "user_id": user_info.user_id,
+            "email": user_info.email,
+        }
+        return {"message": f"계정 {loginRequest.user_id}이 생성 되었습니다."}
 class UserService:
     def __init__(self):
         self.session = SessionLocal()
@@ -132,3 +125,5 @@ class UserService:
             user_id: 삭제할 사용자 ID
         """
         self.user_info_repository.delete_user(user_id)
+
+app.include_router(router)        
