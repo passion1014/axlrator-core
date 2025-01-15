@@ -1,24 +1,16 @@
-# import json
-# from fastapi import  APIRouter, Request, FastAPI
-# from fastapi.responses import RedirectResponse, JSONResponse
-# from starlette.middleware.sessions import SessionMiddleware
-# from starlette.middleware.sessions import SessionMiddleware
-# from openai import BaseModel
 from app.config import setup_logging
-from app.db_model.data_repository import UserInfoRepository
+from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database import SessionLocal
-from app.db_model.database_models import UserInfo
-# from uuid import uuid4
+from app.db_model.database_models import ChatHistory, UserInfo
 from fastapi import FastAPI, APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel
 from typing import Optional
-
+from typing import List
 
 # 라우터 정의
 router = APIRouter()
-
 
 class LoginRequest(BaseModel):
     user_id: str
@@ -62,7 +54,6 @@ async def login(request: Request, loginRequest: LoginRequest):
 
 @router.post("/api/logout")
 async def login(request: Request):
-
     # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
     if user_info:
@@ -70,6 +61,18 @@ async def login(request: Request):
         del request.session['user_info']
     
     return {"message": "로그아웃 되었습니다."}
+
+@router.get("/api/history")
+async def history(request: Request, type_cd: str):
+    print(f"### {request}")
+     # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+    print(user_info)
+
+    chatHistoryService = ChatHistoryService()
+    list = chatHistoryService.get_chat_history_by_user_id(user_info['user_id'])
+
+    return {"response": list}
 
 class UserService:
     def __init__(self):
@@ -143,3 +146,12 @@ class UserService:
         """
         self.user_info_repository.delete_user(user_id)
 
+
+
+class ChatHistoryService:
+    def __init__(self):
+        self.session = SessionLocal()
+        self.chat_history_repository = ChatHistoryRepository(self.session)
+
+    def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
+        return self.chat_history_repository.get_chat_history_by_user_id(user_id=user_id)

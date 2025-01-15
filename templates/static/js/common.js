@@ -4,7 +4,7 @@ const common = {
       url: url,
       type: "GET",
       contentType: "application/json",
-      data: JSON.stringify(params),
+      data: params,
       beforeSend: function () {
         showLoading(); // 요청 전 로딩 표시
       },
@@ -14,7 +14,6 @@ const common = {
       error: function (data) {
         hideLoading();
         console.log("fail:" + data);
-        alert(data.responseJSON.message);
         if (failFunc) failFunc(data);
 
         if (data?.responseJSON?.message) {

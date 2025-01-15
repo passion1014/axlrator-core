@@ -1,7 +1,15 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
 <script>
   $(document).ready(function () {
-    //입력버튼 클릭
+    common.getRequest("/user/api/history", { type_cd: "1" }, function (data) {
+      let html = "";
+      data.response.forEach((item, index) => {
+        html += `<li class="list-group-item pointer">${item.title}</li>`;
+      });
+      $("#chatHistory").html(html);
+    });
+
+    //입력버튼 클릭이벤트 핸들러
     $("#btnInput").on("click", function () {
       const question = $("#iptQuestion").val();
       if (!question) return;
@@ -70,13 +78,7 @@
       </div>
     </div>
     <div class="col-4">
-      <ul class="list-group">
-        <li class="list-group-item">이력1</li>
-        <li class="list-group-item">이력2</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-      </ul>
+      <ul class="list-group" id="chatHistory"></ul>
     </div>
   </div>
 </div>

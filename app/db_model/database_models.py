@@ -62,6 +62,7 @@ class ChatHistory(Base):
     id = Column(Integer, primary_key=True, index=True, comment="primary key")
     data = Column(Text, comment="큰 사이즈의 텍스트 컬럼")
     title = Column(String(200), comment="200자 사이즈 텍스트")
+    type_code = Column(String(100), comment="타입코드") # code_assist:코드생성, text2sql:SQL생성
     user_info_id = Column(Integer, ForeignKey("user_info.id"), comment="UserInfo FK")
 
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")

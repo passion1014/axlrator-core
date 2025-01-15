@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=".env.testcase", override=True) # .env, .env.testcase
 database_url = os.getenv("DATABASE_URL")
 
 # SQLAlchemy engine 생성하기
-engine = create_engine(database_url) # 로컬에서 실행시
+engine = create_engine(database_url, echo=True) # 로컬에서 실행시
 
 # DB 세션 생성하기
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
