@@ -1,21 +1,26 @@
 import json
+from typing import List
 from fastapi import APIRouter
 from openai import BaseModel
 from app.config import setup_logging
-from app.db_model.data_repository import UserInfoRepository
+from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database import SessionLocal
-from app.db_model.database_models import UserInfo
+from app.db_model.database_models import ChatHistory, UserInfo
 
 logger = setup_logging()
 router = APIRouter()
 
-class LoginRequest(BaseModel):
+class LoginInfo(BaseModel):
     user_id: str
     password: str
 
+class CallHistoryInfo(BaseModel):
+    user_id: str
+    type_cd: str # code_assist:코드생성, text2sql:SQL생성
+
 
 @router.post("/api/login")
-async def login(request: LoginRequest):
+async def login(request: LoginInfo):
     print(f"### {request}")
 
     user_service = UserService()
@@ -35,6 +40,17 @@ async def login(request: LoginRequest):
     return {"response": user_json}
 
 
+@router.post("/api/history")
+async def history(request: CallHistoryInfo):
+    print(f"### {request}")
+
+    chatHistoryService = ChatHistoryService()
+    list = chatHistoryService.get_chat_history_by_user_id(request.user_id)
+
+    return {"response": list}
+
+
+
 class UserService:
     def __init__(self):
         self.session = SessionLocal()
@@ -43,66 +59,44 @@ class UserService:
     def get_user_by_id(self, user_id: str):
         """
         주어진 사용자 ID로 사용자를 조회합니다.
-        
-        Args:
-            user_id: 조회할 사용자 ID
-            
-        Returns:
-            조회된 사용자 정보. 없으면 None 반환
         """
         return self.user_info_repository.get_user_by_id(user_id)
 
     def get_user_by_email(self, email: str):
         """
         주어진 이메일로 사용자를 조회합니다.
-        
-        Args:
-            email: 조회할 사용자 이메일
-            
-        Returns:
-            조회된 사용자 정보. 없으면 None 반환
         """
         return self.user_info_repository.get_user_by_email(email)
 
     def get_all_users(self):
         """
         모든 사용자를 조회합니다.
-        
-        Returns:
-            모든 사용자 정보 리스트
         """
         return self.user_info_repository.get_all_users()
 
     def create_user(self, user_data: dict):
         """
         새로운 사용자를 생성합니다.
-        
-        Args:
-            user_data: 생성할 사용자 정보
-            
-        Returns:
-            생성된 사용자 정보
         """
         return self.user_info_repository.create_user(user_data)
 
     def update_user(self, user_id: str, user_data: dict):
         """
         주어진 사용자 ID로 사용자를 업데이트합니다.
-        
-        Args:
-            user_id: 업데이트할 사용자 ID
-            user_data: 업데이트할 사용자 정보
-            
-        Returns:
-            업데이트된 사용자 정보
         """
         return self.user_info_repository.update_user(user_id, user_data)
 
     def delete_user(self, user_id: str):
         """
         주어진 사용자 ID로 사용자를 삭제합니다.
-        
-        Args:
-            user_id: 삭제할 사용자 ID
         """
         self.user_info_repository.delete_user(user_id)
+        
+
+class ChatHistoryService:
+    def __init__(self):
+        self.session = SessionLocal()
+        self.chat_history_repository = ChatHistoryRepository(self.session)
+
+    def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
+        return self.chat_history_repository.get_chat_history_by_user_id(user_id=user_id)
