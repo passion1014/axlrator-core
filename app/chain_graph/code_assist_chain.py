@@ -2,12 +2,26 @@ from langchain_core.prompts import PromptTemplate
 from app.chain_graph.agent_state import AgentState, CodeAssistState
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
+from app.process.reranker import AlfredReranker
 from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
 from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
+
+import logging
+
+# 기본 설정
+logging.basicConfig(level=logging.INFO)
+
+# 로그 출력
+logging.debug("This is a debug message")
+logging.info("This is an info message")
+logging.warning("This is a warning message")
+logging.error("This is an error message")
+logging.critical("This is a critical message")
+
 
 class CodeAssistChain:
     def __init__(self, index_name:str="cg_code_assist"):
@@ -21,18 +35,30 @@ class CodeAssistChain:
         question = state['question']
 
         # VectorDB / BM25 조회
-        semantic_results = self.faissVectorDB.search_similar_documents(query=question, k=50)
-        bm25_results = self.es_bm25.search(query=question, k=50)
+        semantic_results = self.faissVectorDB.search_similar_documents(query=question, k=50) # faiss 조회
+        bm25_results = self.es_bm25.search(query=question, k=50) # elasticsearch 조회
+        
+        logging.info("## Step1. Semantic Results: %s", semantic_results)
+        logging.info("## Step1. BM25 Results: %s", bm25_results)
 
         # VectorDB의 doc_id, original_index값 추출
         ranked_chunk_ids = [
-            (result['metadata'].get('doc_id', None), result['metadata'].get('original_index', None))
+            (
+                result['metadata'].get('doc_id', None), 
+                result['metadata'].get('original_index', None)
+            )
             for result in semantic_results
             if 'metadata' in result and isinstance(result['metadata'], dict)
         ]
 
         # BM25조회 결과의 doc_id, original_index값 추출
-        ranked_bm25_chunk_ids = [(result['doc_id'], result['original_index']) for result in bm25_results]
+        ranked_bm25_chunk_ids = [
+            (
+                result['doc_id'], 
+                result['original_index']
+            ) 
+            for result in bm25_results
+        ]
         
         # 2개의 결과를 머지 (중복제거)
         chunk_ids = list(set(ranked_chunk_ids + ranked_bm25_chunk_ids))
@@ -48,13 +74,54 @@ class CodeAssistChain:
             chunk_id_to_score[chunk_id] = score
             
         # 정렬 (score, chunk_id의 1번째, chunk_id의 2번째)
-        sorted_chunk_ids = sorted(chunk_id_to_score.keys(), key=lambda x: (chunk_id_to_score[x], x[0], x[1]), reverse=True)
+        sorted_chunk_ids = sorted(
+            chunk_id_to_score.keys(), 
+            key=lambda x: (chunk_id_to_score[x], x[0], x[1]), 
+            reverse=True
+        )
+        logging.info("### Step2. 랭크퓨전 결과 (sorted_chunk_ids) : %s", sorted_chunk_ids)
+        
+        # docid와 content/value를 매핑한 딕셔너리 생성
+        # semantic_docid_to_content = {result['vector_index']: result['content'] for result in semantic_results}
+        # bm25_docid_to_value = {result['doc_id']: result['content'] for result in bm25_results}
+        
+        # docid와 content/value를 매핑한 딕셔너리 생성
+        semantic_docid_to_content = {
+            (
+                result['metadata'].get('doc_id', None),
+                result['metadata'].get('original_index', None)
+            ): result.get('content', '')
+            for result in semantic_results
+            if 'metadata' in result and isinstance(result['metadata'], dict)
+        }
+        bm25_docid_to_value = {
+            (
+                result.get('doc_id', None),
+                result.get('original_index', None)
+            ): result.get('content', '')
+            for result in bm25_results
+        }
 
-        state['context'] = [{
+        # 리랭킹 하기 전 정렬된 데이터 리스트
+        sorted_documents = [{
             'score': chunk_id_to_score[chunk_id],
             'from_semantic': chunk_id in ranked_chunk_ids,
-            'from_bm25': chunk_id in ranked_bm25_chunk_ids
+            'from_bm25': chunk_id in ranked_bm25_chunk_ids,
+            'content': (
+                semantic_docid_to_content.get(chunk_id, 'Content not found') if chunk_id in ranked_chunk_ids
+                else bm25_docid_to_value.get(chunk_id, 'Value not found') if chunk_id in ranked_bm25_chunk_ids
+                else ''
+            )
         } for chunk_id in sorted_chunk_ids[:k]]
+        
+        logging.info("### Step3. 머지/정렬된 결과(sorted_documents) : %s", sorted_documents)
+        
+        # 리랭킹
+        valid_documents = [doc for doc in sorted_documents if doc['content']]
+        reranker = AlfredReranker()
+        reranker.cross_encoder(query=question, documents=valid_documents)
+
+        state['context'] = valid_documents
 
         return state
 
@@ -301,7 +368,6 @@ def code_assist_chain(type:str):
         workflow.add_edge("generate_response", END)
         pass
 
-
     else:
         workflow.add_node("get_context", get_context)
         workflow.add_node("generate_response", generate_response)
@@ -316,11 +382,6 @@ def code_assist_chain(type:str):
     
     return chain
 
-# Helper function: contextual_enrichment
-def contextual_enrichment(query):
-    # LLM을 이용하여 질문의 의도를 확장하거나 관련 정보를 추가
-    enriched_query = f"{query} | Additional Context: Extract function and variable relationships."
-    return enriched_query
 
 # Helper function: combine_documents_with_relevance
 def combine_documents_with_relevance(docs):
@@ -328,3 +389,28 @@ def combine_documents_with_relevance(docs):
     combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context
 
+
+# 테스트 실행
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    import os
+
+    print(f"### {os.getcwd()}")
+
+    # 작업디렉토리를 상위경로로 변경
+    parent_dir = os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
+    os.chdir(parent_dir)
+
+    # 환경변수 설정
+    load_dotenv(dotenv_path=".env.testcase", override=True)
+
+    from app.db_model.database import SessionLocal
+    from app.vectordb.faiss_vectordb import FaissVectorDB
+    # session = SessionLocal()
+    # faissVectorDB = FaissVectorDB(db_session=session, index_name='cg_code_assist')    
+        
+    state = CodeAssistState()
+    state.question = "스페인의 비는 어디에 내리나요?"
+    
+    code_assist_chain = CodeAssistChain()
+    code_assist_state = code_assist_chain.context_node(state=state, k=3)
