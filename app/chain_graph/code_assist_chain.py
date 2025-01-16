@@ -12,17 +12,6 @@ from langfuse.callback import CallbackHandler
 
 import logging
 
-# 기본 설정
-logging.basicConfig(level=logging.INFO)
-
-# 로그 출력
-logging.debug("This is a debug message")
-logging.info("This is an info message")
-logging.warning("This is a warning message")
-logging.error("This is an error message")
-logging.critical("This is a critical message")
-
-
 class CodeAssistChain:
     def __init__(self, index_name:str="cg_code_assist"):
         self.index_name = index_name

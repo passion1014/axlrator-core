@@ -16,13 +16,13 @@ router = APIRouter()
 class LoginInfo(BaseModel):
     user_id: str
     password: str
-class HistoryRequest(BaseModel):
+class HistoryInfo(BaseModel):
     data: str
     title: str
     type_code: str
 
 @router.post("/api/login")
-async def login(request: Request, loginRequest: LoginRequest):
+async def login(request: Request, loginRequest: LoginInfo):
     print(f"### {loginRequest}")
 
     user_service = UserService()
@@ -83,7 +83,7 @@ async def history(request: Request, type_code: str):
 
 
 @router.post("/api/history")
-async def createHistory(request: Request, historyRequest: HistoryRequest):
+async def createHistory(request: Request, historyRequest: HistoryInfo):
     print(f"### aaaa {historyRequest}")
      # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
@@ -105,7 +105,7 @@ async def createHistory(request: Request, historyRequest: HistoryRequest):
     return {"message": ""}
 
 @router.post("/api/history")
-async def history(request: CallHistoryInfo):
+async def history(request: HistoryInfo):
     print(f"### {request}")
 
     chatHistoryService = ChatHistoryService()

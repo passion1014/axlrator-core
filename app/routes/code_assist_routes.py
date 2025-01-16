@@ -7,6 +7,8 @@ from app.db_model.database_models import ChatHistory, UserInfo
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from typing import Optional
 from typing import List
+from fastapi.responses import StreamingResponse
+from typing import AsyncGenerator
 
 logger = setup_logging()
 router = APIRouter()
@@ -40,11 +42,6 @@ async def sample_endpoint(request: CodeAssistRequest):
     state = {"indexname": request.indexname, "question": request.question, "current_code": request.current_code}
     response = chain.invoke(state)
     return {"response": response}
-
-
-from fastapi.responses import StreamingResponse
-from typing import AsyncGenerator
-
 
 
 
