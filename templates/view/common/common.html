@@ -1,0 +1,53 @@
+<!-- <link href="/static/css/bootstrap.min.css" rel="stylesheet" /> -->
+<link href="/static/css/bootstrap.css" rel="stylesheet" />
+<link href="/static/icons/font/bootstrap-icons.css" rel="stylesheet" />
+<link href="/static/css/common.css" rel="stylesheet" />
+<link href="/static/css/highlight.min.css" rel="stylesheet" />
+<!-- Feather Icons 스크립트 추가 -->
+<script src="/static/js/feather.min.js"></script>
+<!-- Bootstrap JS 및 의존성 파일 -->
+<script src="/static/js/jquery-3.7.1.min.js"></script>
+<script src="/static/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/marked.min.js"></script>
+<script src="/static/js/highlight.min.js"></script>
+<script src="/static/js/color-modes.js"></script>
+<script src="/static/js/common.js"></script>
+
+<script>
+  feather.replace();
+
+  $("html").css("overflow", "auto");
+  function showLoading() {
+    $(".loading").css("display", "flex");
+  }
+
+  function hideLoading() {
+    $(".loading").css("display", "none");
+  }
+
+  //$(".loading").css("display", "none");
+</script>
+<style>
+  html {
+    overflow: "hidden";
+  }
+  .loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    transition: 0.5s ease;
+    display: none;
+    justify-content: center; /* 가로로 가운데 정렬 */
+    align-items: center; /* 세로로 가운데 정렬 */
+  }
+</style>
+
+<!-- 로딩 화면 -->
+<div class="loading">
+  <div class="spinner-border" role="status"></div>
+  Loading...
+</div>

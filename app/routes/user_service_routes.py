@@ -1,44 +1,108 @@
-import json
-from typing import List
-from fastapi import APIRouter
-from openai import BaseModel
+from datetime import datetime
 from app.config import setup_logging
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database import SessionLocal
 from app.db_model.database_models import ChatHistory, UserInfo
+from fastapi import FastAPI, APIRouter, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
+from pydantic import BaseModel
+from typing import Optional
+from typing import List
 
-logger = setup_logging()
+# 라우터 정의
 router = APIRouter()
 
 class LoginInfo(BaseModel):
     user_id: str
     password: str
-
-class CallHistoryInfo(BaseModel):
-    user_id: str
-    type_cd: str # code_assist:코드생성, text2sql:SQL생성
-
+class HistoryRequest(BaseModel):
+    data: str
+    title: str
+    type_code: str
 
 @router.post("/api/login")
-async def login(request: LoginInfo):
-    print(f"### {request}")
+async def login(request: Request, loginRequest: LoginRequest):
+    print(f"### {loginRequest}")
 
     user_service = UserService()
     
     # user_id로 조회
-    user_info = user_service.get_user_by_id(request.user_id)
+    user_info = user_service.get_user_by_id(loginRequest.user_id)
     if user_info:
-        return {"response": user_info}
-    
-    # 없으면 저장
-    user_info = UserInfo(user_id=request.user_id, password=request.password, email=f"{request.user_id}@temp.com")
-    user_info = user_service.create_user(user_info)
-    
-    user_dict = {key: value for key, value in user_info.__dict__.items() if not key.startswith('_')} # 인스턴스를 딕셔너리로 변환
-    user_json = json.dumps(user_dict, ensure_ascii=False) # 딕셔너리를 JSON으로 변환
-    
-    return {"response": user_json}
+        if user_info.password == loginRequest.password:
+            # 사용자 정보를 세션에 저장
+            request.session["user_info"] = {
+                "id": user_info.id,
+                "user_id": user_info.user_id,
+                "email": user_info.email,
+            }
+            return {"message": ""}
+        else:
+            return JSONResponse(
+                content={"message": "비밀번호가 일치하지 않습니다."},
+                status_code=400
+            )
+    else:
+        # 없으면 사용자 정보 저장
+        user_info = UserInfo(
+            user_id=loginRequest.user_id, 
+            password=loginRequest.password, 
+            email=f"{loginRequest.user_id}@temp.com"
+        )
+        user_info = user_service.create_user(user_info)
+        # 사용자 정보를 세션에 저장
+        request.session["user_info"] = {
+            "id": user_info.id,
+            "user_id": user_info.user_id,
+            "email": user_info.email,
+        }
+        return {"message": f"계정 {loginRequest.user_id}이 생성 되었습니다."}
 
+@router.post("/api/logout")
+async def login(request: Request):
+    # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+    if user_info:
+        # 세션에서 사용자 정보 제거
+        del request.session['user_info']
+    
+    return {"message": "로그아웃 되었습니다."}
+
+@router.get("/api/history")
+async def history(request: Request, type_code: str):
+    print(f"### {request}")
+     # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+    print(user_info)
+
+    chatHistoryService = ChatHistoryService()
+    list = chatHistoryService.get_chat_history_by_user_id_and_type_code(user_info['user_id'], type_code)
+
+    return {"response": list}
+
+
+@router.post("/api/history")
+async def createHistory(request: Request, historyRequest: HistoryRequest):
+    print(f"### aaaa {historyRequest}")
+     # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+
+
+    history = {
+        'title': historyRequest.title,
+        'type_code': historyRequest.type_code,
+        'data': historyRequest.data,
+        'user_info_id': user_info['id'],
+        'modified_at': datetime.now(),
+        'created_at':  datetime.now(),
+        'created_by':  user_info['id'],
+        'modified_by': user_info['id'],
+    }
+    chatHistoryService = ChatHistoryService()
+    chatHistoryService.create_chat_history(history)
+
+    return {"message": ""}
 
 @router.post("/api/history")
 async def history(request: CallHistoryInfo):
@@ -91,12 +155,16 @@ class UserService:
         주어진 사용자 ID로 사용자를 삭제합니다.
         """
         self.user_info_repository.delete_user(user_id)
-        
+
+
 
 class ChatHistoryService:
     def __init__(self):
         self.session = SessionLocal()
         self.chat_history_repository = ChatHistoryRepository(self.session)
 
-    def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
-        return self.chat_history_repository.get_chat_history_by_user_id(user_id=user_id)
+    def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
+        return self.chat_history_repository.get_chat_history_by_user_id_and_type_code(user_id=user_id, type_code=type_code)
+    
+    def create_chat_history(self, history: dict) -> ChatHistory:
+        return self.chat_history_repository.create_chat_history(history)  

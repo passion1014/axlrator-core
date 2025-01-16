@@ -1,76 +1,35 @@
 <!DOCTYPE html>
 <html data-bs-theme="light">
+  {% include 'view/common/common.html' %}
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}화면{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- <link href="/static/css/bootstrap.min.css" rel="stylesheet" /> -->
-    <link href="/static/css/bootstrap.css" rel="stylesheet" />
-    <link href="/static/icons/font/bootstrap-icons.css" rel="stylesheet" />
-    <link href="/static/css/common.css" rel="stylesheet" />
-    <link href="/static/css/highlight.min.css" rel="stylesheet" />
-    <!-- Feather Icons 스크립트 추가 -->
-    <script src="/static/js/feather.min.js"></script>
-    <!-- Bootstrap JS 및 의존성 파일 -->
-    <script src="/static/js/jquery-3.7.1.min.js"></script>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/js/marked.min.js"></script>
-    <script src="/static/js/highlight.min.js"></script>
-    <script src="/static/js/color-modes.js"></script>
-    <script src="/static/js/common.js"></script>
-
     <script>
-      feather.replace();
-
-      $("html").css("overflow", "auto");
-      function showLoading() {
-        $(".loading").css("display", "flex");
-      }
-
-      function hideLoading() {
-        $(".loading").css("display", "none");
-      }
-
-      //$(".loading").css("display", "none");
+      $(document).ready(function () {
+        //로그아웃 버튼 클릭
+        $("#btnLogout").click(function () {
+          common.postRequest("/user/api/logout", null, function (data) {
+            window.location.href = "/view/login";
+          });
+        });
+      });
     </script>
-    <style>
-      html {
-        overflow: "hidden";
-      }
-      .loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 10;
-        transition: 0.5s ease;
-        display: none;
-        justify-content: center; /* 가로로 가운데 정렬 */
-        align-items: center; /* 세로로 가운데 정렬 */
-      }
-    </style>
   </head>
   <body>
-    <!-- 로딩 화면 -->
-    <div class="loading">
-      <div class="spinner-border" role="status"></div>
-      Loading...
-    </div>
-
     <div class="container-fluid wrap">
       <header class="header row justify-content-between align-items-center">
         <div class="col left">
           <h1 class="logo">건설공제 RAG</h1>
         </div>
         <div class="col-auto right">
-          <button class="btn btn-sm btn-outline-light">로그인</button>
+          <button class="btn btn-sm btn-outline-light" id="btnLogout">로그아웃</button>
         </div>
       </header>
       <div class="row container-body">
         {% include 'view/common/sidebar.html' %}
+
         <!--  contents -->
 
         <div class="col-10 content">

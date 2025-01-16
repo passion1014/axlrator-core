@@ -1,7 +1,32 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
 
 <script>
+  //이력 조회
+  const getChatHistory = function () {
+    common.getRequest("/user/api/history", { type_code: "2" }, function (data) {
+      let html = "";
+      data.response.forEach((item, index) => {
+        const data = item.data.replaceAll('"', "&quot;");
+        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}</li>`;
+      });
+      $("#chatHistory").html(html);
+
+      //이력 title버튼 클릭 이벤트
+      $("#chatHistory li").click(function () {
+        debugger;
+        const data = $(this).attr("data-data").replaceAll("&quot;", "'");
+        const list = JSON.parse(data);
+        $("#iptQuestion").val(list[0].question);
+        $("#iptAnswer").html(list[0].answer);
+        $("#iptContext").val(list[0].context);
+      });
+    });
+  };
+
   $(document).ready(function () {
+    getChatHistory();
+
+    //입력버튼클릭 이벤트 핸들러
     $("#btnInput").on("click", function () {
       const question = $("#iptQuestion").val();
       const sql_request = $("#iptContext").val();
@@ -15,20 +40,22 @@
         sql_request: sql_request,
       };
 
+      //SQL생성 서비스 호출
       common.postRequest("/codeassist/api/makesql", payload, function (data) {
         const content = data?.response?.response?.content;
         $("#iptAnswer").text(content);
 
-        //이력 재 조회
-        //
-        // $.ajax({
-        // 	url: "/codeassist/api/makesql",
-        // 	type: "POST",
-        // 	contentType: "application/json",
-        // 	data: JSON.stringify({ question: question, sql_request: sql_request }),
-        // 	success: function (data) {
-        // 	},
-        // });
+        //이력생성
+        const param = {
+          title: $("#iptQuestion").val(),
+          type_code: "2",
+          data: JSON.stringify([
+            { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+          ]),
+        };
+        common.postRequest("/user/api/history", param, function (data) {
+          getChatHistory(); //이력 재조회
+        });
       });
     });
   });
@@ -62,13 +89,7 @@
       </div>
     </div>
     <div class="col-4">
-      <ul class="list-group">
-        <li class="list-group-item">이력1</li>
-        <li class="list-group-item">이력2</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-      </ul>
+      <ul class="list-group" id="chatHistory"></ul>
     </div>
   </div>
 </div>

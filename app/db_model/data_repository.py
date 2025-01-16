@@ -339,8 +339,11 @@ class ChatHistoryRepository:
     def __init__(self, session):
         self.session = session
 
-    def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
-        return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id).all()
+    # def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
+    #     return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id).all()
+    
+    def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
+        return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id, ChatHistory.type_code == type_code).all()
 
     def get_chat_history_by_title(self, title: str) -> List[ChatHistory]:
         return self.session.query(ChatHistory).filter(ChatHistory.title == title).all()

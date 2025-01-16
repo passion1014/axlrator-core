@@ -8,34 +8,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}화면{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- <link href="/static/css/bootstrap.min.css" rel="stylesheet" /> -->
-    <link href="/static/css/bootstrap.css" rel="stylesheet" />
-    <link href="/static/icons/font/bootstrap-icons.css" rel="stylesheet" />
-    <link href="/static/css/common.css" rel="stylesheet" />
-    <link href="/static/css/highlight.min.css" rel="stylesheet" />
-    <!-- Feather Icons 스크립트 추가 -->
-    <script src="/static/js/feather.min.js"></script>
-    <!-- Bootstrap JS 및 의존성 파일 -->
-    <script src="/static/js/jquery-3.7.1.min.js"></script>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/js/marked.min.js"></script>
-    <script src="/static/js/highlight.min.js"></script>
-    <script src="/static/js/color-modes.js"></script>
+    {% include 'view/common/common.html' %}
+    <script>
+      $(document).ready(function () {
+        //로그인 버튼 클릭
+        $("#btnLogin").click(function () {
+          const id = $("#iptId").val();
+          const password = $("#iptPassword").val();
+
+          if (!id) {
+            alert("아이디를 입력하세요");
+            $("#iptId").focus();
+            return;
+          }
+
+          if (!password) {
+            alert("비밀번호를 입력하세요");
+            $("#iptPassword").focus();
+            return;
+          }
+
+          const param = {
+            user_id: id,
+            password: password,
+          };
+
+          common.postRequest("/user/api/login", param, function (data) {
+            if (data.message) alert(data.message);
+
+            //성공
+            window.location.href = "/view/code/conversion";
+          });
+        });
+      });
+    </script>
   </head>
   <body>
     <div class="login-container">
       <div class="login-wrap border p-5 rounded-5 shadow">
         <h1 class="fs-3 fw-bold text-center mb-5">건설공제조합 RAG</h1>
         <div class="row align-items-center">
-          <label class="form-label mb-0 col-sm-3 fw-bold" for="ipId">아이디</label>
-          <input type="text" class="form-control form-control-lg col" id="ipId" />
+          <label class="form-label mb-0 col-sm-3 fw-bold" for="iptId">아이디</label>
+          <input type="text" class="form-control form-control-lg col" id="iptId" />
         </div>
         <div class="row mt-3 align-items-center">
-          <label class="form-label mb-0 col-sm-3 fw-bold" for="ipPwd">비밀번호</label>
-          <input type="password" class="form-control form-control-lg col" id="ipPwd" />
+          <label class="form-label mb-0 col-sm-3 fw-bold" for="iptPassword">비밀번호</label>
+          <input type="password" class="form-control form-control-lg col" id="iptPassword" />
         </div>
         <div class="row login-btns mt-5">
-          <button class="btn btn-primary btn-lg col fw-bold">로그인</button>
+          <button class="btn btn-primary btn-lg col fw-bold" id="btnLogin">로그인</button>
         </div>
       </div>
     </div>

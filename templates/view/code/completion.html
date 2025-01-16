@@ -1,7 +1,30 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
 <script>
+  //이력 조회
+  const getChatHistory = function () {
+    common.getRequest("/user/api/history", { type_code: "2" }, function (data) {
+      let html = "";
+      data.response.forEach((item, index) => {
+        const data = item.data.replaceAll('"', "&quot;");
+        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}</li>`;
+      });
+      $("#chatHistory").html(html);
+
+      //이력 title버튼 클릭 이벤트
+      $("#chatHistory li").click(function () {
+        const data = $(this).attr("data-data").replaceAll("&quot;", "'");
+        const list = JSON.parse(data);
+        $("#iptQuestion").val(list[0].question);
+        $("#iptAnswer").html(list[0].answer);
+        $("#iptContext").val(list[0].context);
+      });
+    });
+  };
+
   $(document).ready(function () {
-    //입력버튼 클릭
+    getChatHistory();
+
+    //입력버튼 클릭이벤트 핸들러
     $("#btnInput").on("click", function () {
       const question = $("#iptQuestion").val();
       if (!question) return;
@@ -18,23 +41,42 @@
         sql_request: "",
       };
 
-      common.postStreamRequest(
-        "/codeassist/api/autocode",
-        // "/codeassist/api/stream",
-        param,
-        function (e) {
-          const chunk = e.currentTarget.response;
-          console.log(chunk);
+      //코드 생성서비스 호출
+      common.postRequest("/codeassist/api/code", param, function (data) {
+        const content = data?.response?.response?.content;
+        $("#iptAnswer").text(content);
 
-          $("#iptAnswer").text(chunk); // 모든 데이터 표시
-        },
-        function (data) {
-          console.log("success");
-        },
-        function (data) {
-          console.log("fail");
-        }
-      );
+        const param = {
+          title: $("#iptQuestion").val(),
+          type_code: "2",
+          data: JSON.stringify([
+            { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+          ]),
+        };
+
+        //이력생성
+        common.postRequest("/user/api/history", param, function (data) {
+          getChatHistory(); //이력 재조회
+        });
+      });
+
+      // common.postStreamRequest(
+      //   "/codeassist/api/autocode",
+      //   // "/codeassist/api/stream",
+      //   param,
+      //   function (e) {
+      //     const chunk = e.currentTarget.response;
+      //     console.log(chunk);
+
+      //     $("#iptAnswer").text(chunk); // 모든 데이터 표시
+      //   },
+      //   function (data) {
+      //     console.log("success");
+      //   },
+      //   function (data) {
+      //     console.log("fail");
+      //   }
+      // );
     });
   });
 </script>
@@ -70,13 +112,7 @@
       </div>
     </div>
     <div class="col-4">
-      <ul class="list-group">
-        <li class="list-group-item">이력1</li>
-        <li class="list-group-item">이력2</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-      </ul>
+      <ul class="list-group" id="chatHistory"></ul>
     </div>
   </div>
 </div>
