@@ -63,14 +63,14 @@ async def login(request: Request):
     return {"message": "로그아웃 되었습니다."}
 
 @router.get("/api/history")
-async def history(request: Request, type_cd: str):
+async def history(request: Request, type_code: str):
     print(f"### {request}")
      # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
     print(user_info)
 
     chatHistoryService = ChatHistoryService()
-    list = chatHistoryService.get_chat_history_by_user_id(user_info['user_id'])
+    list = chatHistoryService.get_chat_history_by_user_id_and_type_code(user_info['user_id'], type_code)
 
     return {"response": list}
 
@@ -153,5 +153,5 @@ class ChatHistoryService:
         self.session = SessionLocal()
         self.chat_history_repository = ChatHistoryRepository(self.session)
 
-    def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
-        return self.chat_history_repository.get_chat_history_by_user_id(user_id=user_id)
+    def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
+        return self.chat_history_repository.get_chat_history_by_user_id_and_type_code(user_id=user_id, type_code=type_code)
