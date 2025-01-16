@@ -1,8 +1,8 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
 
 <script>
-  $(document).ready(function () {
-    //이력 조회
+  //이력 조회
+  const getChatHistory = function () {
     common.getRequest("/user/api/history", { type_code: "2" }, function (data) {
       let html = "";
       data.response.forEach((item, index) => {
@@ -13,12 +13,18 @@
 
       //이력 title버튼 클릭 이벤트
       $("#chatHistory li").click(function () {
+        debugger;
         const data = $(this).attr("data-data").replaceAll("&quot;", "'");
         const list = JSON.parse(data);
         $("#iptQuestion").val(list[0].question);
+        $("#iptAnswer").html(list[0].answer);
         $("#iptContext").val(list[0].context);
       });
     });
+  };
+
+  $(document).ready(function () {
+    getChatHistory();
 
     //입력버튼클릭 이벤트 핸들러
     $("#btnInput").on("click", function () {
@@ -34,20 +40,22 @@
         sql_request: sql_request,
       };
 
+      //SQL생성 서비스 호출
       common.postRequest("/codeassist/api/makesql", payload, function (data) {
         const content = data?.response?.response?.content;
         $("#iptAnswer").text(content);
 
-        //이력 재 조회
-        //
-        // $.ajax({
-        // 	url: "/codeassist/api/makesql",
-        // 	type: "POST",
-        // 	contentType: "application/json",
-        // 	data: JSON.stringify({ question: question, sql_request: sql_request }),
-        // 	success: function (data) {
-        // 	},
-        // });
+        //이력생성
+        const param = {
+          title: $("#iptQuestion").val(),
+          type_code: "2",
+          data: JSON.stringify([
+            { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+          ]),
+        };
+        common.postRequest("/user/api/history", param, function (data) {
+          getChatHistory(); //이력 재조회
+        });
       });
     });
   });

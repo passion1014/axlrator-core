@@ -1,3 +1,4 @@
+from datetime import datetime
 from app.config import setup_logging
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database import SessionLocal
@@ -15,6 +16,10 @@ router = APIRouter()
 class LoginRequest(BaseModel):
     user_id: str
     password: str
+class HistoryRequest(BaseModel):
+    data: str
+    title: str
+    type_code: str
 
 @router.post("/api/login")
 async def login(request: Request, loginRequest: LoginRequest):
@@ -28,6 +33,7 @@ async def login(request: Request, loginRequest: LoginRequest):
         if user_info.password == loginRequest.password:
             # 사용자 정보를 세션에 저장
             request.session["user_info"] = {
+                "id": user_info.id,
                 "user_id": user_info.user_id,
                 "email": user_info.email,
             }
@@ -47,6 +53,7 @@ async def login(request: Request, loginRequest: LoginRequest):
         user_info = user_service.create_user(user_info)
         # 사용자 정보를 세션에 저장
         request.session["user_info"] = {
+            "id": user_info.id,
             "user_id": user_info.user_id,
             "email": user_info.email,
         }
@@ -73,6 +80,29 @@ async def history(request: Request, type_code: str):
     list = chatHistoryService.get_chat_history_by_user_id_and_type_code(user_info['user_id'], type_code)
 
     return {"response": list}
+
+
+@router.post("/api/history")
+async def createHistory(request: Request, historyRequest: HistoryRequest):
+    print(f"### aaaa {historyRequest}")
+     # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+
+
+    history = {
+        'title': historyRequest.title,
+        'type_code': historyRequest.type_code,
+        'data': historyRequest.data,
+        'user_info_id': user_info['id'],
+        'modified_at': datetime.now(),
+        'created_at':  datetime.now(),
+        'created_by':  user_info['id'],
+        'modified_by': user_info['id'],
+    }
+    chatHistoryService = ChatHistoryService()
+    chatHistoryService.create_chat_history(history)
+
+    return {"message": ""}
 
 class UserService:
     def __init__(self):
@@ -155,3 +185,6 @@ class ChatHistoryService:
 
     def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
         return self.chat_history_repository.get_chat_history_by_user_id_and_type_code(user_id=user_id, type_code=type_code)
+    
+    def create_chat_history(self, history: dict) -> ChatHistory:
+        return self.chat_history_repository.create_chat_history(history)  
