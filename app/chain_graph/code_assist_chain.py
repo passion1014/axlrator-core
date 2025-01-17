@@ -8,6 +8,7 @@ from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
+from langgraph.types import StreamWriter
 
 class CodeAssistChain:
     def __init__(self, index_name:str="cg_code_assist"):
@@ -213,7 +214,7 @@ def code_assist_chain(type:str):
         return state
 
 
-    def generate_response(state: AgentState) -> AgentState:
+    async def generate_response(state: AgentState, writer: StreamWriter) -> AgentState:
         
         if ("01" == type) : # autocode
             prompt = AUTO_CODE_TASK_PROMPT.format(
@@ -250,9 +251,15 @@ def code_assist_chain(type:str):
             )
             pass
 
-        response = model.invoke(prompt)
+        # response = model.invoke(prompt)
+        # state['response'] = response
         
-        state['response'] = response
+        # Stream 방식
+        chunks = []
+        async for chunk in model.astream(prompt):
+            writer(chunk)
+            chunks.append(chunk)
+        state['response'] = "".join(str(chunks))
         return state
 
     workflow = StateGraph(AgentState)

@@ -1,4 +1,5 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+
 <script>
   //이력 조회
   const getChatHistory = function () {
@@ -6,7 +7,9 @@
       let html = "";
       data.response.forEach((item, index) => {
         const data = item.data.replaceAll('"', "&quot;");
-        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}</li>`;
+        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}
+                    <i class="fas fa-times delete-btn" data-id="${item.id}"></i>
+                 </li> `;
       });
       $("#chatHistory").html(html);
 
@@ -17,6 +20,16 @@
         $("#iptQuestion").val(list[0].question);
         $("#iptAnswer").html(list[0].answer);
         $("#iptContext").val(list[0].context);
+      });
+
+      // X 버튼 클릭 시 항목 삭제 처리
+      $(".delete-btn").click(function (event) {
+        event.stopPropagation();
+        const itemId = $(this).attr("data-id");
+
+        common.getRequest("/user/api/delete", { id: itemId }, function (response) {
+          getChatHistory();
+        });
       });
     });
   };
@@ -46,7 +59,7 @@
         param,
         function (e) {
           const chunk = e.currentTarget.response;
-          console.log(chunk);
+          console.log(chunk.replaceAll("\n", "<br/>"));
 
           $("#iptAnswer").text(chunk); // 모든 데이터 표시
         },
@@ -83,8 +96,8 @@
             <textarea class="form-control" rows="5" id="iptContext" disabled></textarea>
           </div>
           <div class="col-12 mt-3">
-            <span class="form-label d-inline-block" id="iptAnswer">답변결과</span>
-            <div></div>
+            <span class="form-label d-inline-block">답변결과</span>
+            <pre id="iptAnswer"></pre>
           </div>
           <div class="col-12 mt-3">
             <label for="#" class="form-label">파일첨부</label>

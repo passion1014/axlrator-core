@@ -1,12 +1,10 @@
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from openai import BaseModel
 from app.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain 
 from app.config import setup_logging
 from app.db_model.database import SessionLocal
-from app.db_model.database_models import ChatHistory, UserInfo
-from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
-from typing import Optional
-from typing import List
+from app.db_model.data_repository import ChatHistoryRepository
 
 logger = setup_logging()
 router = APIRouter()
@@ -42,52 +40,19 @@ async def sample_endpoint(request: CodeAssistRequest):
     return {"response": response}
 
 
-from fastapi.responses import StreamingResponse
-from typing import AsyncGenerator
-
-
-
 
 @router.post("/api/autocode")
-def autocode_endpoint(request: CodeAssistRequest):
+async def autocode_endpoint(request: CodeAssistRequest):
     state = {"question": request.question}
-    
 
-    async def stream_response():
-        # `ainvoke` 호출
-        result = code_assist_chain(type="01").astream(state, stream_mode="values")
-        async for chunk in result:
-            print (111111111)
-            print (chunk)
-
-        # 결과가 비동기 반복 가능한 객체인지 확인
-        # if isinstance(result, dict) or not hasattr(result, "__aiter__"):
-        #     # 단일 값 반환
-        #     yield str(result)
-        # else:
-        #     # 비동기 반복 가능한 객체 처리
-        #     for chunk in result:
-        #         yield chunk
+    async def stream_response() :
+        async for chunk in code_assist_chain(type="01").astream(state, stream_mode="custom"):
+            print("## chucnk=", chunk.content)
+            yield chunk.content
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
-# @router.post("/api/autocode")
-# async def autocode_endpoint(request: CodeAssistRequest):
-#     state = {"question": request.question}
-
-#     async def stream_response() -> AsyncGenerator[str, None]:
-#         async for chunk in code_assist_chain(type="01").astream(state, stream_mode="chunks"):
-#             # Convert the chunk to a JSON string if it's a dictionary or an object
-#             if isinstance(chunk, (dict, list)):
-#                 print(1)
-#                 yield json.dumps(chunk) + "\n"
-#             else:
-#                 # Convert non-dict types to strings
-#                 print(2)
-#                 yield str(chunk) + "\n"
-
-#     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 # async def autocode_endpoint(request: CodeAssistRequest):
 #     state = {"question": request.question}
@@ -99,30 +64,6 @@ def autocode_endpoint(request: CodeAssistRequest):
 #             yield chunk  # 클라이언트로 스트리밍
 
 #     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-# @router.post("/api/autocode")
-# def autocode_endpoint(request: CodeAssistRequest):
-#     state = {"question": request.question}
-
-#     def stream_response():
-#         # `ainvoke` 호출
-#         result = code_assist_chain(type="01").ainvoke(state, stream_mode="chunks")
-#         for chunk in result:
-#             yield chunk
-
-#         # 결과가 비동기 반복 가능한 객체인지 확인
-#         # if isinstance(result, dict) or not hasattr(result, "__aiter__"):
-#         #     # 단일 값 반환
-#         #     yield str(result)
-#         # else:
-#         #     # 비동기 반복 가능한 객체 처리
-#         #     for chunk in result:
-#         #         yield chunk
-
-#     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-
-
 
 # 주석 생성 요청 엔드포인트
 @router.post("/api/makecomment")
@@ -146,13 +87,16 @@ async def make_mapdatautil_endpoint(request: CodeAssistRequest):
 @router.post("/api/makesql")
 async def make_sql_endpoint(request: CodeAssistRequest):
     print(f"### request = {str(request)}")
-
-    #이력등록
-    
-    
+    # state = {"question": request.question, "sql_request": request.sql_request}    
+    # response = code_assist_chain(type="05").invoke(state)
+    # return {"response": response}
     state = {"question": request.question, "sql_request": request.sql_request}    
-    response = code_assist_chain(type="05").invoke(state)
-    return {"response": response}
+
+    async def stream_response() :
+        async for chunk in code_assist_chain(type="05").astream(state, stream_mode="custom"):
+            print("## chucnk=", chunk.content)
+            yield chunk.content
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
 
