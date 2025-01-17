@@ -1,12 +1,15 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+
 <script>
   //이력 조회
   const getChatHistory = function () {
-    common.getRequest("/user/api/history", { type_code: "2" }, function (data) {
+    common.getRequest("/user/api/history", { type_code: "1" }, function (data) {
       let html = "";
       data.response.forEach((item, index) => {
         const data = item.data.replaceAll('"', "&quot;");
-        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}</li>`;
+        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}
+                    <i class="fas fa-times delete-btn" data-id="${item.id}"></i>
+                 </li> `;
       });
       $("#chatHistory").html(html);
 
@@ -17,6 +20,16 @@
         $("#iptQuestion").val(list[0].question);
         $("#iptAnswer").html(list[0].answer);
         $("#iptContext").val(list[0].context);
+      });
+
+      // X 버튼 클릭 시 항목 삭제 처리
+      $(".delete-btn").click(function (event) {
+        event.stopPropagation();
+        const itemId = $(this).attr("data-id");
+
+        common.getRequest("/user/api/delete", { id: itemId }, function (response) {
+          getChatHistory();
+        });
       });
     });
   };
@@ -41,42 +54,31 @@
         sql_request: "",
       };
 
-      //코드 생성서비스 호출
-      common.postRequest("/codeassist/api/code", param, function (data) {
-        const content = data?.response?.response?.content;
-        $("#iptAnswer").text(content);
+      common.postStreamRequest(
+        "/codeassist/api/autocode",
+        param,
+        function (e) {
+          const chunk = e.currentTarget.response;
+          console.log(chunk.replaceAll("\n", "<br/>"));
 
-        const param = {
-          title: $("#iptQuestion").val(),
-          type_code: "2",
-          data: JSON.stringify([
-            { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
-          ]),
-        };
+          $("#iptAnswer").text(chunk); // 모든 데이터 표시
+        },
+        function (data) {
+          console.log("success");
+          //이력생성
 
-        //이력생성
-        common.postRequest("/user/api/history", param, function (data) {
-          getChatHistory(); //이력 재조회
-        });
-      });
-
-      // common.postStreamRequest(
-      //   "/codeassist/api/autocode",
-      //   // "/codeassist/api/stream",
-      //   param,
-      //   function (e) {
-      //     const chunk = e.currentTarget.response;
-      //     console.log(chunk);
-
-      //     $("#iptAnswer").text(chunk); // 모든 데이터 표시
-      //   },
-      //   function (data) {
-      //     console.log("success");
-      //   },
-      //   function (data) {
-      //     console.log("fail");
-      //   }
-      // );
+          const param = {
+            title: $("#iptQuestion").val(),
+            type_code: "1",
+            data: JSON.stringify([
+              { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+            ]),
+          };
+          common.postRequest("/user/api/history", param, function (data) {
+            getChatHistory(); //이력 재조회
+          });
+        }
+      );
     });
   });
 </script>
@@ -94,8 +96,8 @@
             <textarea class="form-control" rows="5" id="iptContext" disabled></textarea>
           </div>
           <div class="col-12 mt-3">
-            <span class="form-label d-inline-block" id="iptAnswer">답변결과</span>
-            <div></div>
+            <span class="form-label d-inline-block">답변결과</span>
+            <pre id="iptAnswer"></pre>
           </div>
           <div class="col-12 mt-3">
             <label for="#" class="form-label">파일첨부</label>

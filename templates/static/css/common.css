@@ -354,3 +354,21 @@ li.pointer:hover {
   cursor: pointer;
   color: rgb(225, 162, 89);
 }
+.list-group-item {
+  position: relative;
+  padding-right: 40px; /* X 아이콘 공간 확보 */
+}
+
+.delete-btn {
+  position: absolute;
+  top: 50%;
+  right: 10px; /* 우측에 위치 */
+  transform: translateY(-50%); /* 수직 중앙 정렬 */
+  cursor: pointer;
+  display: none;
+  color: #dc3545; /* 빨간색 아이콘 */
+}
+
+.list-group-item:hover .delete-btn {
+  display: inline-block; /* hover 시 아이콘 보이기 */
+}

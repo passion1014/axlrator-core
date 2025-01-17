@@ -13,7 +13,6 @@
 
       //이력 title버튼 클릭 이벤트
       $("#chatHistory li").click(function () {
-        debugger;
         const data = $(this).attr("data-data").replaceAll("&quot;", "'");
         const list = JSON.parse(data);
         $("#iptQuestion").val(list[0].question);
@@ -31,7 +30,7 @@
       const question = $("#iptQuestion").val();
       const sql_request = $("#iptContext").val();
 
-      const payload = {
+      const param = {
         indexname: "",
         current_code: "",
         category: "",
@@ -41,22 +40,47 @@
       };
 
       //SQL생성 서비스 호출
-      common.postRequest("/codeassist/api/makesql", payload, function (data) {
-        const content = data?.response?.response?.content;
-        $("#iptAnswer").text(content);
+      common.postStreamRequest(
+        "/codeassist/api/makesql",
+        param,
+        function (e) {
+          const chunk = e.currentTarget.response;
+          console.log(chunk);
 
-        //이력생성
-        const param = {
-          title: $("#iptQuestion").val(),
-          type_code: "2",
-          data: JSON.stringify([
-            { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
-          ]),
-        };
-        common.postRequest("/user/api/history", param, function (data) {
-          getChatHistory(); //이력 재조회
-        });
-      });
+          $("#iptAnswer").text(chunk); // 모든 데이터 표시
+        },
+        function (data) {
+          console.log("success");
+          //이력생성
+          const param = {
+            title: $("#iptQuestion").val(),
+            type_code: "2",
+            data: JSON.stringify([
+              { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+            ]),
+          };
+          common.postRequest("/user/api/history", param, function (data) {
+            getChatHistory(); //이력 재조회
+          });
+        }
+      );
+
+      // common.postRequest("/codeassist/api/makesql", payload, function (data) {
+      //   const content = data?.response?.response?.content;
+      //   $("#iptAnswer").text(content);
+
+      //   //이력생성
+      //   const param = {
+      //     title: $("#iptQuestion").val(),
+      //     type_code: "2",
+      //     data: JSON.stringify([
+      //       { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+      //     ]),
+      //   };
+      //   common.postRequest("/user/api/history", param, function (data) {
+      //     getChatHistory(); //이력 재조회
+      //   });
+      // });
     });
   });
 </script>
@@ -76,7 +100,7 @@
           </div>
           <div class="col-12 mt-3">
             <span class="form-label d-inline-block">답변결과</span>
-            <div id="iptAnswer"></div>
+            <pre id="iptAnswer"></pre>
           </div>
           <div class="col-12 mt-3">
             <label for="#" class="form-label">질문 입력</label>

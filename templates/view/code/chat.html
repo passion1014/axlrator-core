@@ -84,22 +84,27 @@
     });
   }); //end of ready()
 
-  const preEl = document.getElementsByTagName("pre");
-  for (i = 0; i < preEl.length; i++) {
-    const divTop = document.createElement("div");
-    divTop.classList.add("code-top");
-    const copyBtn = document.createElement("a");
-    copyBtn.classList.add("btn");
-    copyBtn.innerHTML = "<i class='bi bi-clipboard'></i> 코드복사";
-    divTop.appendChild(copyBtn);
-    preEl[i].insertBefore(divTop, preEl[i].firstChild);
-    copyBtn.addEventListener("click", function () {
-      const code = divTop.parentNode.getElementsByTagName("code")[0].textContent;
-      //navigator.clipboard.writeText(code); IE11에서는 지원안함
-      //document.execCommand("copy");
-      //alert(code);
-    });
-  }
+  const chatWrap = {
+    el: document.getElementById("chatScroll"),
+    getHeight() {
+      return this.el.clientHeight;
+    },
+    getScrollTop() {
+      return this.el.scrollTop;
+    },
+    getScrollHeight() {
+      return this.el.scrollHeight;
+    },
+    scrollDown() {
+      this.el.scrollTo(0, this.getScrollHeight());
+    },
+    eventScroll() {
+      const btnDown = document.querySelector(".btn-scroll-down");
+      this.getScrollTop() + this.getHeight() >= this.getScrollHeight()
+        ? btnDown.classList.add("d-none")
+        : btnDown.classList.remove("d-none");
+    },
+  };
 
   const clickBtn = function () {
     const text = document.getElementById("textMsg");
@@ -121,28 +126,20 @@
     }
   };
 
-  const chatWrap = {
-    el: document.getElementById("chatScroll"),
-    getHeight: function () {
-      return this.el.clientHeight;
-    },
-    getScrollTop: function () {
-      return this.el.scrollTop;
-    },
-    getScrollHeight: function () {
-      return this.el.scrollHeight;
-    },
-    scrollDown: function () {
-      //this.el.scrollTo(0, this.getScrollHeight());
-      this.el.scrollTop = this.getScrollHeight();
-    },
-    eventScroll: function () {
-      const btnDown = document.getElementById("btnScrollDown");
-      this.getScrollTop() + this.getHeight() >= this.getScrollHeight()
-        ? btnDown.classList.add("d-none")
-        : btnDown.classList.remove("d-none");
-    },
-  };
+  //코드복사 영역
+  document.querySelectorAll("pre").forEach((pre) => {
+    const divTop = document.createElement("div");
+    divTop.classList.add("code-top");
+    const copyBtn = document.createElement("button");
+    copyBtn.classList.add("btn", "text-white", "bi", "bi-clipboard");
+    copyBtn.innerText = "코드복사";
+    divTop.appendChild(copyBtn);
+    copyBtn.addEventListener("click", () => {
+      const code = divTop.parentNode.querySelector("code").textContent;
+      navigator.clipboard.writeText(code);
+    });
+    pre.insertBefore(divTop, pre.firstChild);
+  });
 </script>
 
 <div class="contents-wrap">

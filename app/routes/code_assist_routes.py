@@ -1,5 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from app.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain 
 from app.config import setup_logging
@@ -55,28 +56,19 @@ async def sample_endpoint(request: Request):
             status_code=500
         )
 
+
 @router.post("/api/autocode")
 async def autocode_endpoint(request: Request):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
 
-    async def stream_response():
-        # `ainvoke` 호출
-        result = code_assist_chain(type="01").astream(message, stream_mode="values")
-        async for chunk in result:
-            print (111111111)
-            print (chunk)
-
-        # 결과가 비동기 반복 가능한 객체인지 확인
-        # if isinstance(result, dict) or not hasattr(result, "__aiter__"):
-        #     # 단일 값 반환
-        #     yield str(result)
-        # else:
-        #     # 비동기 반복 가능한 객체 처리
-        #     for chunk in result:
-        #         yield chunk
+    async def stream_response() :
+        async for chunk in code_assist_chain(type="01").astream(message, stream_mode="custom"):
+            print("## chucnk=", chunk.content)
+            yield chunk.content
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+
 
 
 # 주석 생성 요청 엔드포인트
@@ -104,9 +96,13 @@ async def make_sql_endpoint(request: Request):
     message = CodeAssistInfo.model_validate(body)
 
     #TODO: 이력등록
-    
-    response = code_assist_chain(type="05").invoke(message)
-    return {"response": response}
+
+    async def stream_response() :
+        async for chunk in code_assist_chain(type="05").astream(message, stream_mode="custom"):
+            print("## chucnk=", chunk.content)
+            yield chunk.content
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
+
 
 # SQL 생성 요청 엔드포인트
 @router.post("/api/chat")
