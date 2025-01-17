@@ -1,13 +1,11 @@
 from datetime import datetime
-from app.config import setup_logging
+
+from fastapi.responses import JSONResponse
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database import SessionLocal
 from app.db_model.database_models import ChatHistory, UserInfo
-from fastapi import FastAPI, APIRouter, Request
-from fastapi.responses import JSONResponse, RedirectResponse
-from starlette.middleware.sessions import SessionMiddleware
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from typing import Optional
 from typing import List
 
 # 라우터 정의
@@ -87,7 +85,6 @@ async def createHistory(request: Request, historyRequest: HistoryInfo):
     print(f"### aaaa {historyRequest}")
      # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
-
 
     history = {
         'title': historyRequest.title,

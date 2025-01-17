@@ -1,58 +1,68 @@
-from fastapi import APIRouter
-from openai import BaseModel
+from typing import List
+from fastapi import APIRouter, Request
+from pydantic import BaseModel
 from app.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain 
 from app.config import setup_logging
 from app.db_model.database import SessionLocal
-from app.db_model.database_models import ChatHistory, UserInfo
-from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
-from typing import Optional
-from typing import List
-from fastapi.responses import StreamingResponse
-from typing import AsyncGenerator
+from app.db_model.data_repository import ChatHistoryRepository
+from fastapi.responses import JSONResponse, StreamingResponse
 
 logger = setup_logging()
 router = APIRouter()
 code_assist = CodeAssistChain(index_name="cg_code_assist")
 
-class CodeAssistRequest(BaseModel):
+class ChatInfo(BaseModel):
+    seq: int
+    user_message: str
+    ai_message: str
+    user_time:str
+    ai_time:str
+
+class CodeAssistInfo(BaseModel):
     indexname: str
     question: str
     current_code: str
     sql_request: str
+    chat_history: List[ChatInfo]
 
-
-# code assist 요청 엔드포인트
 @router.post("/api/predicate")
-async def predicate(request: CodeAssistRequest):
+async def predicate(request: CodeAssistInfo):
     chain = code_assist.get_chain(task_type="01")
     
     state = {"indexname": request.indexname, "question": request.question, "current_code": request.current_code}
     response = chain.invoke(state)
     return {"response": response}
 
-
-
-# code assist 요청 엔드포인트
 @router.post("/api/code")
-async def sample_endpoint(request: CodeAssistRequest):
-    print(f"### request = {str(request)}")
-    
-    chain = code_assist.get_chain(task_type="01")
-    
-    state = {"indexname": request.indexname, "question": request.question, "current_code": request.current_code}
-    response = chain.invoke(state)
-    return {"response": response}
+# async def sample_endpoint(request: CodeAssistInfo):
+async def sample_endpoint(request: Request):
+    try:
+        body = await request.json()
+        message = CodeAssistInfo.model_validate(body)
 
+        # chain 생성
+        chain = code_assist.get_chain(task_type="01")
 
+        # chain 실행
+        response = chain.invoke(message)
+
+        # 결과 반환
+        return {"response": response}
+    
+    except Exception as e:
+        return JSONResponse(
+            content={"error": f"An error occurred: {str(e)}"},
+            status_code=500
+        )
 
 @router.post("/api/autocode")
-def autocode_endpoint(request: CodeAssistRequest):
-    state = {"question": request.question}
-    
+async def autocode_endpoint(request: Request):
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
 
     async def stream_response():
         # `ainvoke` 호출
-        result = code_assist_chain(type="01").astream(state, stream_mode="values")
+        result = code_assist_chain(type="01").astream(message, stream_mode="values")
         async for chunk in result:
             print (111111111)
             print (chunk)
@@ -69,93 +79,59 @@ def autocode_endpoint(request: CodeAssistRequest):
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
-# @router.post("/api/autocode")
-# async def autocode_endpoint(request: CodeAssistRequest):
-#     state = {"question": request.question}
-
-#     async def stream_response() -> AsyncGenerator[str, None]:
-#         async for chunk in code_assist_chain(type="01").astream(state, stream_mode="chunks"):
-#             # Convert the chunk to a JSON string if it's a dictionary or an object
-#             if isinstance(chunk, (dict, list)):
-#                 print(1)
-#                 yield json.dumps(chunk) + "\n"
-#             else:
-#                 # Convert non-dict types to strings
-#                 print(2)
-#                 yield str(chunk) + "\n"
-
-#     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-# async def autocode_endpoint(request: CodeAssistRequest):
-#     state = {"question": request.question}
-
-#     async def stream_response() -> AsyncGenerator[str, None]:
-#         # astream은 비동기 제너레이터이므로 async for로 처리
-#         async for chunk in code_assist_chain(type="01").astream(state, stream_mode="values"):
-#             # print(f"### chunk = {chunk}")  # 디버깅 출력
-#             yield chunk  # 클라이언트로 스트리밍
-
-#     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-# @router.post("/api/autocode")
-# def autocode_endpoint(request: CodeAssistRequest):
-#     state = {"question": request.question}
-
-#     def stream_response():
-#         # `ainvoke` 호출
-#         result = code_assist_chain(type="01").ainvoke(state, stream_mode="chunks")
-#         for chunk in result:
-#             yield chunk
-
-#         # 결과가 비동기 반복 가능한 객체인지 확인
-#         # if isinstance(result, dict) or not hasattr(result, "__aiter__"):
-#         #     # 단일 값 반환
-#         #     yield str(result)
-#         # else:
-#         #     # 비동기 반복 가능한 객체 처리
-#         #     for chunk in result:
-#         #         yield chunk
-
-#     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-
-
-
 # 주석 생성 요청 엔드포인트
 @router.post("/api/makecomment")
-async def makecomment_endpoint(request: CodeAssistRequest):
-    print(f"### request = {str(request)}")
+async def makecomment_endpoint(request: Request):
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
     
-    state = {"question": request.question}
-    response = code_assist_chain(type="03").invoke(state)
+    response = code_assist_chain(type="03").invoke(message)
     return {"response": response}
 
 # MapDataUtil 생성 요청 엔드포인트
 @router.post("/api/makemapdatautil")
-async def make_mapdatautil_endpoint(request: CodeAssistRequest):
-    print(f"### request = {str(request)}")
+async def make_mapdatautil_endpoint(request: Request):
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
     
-    state = {"question": request.question}
-    response = code_assist_chain(type="04").invoke(state)
+    response = code_assist_chain(type="04").invoke(message)
     return {"response": response}
 
 # SQL 생성 요청 엔드포인트
 @router.post("/api/makesql")
-async def make_sql_endpoint(request: CodeAssistRequest):
-    print(f"### request = {str(request)}")
+async def make_sql_endpoint(request: Request):
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
 
-    #이력등록
+    #TODO: 이력등록
     
-    
-    state = {"question": request.question, "sql_request": request.sql_request}    
-    response = code_assist_chain(type="05").invoke(state)
+    response = code_assist_chain(type="05").invoke(message)
     return {"response": response}
 
+# SQL 생성 요청 엔드포인트
+@router.post("/api/chat")
+async def chat(request: Request):
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
 
+    # chain 호출
+    response = code_assist_chain(type="05").invoke(message)
+    
+    #TODO: 이력등록
+    
+    return {"response": response}
 
 class ChatHistoryService:
     def __init__(self):
         self.session = SessionLocal()
         self.chat_history_repository = ChatHistoryRepository(self.session)
-   
- 
+
+class CodeAssistService:
+    def __init__(self):
+        self.session = SessionLocal()
+        self.chat_history_repository = ChatHistoryRepository(self.session)
+    
+    # 인텐트 분류
+    def get_question_category():
+        
+        pass
