@@ -2,7 +2,7 @@
 <script>
   //이력 조회
   const getChatHistory = function () {
-    common.getRequest("/user/api/history", { type_code: "2" }, function (data) {
+    common.getRequest("/user/api/history", { type_code: "1" }, function (data) {
       let html = "";
       data.response.forEach((item, index) => {
         const data = item.data.replaceAll('"', "&quot;");
@@ -41,42 +41,31 @@
         sql_request: "",
       };
 
-      //코드 생성서비스 호출
-      common.postRequest("/codeassist/api/code", param, function (data) {
-        const content = data?.response?.response?.content;
-        $("#iptAnswer").text(content);
+      common.postStreamRequest(
+        "/codeassist/api/autocode",
+        param,
+        function (e) {
+          const chunk = e.currentTarget.response;
+          console.log(chunk);
 
-        const param = {
-          title: $("#iptQuestion").val(),
-          type_code: "2",
-          data: JSON.stringify([
-            { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
-          ]),
-        };
+          $("#iptAnswer").text(chunk); // 모든 데이터 표시
+        },
+        function (data) {
+          console.log("success");
+          //이력생성
 
-        //이력생성
-        common.postRequest("/user/api/history", param, function (data) {
-          getChatHistory(); //이력 재조회
-        });
-      });
-
-      // common.postStreamRequest(
-      //   "/codeassist/api/autocode",
-      //   // "/codeassist/api/stream",
-      //   param,
-      //   function (e) {
-      //     const chunk = e.currentTarget.response;
-      //     console.log(chunk);
-
-      //     $("#iptAnswer").text(chunk); // 모든 데이터 표시
-      //   },
-      //   function (data) {
-      //     console.log("success");
-      //   },
-      //   function (data) {
-      //     console.log("fail");
-      //   }
-      // );
+          const param = {
+            title: $("#iptQuestion").val(),
+            type_code: "1",
+            data: JSON.stringify([
+              { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+            ]),
+          };
+          common.postRequest("/user/api/history", param, function (data) {
+            getChatHistory(); //이력 재조회
+          });
+        }
+      );
     });
   });
 </script>
