@@ -104,6 +104,21 @@ async def createHistory(request: Request, historyRequest: HistoryRequest):
 
     return {"message": ""}
 
+@router.post("/api/deletehistory")
+async def deleteHistory(request: Request):
+    print(f"### aaaa {request}")
+     # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+
+    # history = {
+    #     'id': historyRequest.title,
+    #     'user_info_id': user_info['id'],
+    # }
+    chatHistoryService = ChatHistoryService()
+    chatHistoryService.create_chat_history(history)
+
+    return {"message": ""}
+
 class UserService:
     def __init__(self):
         self.session = SessionLocal()

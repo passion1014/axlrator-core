@@ -30,6 +30,17 @@
         $("#iptQuestion").val(list[0].question);
         $("#iptAnswer").html(marked.parse(list[0].answer));
         $("#iptContext").val(list[0].context);
+
+        marked.setOptions({
+          highlight: function (code, lang) {
+            const validLang = hljs.getLanguage(lang) ? lang : "plaintext"; // 언어 유효성 확인
+            return hljs.highlight(validLang, code).value;
+          },
+        });
+
+        $("#iptAnswer pre code").each(function (i, block) {
+          hljs.highlightElement(block);
+        });
       });
 
       // X 버튼 클릭 시 항목 삭제 처리
