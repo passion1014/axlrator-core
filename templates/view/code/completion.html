@@ -1,41 +1,18 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
-
+<style>
+  .delete-btn {
+    position: absolute;
+    top: 50%;
+    right: 10px; /* 우측에 위치 */
+    transform: translateY(-50%); /* 수직 중앙 정렬 */
+    cursor: pointer;
+    display: none;
+    color: #dc3545; /* 빨간색 아이콘 */
+  }
+</style>
 <script>
-  //이력 조회
-  const getChatHistory = function () {
-    common.getRequest("/user/api/history", { type_code: "1" }, function (data) {
-      let html = "";
-      data.response.forEach((item, index) => {
-        const data = item.data.replaceAll('"', "&quot;");
-        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}
-                    <i class="fas fa-times delete-btn" data-id="${item.id}"></i>
-                 </li> `;
-      });
-      $("#chatHistory").html(html);
-
-      //이력 title버튼 클릭 이벤트
-      $("#chatHistory li").click(function () {
-        const data = $(this).attr("data-data").replaceAll("&quot;", "'");
-        const list = JSON.parse(data);
-        $("#iptQuestion").val(list[0].question);
-        $("#iptAnswer").html(list[0].answer);
-        $("#iptContext").val(list[0].context);
-      });
-
-      // X 버튼 클릭 시 항목 삭제 처리
-      $(".delete-btn").click(function (event) {
-        event.stopPropagation();
-        const itemId = $(this).attr("data-id");
-
-        common.getRequest("/user/api/delete", { id: itemId }, function (response) {
-          getChatHistory();
-        });
-      });
-    });
-  };
-
   $(document).ready(function () {
-    getChatHistory();
+    getChatHistory("1");
 
     //입력버튼 클릭이벤트 핸들러
     $("#btnInput").on("click", function () {
@@ -59,9 +36,8 @@
         param,
         function (e) {
           const chunk = e.currentTarget.response;
-          console.log(chunk.replaceAll("\n", "<br/>"));
-
-          $("#iptAnswer").text(chunk); // 모든 데이터 표시
+          // 마크다운 데이터를 HTML로 변환
+          $("#iptAnswer").html(marked.parse(chunk));
         },
         function (data) {
           console.log("success");
@@ -75,7 +51,12 @@
             ]),
           };
           common.postRequest("/user/api/history", param, function (data) {
-            getChatHistory(); //이력 재조회
+            //highlight적용
+            $("#iptAnswer pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+            });
+
+            getChatHistory("1"); //이력 재조회
           });
         }
       );
@@ -97,7 +78,8 @@
           </div>
           <div class="col-12 mt-3">
             <span class="form-label d-inline-block">답변결과</span>
-            <pre id="iptAnswer"></pre>
+            <!-- <pre id="iptAnswer"></pre> -->
+            <div id="iptAnswer" class="markdown-body"></div>
           </div>
           <div class="col-12 mt-3">
             <label for="#" class="form-label">파일첨부</label>
@@ -113,9 +95,11 @@
         </div>
       </div>
     </div>
-    <div class="col-4">
+
+    {% include 'view/common/chathistory.html' %}
+    <!-- <div class="col-4">
       <ul class="list-group" id="chatHistory"></ul>
-    </div>
+    </div> -->
   </div>
 </div>
 

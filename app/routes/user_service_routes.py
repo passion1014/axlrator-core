@@ -1,12 +1,11 @@
 from datetime import datetime
-
-from fastapi.responses import JSONResponse
-from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
-from app.db_model.database import SessionLocal
-from app.db_model.database_models import ChatHistory, UserInfo
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, JSONResponse
 from pydantic import BaseModel
 from typing import List
+# from app.config import setup_logging
+from app.db_model.database import SessionLocal
+from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
+from app.db_model.database_models import ChatHistory, UserInfo
 
 # 라우터 정의
 router = APIRouter()
@@ -70,7 +69,7 @@ async def login(request: Request):
 @router.get("/api/history")
 async def history(request: Request, type_code: str):
     print(f"### {request}")
-     # 세션에서 사용자 정보 가져오기
+    # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
     print(user_info)
 
@@ -81,15 +80,15 @@ async def history(request: Request, type_code: str):
 
 
 @router.post("/api/history")
-async def createHistory(request: Request, historyRequest: HistoryInfo):
-    print(f"### aaaa {historyRequest}")
-     # 세션에서 사용자 정보 가져오기
+async def create_chat_history(request: Request, historyInfo: HistoryInfo):
+    print(f"### aaaa {historyInfo}")
+    # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 
     history = {
-        'title': historyRequest.title,
-        'type_code': historyRequest.type_code,
-        'data': historyRequest.data,
+        'title': historyInfo.title,
+        'type_code': historyInfo.type_code,
+        'data': historyInfo.data,
         'user_info_id': user_info['id'],
         'modified_at': datetime.now(),
         'created_at':  datetime.now(),
@@ -101,16 +100,28 @@ async def createHistory(request: Request, historyRequest: HistoryInfo):
 
     return {"message": ""}
 
-@router.post("/api/history")
-async def history(request: HistoryInfo):
-    print(f"### {request}")
+
+@router.post("/api/deletehistory")
+async def delete_chat_history(request: Request):
+    # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+    
+    data = await request.json()
+    chat_id = data.get('id')
 
     chatHistoryService = ChatHistoryService()
-    list = chatHistoryService.get_chat_history_by_user_id(request.user_id)
+    chatHistoryService.delete_chat_history(chat_id, user_info['id']);
+    return {"message": ""}
 
-    return {"response": list}
+@router.post("/api/deleteallhistory")
+async def delete_all_chat_history(request: Request):
+    # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
 
+    chatHistoryService = ChatHistoryService()
+    chatHistoryService.delete_all_chat_history(user_info['id']);
 
+    return {"message": ""}
 
 class UserService:
     def __init__(self):
@@ -165,3 +176,9 @@ class ChatHistoryService:
     
     def create_chat_history(self, history: dict) -> ChatHistory:
         return self.chat_history_repository.create_chat_history(history)  
+    
+    def delete_chat_history(self, chat_id: int, userInfo_id: int) -> ChatHistory:
+        return self.chat_history_repository.delete_chat_history(chat_id, userInfo_id)  
+    
+    def delete_all_chat_history(self, user_info_id: int) -> ChatHistory:
+        return self.chat_history_repository.delete_all_chat_history(user_info_id)  

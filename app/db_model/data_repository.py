@@ -362,8 +362,15 @@ class ChatHistoryRepository:
             self.session.commit()
         return chat
 
-    def delete_chat_history(self, chat_id: int):
-        chat = self.session.query(ChatHistory).filter(ChatHistory.id == chat_id).first()
+    def delete_chat_history(self, chat_id: int, user_info_id: int):
+        chat = self.session.query(ChatHistory).filter(ChatHistory.id == chat_id, ChatHistory.user_info_id == user_info_id ).first()
         if chat:
             self.session.delete(chat)
+            self.session.commit()
+
+    def delete_all_chat_history(self, user_info_id: int):
+        chats = self.session.query(ChatHistory).filter(ChatHistory.user_info_id == user_info_id).all()
+        if chats:
+            for chat in chats:
+                self.session.delete(chat)
             self.session.commit()
