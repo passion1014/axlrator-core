@@ -25,7 +25,11 @@ from langfuse.callback import CallbackHandler
 import uvicorn
 
 import warnings
-warnings.simplefilter("always", UserWarning)
+warnings.simplefilter("always", UserWarning)# 항상 경고를 표시하도록 설정
+
+import logging
+logging.basicConfig(level=logging.INFO) # 로그설정
+
 
 
 # ---------------------------------------
@@ -69,7 +73,8 @@ code_assist_chain = CodeAssistChain(index_name="cg_code_assist")
 # 웹 페이지
 webServerApp.include_router(view_routes, prefix="/view") # 화면용 라우터
 
-webServerApp.include_router(user_service_routes, prefix="/user") # 화면용 라우터
+
+webServerApp.include_router(user_service_routes, prefix="/user") # 사용자 처리 라우터
 
 webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
 webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터

@@ -11,45 +11,8 @@
   }
 </style>
 <script>
-  //이력 조회
-  const getChatHistory = function () {
-    common.getRequest("/user/api/history", { type_code: "1" }, function (data) {
-      let html = "";
-      data.response.forEach((item, index) => {
-        const data = item.data.replaceAll('"', "&quot;");
-        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}
-                    <i class="fas fa-times delete-btn" data-id="${item.id}"></i>
-                 </li> `;
-      });
-      $("#chatHistory").html(html);
-
-      //이력 title버튼 클릭 이벤트
-      $("#chatHistory li").click(function () {
-        const data = $(this).attr("data-data").replaceAll("&quot;", "'");
-        const list = JSON.parse(data);
-        $("#iptQuestion").val(list[0].question);
-        $("#iptAnswer").html(marked.parse(list[0].answer));
-        $("#iptContext").val(list[0].context);
-
-        $("#iptAnswer pre code").each(function (i, block) {
-          hljs.highlightElement(block);
-        });
-      });
-
-      // X 버튼 클릭 시 항목 삭제 처리
-      $(".delete-btn").click(function (event) {
-        event.stopPropagation();
-        const itemId = $(this).attr("data-id");
-
-        common.getRequest("/user/api/delete", { id: itemId }, function (response) {
-          getChatHistory();
-        });
-      });
-    });
-  };
-
   $(document).ready(function () {
-    getChatHistory();
+    getChatHistory("1");
 
     //입력버튼 클릭이벤트 핸들러
     $("#btnInput").on("click", function () {
@@ -93,7 +56,7 @@
               hljs.highlightElement(block);
             });
 
-            getChatHistory(); //이력 재조회
+            getChatHistory("1"); //이력 재조회
           });
         }
       );
@@ -132,6 +95,7 @@
         </div>
       </div>
     </div>
+
     <div class="col-4">
       <ul class="list-group" id="chatHistory"></ul>
     </div>

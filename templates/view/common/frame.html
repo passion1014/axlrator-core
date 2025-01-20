@@ -15,6 +15,43 @@
           });
         });
       });
+
+      //이력 조회
+      const getChatHistory = function (type_code) {
+        common.getRequest("/user/api/history", { type_code: type_code }, function (data) {
+          let html = "";
+          data.response.forEach((item, index) => {
+            const data = item.data.replaceAll('"', "&quot;");
+            html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}
+                          <i class="fas fa-times delete-btn" data-id="${item.id}"></i>
+                       </li> `;
+          });
+          $("#chatHistory").html(html);
+
+          //이력 title버튼 클릭 이벤트
+          $("#chatHistory li").click(function () {
+            const data = $(this).attr("data-data").replaceAll("&quot;", "'");
+            const list = JSON.parse(data);
+            $("#iptQuestion").val(list[0].question);
+            $("#iptAnswer").html(marked.parse(list[0].answer));
+            $("#iptContext").val(list[0].context);
+
+            $("#iptAnswer pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+            });
+          });
+
+          // X 버튼 클릭 시 항목 삭제 처리
+          $(".delete-btn").click(function (event) {
+            event.stopPropagation();
+            const itemId = $(this).attr("data-id");
+
+            common.getRequest("/user/api/delete", { id: itemId }, function (response) {
+              getChatHistory();
+            });
+          });
+        });
+      };
     </script>
   </head>
   <body>
