@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -12,19 +12,19 @@ logger = setup_logging()
 router = APIRouter()
 code_assist = CodeAssistChain(index_name="cg_code_assist")
 
+
 class ChatInfo(BaseModel):
     seq: int
-    user_message: str
-    ai_message: str
-    user_time:str
-    ai_time:str
+    messenger_type: str # 01:user, 02:agent, 
+    message_body: str
+    send_time:str
 
 class CodeAssistInfo(BaseModel):
     indexname: str
     question: str
     current_code: str
     sql_request: str
-    chat_history: List[ChatInfo]
+    chat_history: Optional[list[ChatInfo]] = None  # 선택적 필드로 설정, 기본값 None
 
 @router.post("/api/predicate")
 async def predicate(request: CodeAssistInfo):
@@ -95,7 +95,7 @@ async def make_sql_endpoint(request: Request):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
 
-    #TODO: 이력등록
+    #TODO: insert history
 
     async def stream_response() :
         async for chunk in code_assist_chain(type="05").astream(message, stream_mode="custom"):
@@ -107,15 +107,25 @@ async def make_sql_endpoint(request: Request):
 # SQL 생성 요청 엔드포인트
 @router.post("/api/chat")
 async def chat(request: Request):
-    body = await request.json()
-    message = CodeAssistInfo.model_validate(body)
+    try:
+        body = await request.json()
+        message = CodeAssistInfo.model_validate(body)
 
-    # chain 호출
-    response = code_assist_chain(type="05").invoke(message)
+        # chain 생성
+        chain = code_assist.get_chain(task_type="05")
+
+        # chain 실행
+        response = chain.invoke(message)
+
+        # 결과 반환
+        return {"response": response}
     
-    #TODO: 이력등록
-    
-    return {"response": response}
+    except Exception as e:
+        return JSONResponse(
+            content={"error": f"An error occurred: {str(e)}"},
+            status_code=500
+        )
+
 
 class ChatHistoryService:
     def __init__(self):

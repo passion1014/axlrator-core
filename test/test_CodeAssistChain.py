@@ -33,7 +33,7 @@ class TestCodeAssistWorkflow(unittest.TestCase):
         state = CodeAssistState()
         state['question'] = '스페인의 비는 어디에 내리나요?'
         
-        self.chain.context_node(state=state, k=5)
+        self.chain.contextual_reranker(state=state, k=5)
 
     # def test_generate_node(self):
     #     """

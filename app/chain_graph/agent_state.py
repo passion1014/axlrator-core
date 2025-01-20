@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import Dict, Optional, TypedDict
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
@@ -37,8 +37,25 @@ class CodeAssistState(TypedDict):
     current_code: str
     response: str
 
+
+@dataclass(kw_only=True)
+class CodeAssistChatState(TypedDict):
+    question: str
+    current_code: str
+    chat_history_id: str
+    chat_history: Optional[list[Dict]] = None
+
+    # seq: int
+    # user_message: str
+    # ai_message: str
+    # user_time:str
+    # ai_time:str
+
+
+
 __all__ = [
     "AgentState",
-    "CodeAssistState"
+    "CodeAssistState",
+    "CodeAssistChatState",
 ]
 
