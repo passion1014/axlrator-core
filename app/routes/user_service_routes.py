@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 from app.config import setup_logging
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database import SessionLocal
@@ -83,7 +84,7 @@ async def history(request: Request, type_code: str):
 
 
 @router.post("/api/history")
-async def createHistory(request: Request, historyRequest: HistoryRequest):
+async def create_chat_history(request: Request, historyRequest: HistoryRequest):
     print(f"### aaaa {historyRequest}")
      # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
@@ -105,17 +106,24 @@ async def createHistory(request: Request, historyRequest: HistoryRequest):
     return {"message": ""}
 
 @router.post("/api/deletehistory")
-async def deleteHistory(request: Request):
-    print(f"### aaaa {request}")
+async def delete_chat_history(request: Request):
+     # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+    
+    data = await request.json()
+    chat_id = data.get('id')
+
+    chatHistoryService = ChatHistoryService()
+    chatHistoryService.delete_chat_history(chat_id, user_info['id']);
+    return {"message": ""}
+
+@router.post("/api/deleteallhistory")
+async def delete_all_chat_history(request: Request):
      # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 
-    # history = {
-    #     'id': historyRequest.title,
-    #     'user_info_id': user_info['id'],
-    # }
     chatHistoryService = ChatHistoryService()
-    chatHistoryService.create_chat_history(history)
+    chatHistoryService.delete_all_chat_history(user_info['id']);
 
     return {"message": ""}
 
@@ -203,3 +211,11 @@ class ChatHistoryService:
     
     def create_chat_history(self, history: dict) -> ChatHistory:
         return self.chat_history_repository.create_chat_history(history)  
+    
+       
+    def delete_chat_history(self, chat_id: int, userInfo_id: int) -> ChatHistory:
+        return self.chat_history_repository.delete_chat_history(chat_id, userInfo_id)  
+    
+       
+    def delete_all_chat_history(self, user_info_id: int) -> ChatHistory:
+        return self.chat_history_repository.delete_all_chat_history(user_info_id)  

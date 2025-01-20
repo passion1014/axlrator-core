@@ -18,7 +18,7 @@ class CodeAssistChain:
         self.index_name = index_name
         self.db_session = SessionLocal()
         self.faissVectorDB = FaissVectorDB(db_session=self.db_session, index_name=index_name)
-        self.es_bm25 = ElasticsearchBM25(index_name=index_name)
+        # self.es_bm25 = ElasticsearchBM25(index_name=index_name)
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
     def context_node(self, state: CodeAssistState, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:

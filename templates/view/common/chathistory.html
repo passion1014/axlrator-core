@@ -1,0 +1,63 @@
+<script>
+  //이력 조회
+  const getChatHistory = function (type_code) {
+    if (type_code == null) {
+      type_code = $("#chatHistory").attr("data-typecode");
+    } else {
+      $("#chatHistory").attr("data-typecode", type_code);
+    }
+
+    common.getRequest("/user/api/history", { type_code: type_code }, function (data) {
+      let html = "";
+      data.response.forEach((item, index) => {
+        const data = item.data.replaceAll('"', "&quot;");
+        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}
+                    <i class="fas fa-times delete-btn" data-id="${item.id}"></i>
+                 </li> `;
+      });
+      $("#chatHistory").html(html);
+
+      //이력 title버튼 클릭 이벤트
+      $("#chatHistory li").click(function () {
+        const data = $(this).attr("data-data").replaceAll("&quot;", "'");
+        const list = JSON.parse(data);
+        $("#iptQuestion").val(list[0].question);
+        $("#iptAnswer").html(marked.parse(list[0].answer));
+        $("#iptContext").val(list[0].context);
+
+        $("#iptAnswer pre code").each(function (i, block) {
+          hljs.highlightElement(block);
+        });
+      });
+
+      // X 버튼 클릭 시 항목 삭제 처리
+      $(".delete-btn").click(function (event) {
+        event.stopPropagation();
+        const itemId = $(this).attr("data-id");
+        common.postRequest("/user/api/deletehistory", { id: itemId }, function (response) {
+          getChatHistory();
+        });
+      });
+    });
+  };
+
+  $(document).ready(function () {
+    //이력 title버튼 클릭 이벤트
+    $("#btnDeleteAllHistory").click(function () {
+      if (confirm("전체이력을 삭제 하시겠습니까?")) {
+        common.postRequest("/user/api/deleteallhistory", {}, function (response) {
+          getChatHistory();
+        });
+      }
+    });
+  });
+</script>
+
+<div class="col-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h3 class="fs-5">이력</h3>
+    <button class="btn btn-danger" id="btnDeleteAllHistory"><i class="bi bi-trash"></i></button>
+  </div>
+
+  <ul class="list-group" id="chatHistory"></ul>
+</div>
