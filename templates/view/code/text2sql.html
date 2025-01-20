@@ -30,6 +30,10 @@
         $("#iptQuestion").val(list[0].question);
         $("#iptAnswer").html(marked.parse(list[0].answer));
         $("#iptContext").val(list[0].context);
+
+        $("#iptAnswer pre code").each(function (i, block) {
+          hljs.highlightElement(block);
+        });
       });
 
       // X 버튼 클릭 시 항목 삭제 처리
@@ -80,6 +84,11 @@
             ]),
           };
           common.postRequest("/user/api/history", param, function (data) {
+            //highlight적용
+            $("#iptAnswer pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+            });
+
             getChatHistory(); //이력 재조회
           });
         }

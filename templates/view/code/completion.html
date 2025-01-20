@@ -31,13 +31,6 @@
         $("#iptAnswer").html(marked.parse(list[0].answer));
         $("#iptContext").val(list[0].context);
 
-        marked.setOptions({
-          highlight: function (code, lang) {
-            const validLang = hljs.getLanguage(lang) ? lang : "plaintext"; // 언어 유효성 확인
-            return hljs.highlight(validLang, code).value;
-          },
-        });
-
         $("#iptAnswer pre code").each(function (i, block) {
           hljs.highlightElement(block);
         });
@@ -95,6 +88,11 @@
             ]),
           };
           common.postRequest("/user/api/history", param, function (data) {
+            //highlight적용
+            $("#iptAnswer pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+            });
+
             getChatHistory(); //이력 재조회
           });
         }
