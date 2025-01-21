@@ -25,5 +25,43 @@
         >RAG 생성</a
       >
     </li>
+    {% if user_info.user_id == "admin" %}
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.path == '/view/admin/vector-index-list' %}active{% endif %}"
+        href="/view/admin/vector-index-list"
+        >VectorDB Index 조회</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.path == '/view/admin/vector-data-list' %}active{% endif %}"
+        href="/view/admin/vector-data-list"
+        >VectorDB 조회</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.path == '/view/admin/org-resrc-list' %}active{% endif %}"
+        href="/view/admin/org-resrc-list"
+        >원본 리소스 조회</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.path == '/view/admin/org-resrc-chunk-list' %}active{% endif %}"
+        href="/view/admin/org-resrc-chunk-list"
+        >원본 리소스청크 조회</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.path == '/view/workflow/task-target-list' %}active{% endif %}"
+        href="/view/workflow/task-target-list"
+        >작업 대상 조회 - 벌크배치작업</a
+      >
+    </li>
+
+    {% endif %}
   </ul>
 </div>

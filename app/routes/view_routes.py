@@ -35,6 +35,8 @@ async def view_code(request: Request):
         return templates.TemplateResponse("view/code/conversion.html", {"request": request, "message": "용어변환", "user_info":user_info })
     elif "/completion" in url_path:
         return templates.TemplateResponse("view/code/completion.html", {"request": request, "message": "프로그램 코드 생성", "user_info":user_info })
+    elif "/completion2" in url_path:
+        return templates.TemplateResponse("view/code/completion.html", {"request": request, "message": "프로그램 코드 생성2", "user_info":user_info })
     elif "/text2sql" in url_path:
         return templates.TemplateResponse("view/code/text2sql.html", {"request": request, "message": "SQL 생성", "user_info":user_info })
     elif "/chat" in url_path:
@@ -55,16 +57,19 @@ async def view_code(request: Request):
 async def view_admin(request: Request):
     print(f"Requested URL path: {request.url.path}")
     
+    # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+
     url_path = request.url.path
     
     if "/vector-data-list" in url_path:
-        return templates.TemplateResponse("view/admin/vector-data-list.html", {"request": request, "message": "VectorDB 조회"})
+        return templates.TemplateResponse("view/admin/vector-data-list.html", {"request": request, "message": "VectorDB 조회", "user_info":user_info })
     elif "/vector-index-list" in url_path:
-        return templates.TemplateResponse("view/admin/vector-index-list.html", {"request": request, "message": "VectorDB Index 관리"})
+        return templates.TemplateResponse("view/admin/vector-index-list.html", {"request": request, "message": "VectorDB Index 관리", "user_info":user_info })
     elif "/org-resrc-list" in url_path:
-        return templates.TemplateResponse("view/admin/org-resrc-list.html", {"request": request, "message": "원본 리소스 조회"})
+        return templates.TemplateResponse("view/admin/org-resrc-list.html", {"request": request, "message": "원본 리소스 조회", "user_info":user_info })
     elif "/org-resrc-chunk-list" in url_path:
-        return templates.TemplateResponse("view/admin/org-resrc-chunk-list.html", {"request": request, "message": "원본 리소스 청크 조회"})
+        return templates.TemplateResponse("view/admin/org-resrc-chunk-list.html", {"request": request, "message": "원본 리소스 청크 조회", "user_info":user_info })
     else :
         return templates.TemplateResponse("error.html", {"request": request, "message": "요청하신 페이지를 찾을 수 없습니다."}, status_code=404)
 
@@ -77,10 +82,13 @@ async def view_admin(request: Request):
 async def view_workflow(request: Request):
     print(f"Requested URL path: {request.url.path}")
     
+    # 세션에서 사용자 정보 가져오기
+    user_info = request.session.get('user_info', None)
+
     url_path = request.url.path
     
     if "/task-target-list" in url_path:
-        return templates.TemplateResponse("view/workflow/task-target-list.html", {"request": request, "message": "작업대상조회"})
+        return templates.TemplateResponse("view/workflow/task-target-list.html", {"request": request, "message": "작업대상조회", "user_info":user_info })
     else :
         return templates.TemplateResponse("error.html", {"request": request, "message": "요청하신 페이지를 찾을 수 없습니다."}, status_code=404)
     
