@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from app.chain_graph.agent_state import CodeAssistState
+from app.chain_graph.agent_state import CodeAssistChatState, CodeAssistState
 from app.chain_graph.code_assist_chain import CodeAssistChain
 # from your_module import CodeAssistWorkflow, CodeAssistState
 
@@ -25,27 +25,19 @@ class TestCodeAssistWorkflow(unittest.TestCase):
         # self.workflow.model.invoke = MagicMock(return_value="Generated response")
 
     def test_context_node(self):
-        """
-        context_node 메서드 테스트
-        """
-        print("Context node output:")
-        
+        """ context_node 메서드 테스트 """
         state = CodeAssistState()
         state['question'] = '스페인의 비는 어디에 내리나요?'
         
         self.chain.contextual_reranker(state=state, k=5)
 
-    # def test_generate_node(self):
-    #     """
-    #     generate_node 메서드 테스트
-    #     """
-    #     state = CodeAssistState(question="Generate code for a REST API")
-    #     updated_state = self.workflow.generate_node(state)
+    def test_generate_talk(self):
+        """ generate_node 메서드 테스트 """
+        state = CodeAssistChatState()
+        state['question'] = '스페인의 비는 어디에 내리나요?'
         
-    #     # 결과 확인
-    #     self.assertIn('response', updated_state)
-    #     self.assertEqual(updated_state['response'], "Generated response")
-    #     print("Generate node output:", updated_state['response'])
+        self.chain.generate_talk()
+        
 
     # def test_run_autocode_workflow(self):
     #     """

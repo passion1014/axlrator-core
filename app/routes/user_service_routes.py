@@ -1,5 +1,6 @@
 from datetime import datetime
-from fastapi import APIRouter, Request, JSONResponse
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
 # from app.config import setup_logging

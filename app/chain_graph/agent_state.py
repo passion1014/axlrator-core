@@ -42,7 +42,7 @@ class CodeAssistState(TypedDict):
 class CodeAssistChatState(TypedDict):
     question: str
     current_code: str
-    chat_history_id: str
+    thread_id: str
     chat_history: Optional[list[Dict]] = None
 
     # seq: int

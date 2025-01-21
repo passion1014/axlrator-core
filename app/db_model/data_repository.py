@@ -341,7 +341,10 @@ class ChatHistoryRepository:
 
     # def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
     #     return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id).all()
-    
+
+    def get_chat_history_by_thread_id(self, thread_id: int) -> List[ChatHistory]:
+        return self.session.query(ChatHistory).filter(ChatHistory.thread_id == thread_id).all()
+
     def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
         return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id, ChatHistory.type_code == type_code).all()
 

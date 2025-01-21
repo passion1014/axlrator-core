@@ -3,9 +3,10 @@ from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
+from app.process.checkpoint_saver import HybridSaver
 from app.process.reranker import AlfredReranker
-from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
-from langgraph.graph import StateGraph, END
+from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CHAT_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
+from langgraph.graph import StateGraph, START, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
 from app.vectordb.faiss_vectordb import FaissVectorDB
@@ -149,24 +150,25 @@ class CodeAssistChain:
         state['context'] = table_json
         return state
 
-    def generate_talk(self, state: CodeAssistChatState) -> CodeAssistChatState:
-        
-        theard_id = state.get('chat_history_id', -1)
+    async def generate_talk(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
+        thread_id = state.get('thread_id', -1)
         
         config = RunnableConfig(
             recursion_limit=10,  # 최대 10개의 노드까지 방문. 그 이상은 RecursionError 발생
-            configurable={"thread_id": theard_id},  # 스레드 ID 설정
+            configurable={"thread_id": thread_id},  # 스레드 ID 설정
         )
-        
-        # 상태 그래프 생성
-        graph_builder = StateGraph(CodeAssistChatState)
-        
-        # 
-        
-        # 
-        
-        pass
-    
+
+        prompt = CHAT_PROMPT.format(
+            QUESTION=state['question']
+        )
+
+        # 호출
+        chunks = []
+        async for chunk in self.model.astream(prompt, config=config):
+            writer(chunk)
+            chunks.append(chunk)
+        state['response'] = "".join(str(chunks))
+        return state
 
     # below code is no longer used.
     # each 'task_type' should be broken down into seperate 'def'
@@ -203,24 +205,19 @@ class CodeAssistChain:
         return state
     
     def get_chain(self, task_type: str):
-        workflow = StateGraph(AgentState)
-
-        if task_type in ["01", "03"]:
-            workflow.add_node("generate_response", self.generate_response)
-            workflow.set_entry_point("generate_response")
-            workflow.add_edge("generate_response", END)
-        elif task_type in ["02", "04", "05"]:
-            workflow.add_node("get_context", self.search_similar_context if task_type == "02" else self.get_table_desc)
-            workflow.add_node("generate_response", self.generate_response)
-            workflow.set_entry_point("get_context")
-            workflow.add_edge("get_context", "generate_response")
-            workflow.add_edge("generate_response", END)
-        elif task_type in ['06']:
-            pass
-
-        chain = workflow.compile()
-        chain.with_config(callbacks=[CallbackHandler()])
-        return chain
+        if task_type in ["chat"]:
+            memory = HybridSaver()
+            
+            workflow = StateGraph(CodeAssistChatState)
+            workflow.add_node("generate_talk", self.generate_talk)
+            workflow.set_entry_point("generate_talk")
+            workflow.add_edge("generate_talk", END)
+            chain = workflow.compile(checkpointer=memory).with_config(callbacks=[CallbackHandler()])
+            
+            # workflow.get_state(config)
+            
+            return chain
+        pass
 
 
 # ------------------------------------------------
@@ -397,28 +394,3 @@ def combine_documents_with_relevance(docs):
     combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context
 
-
-# 테스트 실행
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    import os
-
-    print(f"### {os.getcwd()}")
-
-    # 작업디렉토리를 상위경로로 변경
-    parent_dir = os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
-    os.chdir(parent_dir)
-
-    # 환경변수 설정
-    load_dotenv(dotenv_path=".env.testcase", override=True)
-
-    from app.db_model.database import SessionLocal
-    from app.vectordb.faiss_vectordb import FaissVectorDB
-    # session = SessionLocal()
-    # faissVectorDB = FaissVectorDB(db_session=session, index_name='cg_code_assist')    
-        
-    state = CodeAssistState()
-    state.question = "스페인의 비는 어디에 내리나요?"
-    
-    code_assist_chain = CodeAssistChain()
-    code_assist_state = code_assist_chain.context_node(state=state, k=3)
