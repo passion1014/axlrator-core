@@ -132,7 +132,15 @@ class UserService:
     def get_user_by_id(self, user_id: str):
         """
         주어진 사용자 ID로 사용자를 조회합니다.
-        """
+        
+        Args:
+            user_id: 조회할 사용자 ID
+            
+        Returns:
+            조회된 사용자 정보. 없으면 None 반환
+        """        
+        if (user_id == 'admin'): # admin은 임시로 일단 로그인
+            return UserInfo(user_id='admin', password='admin', email='admin@temp.com', user_name='관리자', is_active=True)
         return self.user_info_repository.get_user_by_id(user_id)
 
     def get_user_by_email(self, email: str):
