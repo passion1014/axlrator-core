@@ -1,12 +1,25 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
-
+<style>
+  .delete-btn {
+    position: absolute;
+    top: 50%;
+    right: 10px; /* 우측에 위치 */
+    transform: translateY(-50%); /* 수직 중앙 정렬 */
+    cursor: pointer;
+    display: none;
+    color: #dc3545; /* 빨간색 아이콘 */
+  }
+</style>
 <script>
   $(document).ready(function () {
+    getChatHistory("2");
+
+    //입력버튼클릭 이벤트 핸들러
     $("#btnInput").on("click", function () {
       const question = $("#iptQuestion").val();
       const sql_request = $("#iptContext").val();
 
-      const payload = {
+      const param = {
         indexname: "",
         current_code: "",
         category: "",
@@ -15,21 +28,34 @@
         sql_request: sql_request,
       };
 
-      common.postRequest("/codeassist/api/makesql", payload, function (data) {
-        const content = data?.response?.response?.content;
-        $("#iptAnswer").text(content);
+      //SQL생성 서비스 호출
+      common.postStreamRequest(
+        "/codeassist/api/makesql",
+        param,
+        function (e) {
+          const chunk = e.currentTarget.response;
+          $("#iptAnswer").html(marked.parse(chunk));
+        },
+        function (data) {
+          console.log("success");
+          //이력생성
+          const param = {
+            title: $("#iptQuestion").val(),
+            type_code: "2",
+            data: JSON.stringify([
+              { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+            ]),
+          };
+          common.postRequest("/user/api/history", param, function (data) {
+            //highlight적용
+            $("#iptAnswer pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+            });
 
-        //이력 재 조회
-        //
-        // $.ajax({
-        // 	url: "/codeassist/api/makesql",
-        // 	type: "POST",
-        // 	contentType: "application/json",
-        // 	data: JSON.stringify({ question: question, sql_request: sql_request }),
-        // 	success: function (data) {
-        // 	},
-        // });
-      });
+            getChatHistory("2"); //이력 재조회
+          });
+        }
+      );
     });
   });
 </script>
@@ -49,7 +75,8 @@
           </div>
           <div class="col-12 mt-3">
             <span class="form-label d-inline-block">답변결과</span>
-            <div id="iptAnswer"></div>
+            <!-- <pre id="iptAnswer"></pre> -->
+            <div id="iptAnswer" class="markdown-body"></div>
           </div>
           <div class="col-12 mt-3">
             <label for="#" class="form-label">질문 입력</label>
@@ -61,15 +88,7 @@
         </div>
       </div>
     </div>
-    <div class="col-4">
-      <ul class="list-group">
-        <li class="list-group-item">이력1</li>
-        <li class="list-group-item">이력2</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-      </ul>
-    </div>
+    {% include 'view/common/chathistory.html' %}
   </div>
 </div>
 

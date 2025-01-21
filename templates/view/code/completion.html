@@ -1,7 +1,20 @@
 {% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+<style>
+  .delete-btn {
+    position: absolute;
+    top: 50%;
+    right: 10px; /* 우측에 위치 */
+    transform: translateY(-50%); /* 수직 중앙 정렬 */
+    cursor: pointer;
+    display: none;
+    color: #dc3545; /* 빨간색 아이콘 */
+  }
+</style>
 <script>
   $(document).ready(function () {
-    //입력버튼 클릭
+    getChatHistory("1");
+
+    //입력버튼 클릭이벤트 핸들러
     $("#btnInput").on("click", function () {
       const question = $("#iptQuestion").val();
       if (!question) return;
@@ -20,19 +33,31 @@
 
       common.postStreamRequest(
         "/codeassist/api/autocode",
-        // "/codeassist/api/stream",
         param,
         function (e) {
           const chunk = e.currentTarget.response;
-          console.log(chunk);
-
-          $("#iptAnswer").text(chunk); // 모든 데이터 표시
+          // 마크다운 데이터를 HTML로 변환
+          $("#iptAnswer").html(marked.parse(chunk));
         },
         function (data) {
           console.log("success");
-        },
-        function (data) {
-          console.log("fail");
+          //이력생성
+
+          const param = {
+            title: $("#iptQuestion").val(),
+            type_code: "1",
+            data: JSON.stringify([
+              { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+            ]),
+          };
+          common.postRequest("/user/api/history", param, function (data) {
+            //highlight적용
+            $("#iptAnswer pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+            });
+
+            getChatHistory("1"); //이력 재조회
+          });
         }
       );
     });
@@ -52,8 +77,9 @@
             <textarea class="form-control" rows="5" id="iptContext" disabled></textarea>
           </div>
           <div class="col-12 mt-3">
-            <span class="form-label d-inline-block" id="iptAnswer">답변결과</span>
-            <div></div>
+            <span class="form-label d-inline-block">답변결과</span>
+            <!-- <pre id="iptAnswer"></pre> -->
+            <div id="iptAnswer" class="markdown-body"></div>
           </div>
           <div class="col-12 mt-3">
             <label for="#" class="form-label">파일첨부</label>
@@ -69,15 +95,11 @@
         </div>
       </div>
     </div>
-    <div class="col-4">
-      <ul class="list-group">
-        <li class="list-group-item">이력1</li>
-        <li class="list-group-item">이력2</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-        <li class="list-group-item">이력3</li>
-      </ul>
-    </div>
+
+    {% include 'view/common/chathistory.html' %}
+    <!-- <div class="col-4">
+      <ul class="list-group" id="chatHistory"></ul>
+    </div> -->
   </div>
 </div>
 

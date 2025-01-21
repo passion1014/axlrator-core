@@ -19,10 +19,19 @@ from app.routes.faiss_routes import router as faiss_routes
 from app.routes.sample_routes import router as sample_routes
 from app.routes.terms_conversion_routes import router as terms_conversion_routes
 from app.routes.code_assist_routes import router as code_assist_routes
-
+from app.routes.user_service_routes import router as user_service_routes
+from starlette.middleware.sessions import SessionMiddleware
 
 from langfuse.callback import CallbackHandler
 import uvicorn
+
+import warnings
+warnings.simplefilter("always", UserWarning)# 항상 경고를 표시하도록 설정
+
+import logging
+logging.basicConfig(level=logging.INFO) # 로그설정
+
+
 
 # ---------------------------------------
 # 파라미터 처리
@@ -40,6 +49,14 @@ webServerApp = FastAPI(
     version="1.0",
     description="AI Server for Construction Guarantee Company",
 )
+
+webServerApp.add_middleware(
+    SessionMiddleware,
+    secret_key="cgcgcg",
+    session_cookie="session_cookie",
+    max_age=24 * 60 * 60  # 24시간
+)
+
 # 정적 파일 경로 및 Jinja2 템플릿 설정
 webServerApp.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -57,6 +74,9 @@ code_assist_chain = CodeAssistChain(index_name="cg_code_assist")
 # 웹 페이지
 webServerApp.include_router(view_routes, prefix="/view") # 화면용 라우터
 
+
+webServerApp.include_router(user_service_routes, prefix="/user") # 사용자 처리 라우터
+
 webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
 webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
 webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
@@ -67,14 +87,15 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 # webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록
 
 # 체인 등록
-from langserve import add_routes
-add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
+# from langserve import add_routes
+# add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain(type="02"), path="/codeassist", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain.code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)
+
 
 # Stream 처리를 위한 서비스 등록
 

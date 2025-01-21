@@ -9,6 +9,7 @@ from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
+from langchain.schema import Document
 
 
 from app.db_model.database import SessionLocal
@@ -59,7 +60,7 @@ class AlfredReranker:
         self.api_key = os.getenv("COHERE_API_KEY")
 
 
-    def cross_encoder_rerank(self, query: str, vectorDB: FaissVectorDB, k: int) -> List[Dict[str, Any]]:
+    def cross_encoder_faissdb(self, query: str, vectorDB: FaissVectorDB, k: int) -> List[Dict[str, Any]]:
         '''
         # Cross Encoder Reranker
         
@@ -102,6 +103,44 @@ class AlfredReranker:
         )
         
         return compressed_docs
+
+
+    def cross_encoder(self, query: str, documents: List[Dict[str, Any]], k: int = 3) -> List[Dict[str, Any]]:
+        '''
+        크로스 인코더 모델을 사용하여 쿼리에 대한 관련성을 기준으로 문서 목록을 재정렬합니다.
+
+        매개변수:
+            query (str): 쿼리 문자열.
+            documents (List[Dict[str, Any]]): 각 문서가 "page_content"와 같은 키를 가진 사전으로 표현된 문서 목록.
+            k (int): 재정렬 후 반환할 상위 문서의 수.
+
+        반환값:
+            List[Dict[str, Any]]: 상위 k개의 재정렬된 문서 목록.
+        '''
+
+        # Initialize the cross-encoder model
+        model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-v2-m3") # TODO: Model name can be externalized
+
+        # Convert input documents to LangChain's Document format
+        langchain_docs = [Document(page_content=doc["content"]) for doc in documents]
+
+        # Initialize the compressor
+        compressor = CrossEncoderReranker(model=model, top_n=k)
+
+        # Perform reranking
+        reranked_docs = compressor.compress_documents(query=query, documents=langchain_docs)
+
+        # Convert back to the original dictionary format for output
+        output_docs = [{"page_content": doc.page_content} for doc in reranked_docs]
+
+        # Print results for debugging
+        print(
+            f"\n{'-' * 100}\n".join(
+                [f"Document {i+1}:\n\n" + doc["page_content"] for i, doc in enumerate(output_docs)]
+            )
+        )
+
+        return output_docs
         
 
     # def cohere_rerank(self, query: str, target_list: List[Dict], vectorDB: FaissVectorDB, k: int) -> List[Dict[str, Any]]: 
@@ -179,30 +218,3 @@ class AlfredReranker:
     #     print([doc.metadata["id"] for doc in compressed_docs])
         
     #     return compressed_docs
-
-
-# if __name__ == "__main__":
-#     # 예시 쿼리와 타겟 리스트
-#     query = "example query"
-#     target_list = [
-#         {"metadata": {"original_content": "content1", "contextualized_content": "context1"}},
-#         {"metadata": {"original_content": "content2", "contextualized_content": "context2"}}
-#     ]
-
-#     # 예시 벡터 DB 초기화
-#     session = SessionLocal()
-#     vectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
-
-#     # k 값 설정
-#     k = 5
-
-#     # flash_rank_rerank 함수 호출
-#     reranker = AlfredReranker()
-#     results = reranker.flash_rank_rerank(query, target_list, vectorDB, k)
-
-#     # 결과 출력
-#     for result in results:
-#         print(f"Chunk: {result['chunk']}, Score: {result['score']}")
-
-
-# # AlfredReranker.model_rebuild()

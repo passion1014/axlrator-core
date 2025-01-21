@@ -1,8 +1,7 @@
-
-
 from datetime import datetime
 import os
-from app.db_model.database_models import ChunkedData, FaissInfo, OrgRSrc, RSrcTable, RSrcTableColumn
+from typing import List
+from app.db_model.database_models import ChatHistory, ChunkedData, FaissInfo, OrgRSrc, RSrcTable, RSrcTableColumn, UserInfo
 
 class FaissInfoRepository:
     def __init__(self, session):
@@ -302,3 +301,79 @@ class RSrcTableColumnRepository:
     def get_data_by_table_id(self, rsrc_table_id: int) -> list[RSrcTable]:
         return self.session.query(RSrcTableColumn).filter(RSrcTableColumn.rsrc_table_id == rsrc_table_id).all()
     
+
+
+class UserInfoRepository:
+    def __init__(self, session):
+        self.session = session
+
+    def get_user_by_id(self, user_id: str) -> UserInfo:
+        return self.session.query(UserInfo).filter(UserInfo.user_id == user_id).first()
+
+    def get_user_by_email(self, email: str) -> UserInfo:
+        return self.session.query(UserInfo).filter(UserInfo.email == email).first()
+
+    def get_all_users(self) -> List[UserInfo]:
+        return self.session.query(UserInfo).all()
+
+    def create_user(self, user_info: UserInfo) -> UserInfo:
+        self.session.add(user_info)
+        self.session.commit()
+        return user_info
+
+    def update_user(self, user_id: str, user_data: dict) -> UserInfo:
+        user = self.session.query(UserInfo).filter(UserInfo.user_id == user_id).first()
+        if user:
+            for key, value in user_data.items():
+                setattr(user, key, value)
+            self.session.commit()
+        return user
+
+    def delete_user(self, user_id: str):
+        user = self.session.query(UserInfo).filter(UserInfo.user_id == user_id).first()
+        if user:
+            self.session.delete(user)
+            self.session.commit()
+
+class ChatHistoryRepository:
+    def __init__(self, session):
+        self.session = session
+
+    # def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
+    #     return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id).all()
+
+    def get_chat_history_by_thread_id(self, thread_id: int) -> List[ChatHistory]:
+        return self.session.query(ChatHistory).filter(ChatHistory.thread_id == thread_id).all()
+
+    def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
+        return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id, ChatHistory.type_code == type_code).all()
+
+    def get_chat_history_by_title(self, title: str) -> List[ChatHistory]:
+        return self.session.query(ChatHistory).filter(ChatHistory.title == title).all()
+
+    def create_chat_history(self, chat_data: dict) -> ChatHistory:
+        new_chat = ChatHistory(**chat_data)
+        self.session.add(new_chat)
+        self.session.commit()
+        return new_chat
+
+    def update_chat_history(self, chat_id: int, chat_data: dict) -> ChatHistory:
+        chat = self.session.query(ChatHistory).filter(ChatHistory.id == chat_id).first()
+        if chat:
+            for key, value in chat_data.items():
+                setattr(chat, key, value)
+            self.session.commit()
+        return chat
+
+    def delete_chat_history(self, chat_id: int, user_info_id: int):
+        chat = self.session.query(ChatHistory).filter(ChatHistory.id == chat_id, ChatHistory.user_info_id == user_info_id ).first()
+        if chat:
+            self.session.delete(chat)
+            self.session.commit()
+
+    def delete_all_chat_history(self, user_info_id: int):
+        chats = self.session.query(ChatHistory).filter(ChatHistory.user_info_id == user_info_id).all()
+        if chats:
+            for chat in chats:
+                self.session.delete(chat)
+            self.session.commit()

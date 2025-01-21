@@ -7,7 +7,11 @@
             "request": "launch",
             "module": "app.server",
             "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.env.testcase"
+            "envFile": "${workspaceFolder}/.env.testcase",
+            "args": [
+                "--port",
+                "8001"
+            ],
         },
         {
             "name": "DB 스키마 조회",
@@ -20,7 +24,6 @@
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
             "cwd": "${workspaceFolder}"
         },
         // Vector Database File Load
@@ -39,7 +42,6 @@
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
             "cwd": "${workspaceFolder}"
         },
         {
@@ -54,8 +56,6 @@
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
-            "cwd": "${workspaceFolder}"
         },
         {
             "name": "(테스트)용어변환",
@@ -69,8 +69,6 @@
                 "POETRY_ACTIVE": "1",
                 "PYTHONPATH": "${workspaceFolder}" // PYTHONPATH 환경 변수 설정
             },
-            "pythonPath": "/Users/passion1014/anaconda3/envs/ragserver/bin/python",
-            "cwd": "${workspaceFolder}"
         },
         {
             "name": "리랭커 테스트",
