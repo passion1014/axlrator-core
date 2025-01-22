@@ -28,13 +28,16 @@ class RAGController:
         button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
         buttons = [
+            ("WSL", self.wsl),
             ("Compose Up", self.compose_up),
             ("Compose Down", self.compose_down),
             ("Compose Restart", self.compose_restart),
             ("Compose Start", self.compose_start),
             ("Compose Stop", self.compose_stop),
+            ("Container Start", self.container_start),
+            ("Container Stop", self.container_stop),
             ("RAG Server 시작", self.start_rag_server),
-            ("로그 확인", self.show_logs),
+            # ("로그 확인", self.show_logs),
         ]
 
         for name, command in buttons:
@@ -48,7 +51,7 @@ class RAGController:
         # 테이블 생성
         self.table = ttk.Treeview(
             self.table_frame,
-            columns=("Name", "ID", "Image", "Port", "Status", "Action"),
+            columns=("Name", "ID", "Image", "Port", "Status"),
             show="headings",
         )
   
@@ -57,14 +60,12 @@ class RAGController:
         self.table.heading("Image", text="Image")
         self.table.heading("Port", text="Port")
         self.table.heading("Status", text="Status")
-        self.table.heading("Action", text="Action")
 
         self.table.column("Name", width=200)
         self.table.column("ID", width=100)
         self.table.column("Image", width=150)
         self.table.column("Port", width=250)
         self.table.column("Status", width=100)
-        self.table.column("Action", width=150)
 
         self.table.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
 
@@ -88,13 +89,20 @@ class RAGController:
 
     def refresh_table(self):
         def update_table():
+
+            stout: str = None
             while True:
                 try:
                     result = subprocess.run(
                         ["docker", "ps", "-a", "--format", "{{.Names}}|{{.ID}}|{{.Image}}|{{.Ports}}|{{.Status}}"],
                         capture_output=True, text=True, encoding="utf-8",
                     )
-                    containers = result.stdout.strip().split("\n")
+                    
+                    if (result.stdout.strip() == stout):
+                        continue
+
+                    stout = result.stdout.strip()                    
+                    containers = stout.split("\n")
 
                     # 테이블 초기화
                     for row in self.table.get_children():
@@ -108,37 +116,16 @@ class RAGController:
                             # 테이블에 데이터 삽입
                             item_id = self.table.insert("", tk.END, values=values)
 
-                            # 버튼 추가
-                            self.add_action_buttons(item_id, values[0])  # values[0]은 컨테이너 ID
                 except Exception as e:
                     self.append_output(f"Error refreshing table: {e}")
 
                 sleep(5)  # 5초 간격으로 업데이트
 
         Thread(target=update_table, daemon=True).start()
-    def add_action_buttons(self, item_id, container_id):
-        """특정 행에 Start 및 Stop 버튼 추가."""
-        action_frame = tk.Frame(self.table)
 
-        start_button = tk.Button(action_frame, text="Start", bg="green", fg="white", command=lambda: self.start_container(container_id))
-        stop_button = tk.Button(action_frame, text="Stop", bg="red", fg="white", command=lambda: self.stop_container(container_id))
+    def wsl(self):
+        self.run_command(["wsl"])
 
-        start_button.pack(side=tk.LEFT, padx=5)
-        stop_button.pack(side=tk.RIGHT, padx=5)
-
-        self.table.item(item_id, tags=("action",))  # 테이블에 태그 추가
-        self.table.tag_bind("action", "<ButtonRelease-1>", lambda e: action_frame.pack())
-                            
-    def start_container(self, container_id):
-        """컨테이너 시작."""
-        self.run_command(["docker", "start", container_id])
-
-    def stop_container(self, container_id):
-        """컨테이너 중지."""
-        self.run_command(["docker", "stop", container_id])
-
-                     
-                        
     def compose_up(self):
         self.run_command(["docker-compose", "up", "-d"])
 
@@ -153,7 +140,23 @@ class RAGController:
         self.run_command(["docker-compose", "start"])
 
     def compose_stop(self):
-        self.run_command(["docker-compose", "stop"])    
+        self.run_command(["docker-compose", "stop"])
+
+    def container_start(self):
+        selected_item = self.table.focus()
+        if selected_item:
+            container_name = self.table.item(selected_item)['values'][0]
+            self.run_command(["docker", "start", container_name])
+        else:
+            self.append_output("No container selected.")
+
+    def container_stop(self):
+        selected_item = self.table.focus()
+        if selected_item:
+            container_name = self.table.item(selected_item)['values'][0]
+            self.run_command(["docker", "stop", container_name])
+        else:
+            self.append_output("No container selected.")
 
     def start_rag_server(self):
         commands = [
@@ -177,14 +180,25 @@ class RAGController:
         text_widget = tk.Text(log_window, wrap=tk.WORD)
         text_widget.insert(tk.END, logs)
         text_widget.pack(fill=tk.BOTH, expand=True)
+        
 
     def run_command(self, command):
-        """명령어 실행 후 출력 결과를 Text 위젯에 표시."""
+        """명령어 실행 후 출력 결과를 Text 위젯에 실시간으로 표시."""
         try:
-            result = subprocess.run(command, capture_output=True, text=True)
-            self.append_output(result.stdout)
-            if result.stderr:
-                self.append_output(f"Error: {result.stderr}")
+            process = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
+            while True:
+                output = process.stdout.readline()
+                if output == "" and process.poll() is not None:
+                    break
+                if output:
+                    self.append_output(output.strip())
+            
+            # 오류 출력 처리
+            stderr = process.stderr.read()
+            if stderr:
+                self.append_output(f"Error: {stderr.strip()}")
         except Exception as e:
             self.append_output(f"Error running command {command}: {e}")
 
