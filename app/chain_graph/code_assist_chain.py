@@ -3,7 +3,6 @@ from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
-from app.process.checkpoint_saver import HybridSaver
 from app.process.reranker import AlfredReranker
 from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CHAT_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
 from langgraph.graph import StateGraph, START, END
@@ -167,6 +166,8 @@ class CodeAssistChain:
         async for chunk in self.model.astream(prompt, config=config):
             writer(chunk)
             chunks.append(chunk)
+            
+            print(str(chunk))
         state['response'] = "".join(str(chunks))
         return state
 
