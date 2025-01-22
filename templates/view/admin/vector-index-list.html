@@ -1,4 +1,57 @@
 {% extends 'view/common/frame.html' %} {% block title %}VectorDB Index 조회{% endblock %} {% block content %}
+<script>
+  $(document).ready(function () {
+    getChatHistory("1");
+
+    //입력버튼 클릭이벤트 핸들러
+    $("#btnInput").on("click", function () {
+      const question = $("#iptQuestion").val();
+      if (!question) return;
+
+      $("#iptAnswer").text("");
+      $("#iptQuestion").text("");
+
+      const param = {
+        indexname: "",
+        current_code: "",
+        category: "",
+        question: question,
+        context: "",
+        sql_request: "",
+      };
+
+      common.postStreamRequest(
+        "/codeassist/api/autocode",
+        param,
+        function (e) {
+          const chunk = e.currentTarget.response;
+          // 마크다운 데이터를 HTML로 변환
+          $("#iptAnswer").html(marked.parse(chunk));
+        },
+        function (data) {
+          console.log("success");
+          //이력생성
+
+          const param = {
+            title: $("#iptQuestion").val(),
+            type_code: "1",
+            data: JSON.stringify([
+              { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+            ]),
+          };
+          common.postRequest("/user/api/history", param, function (data) {
+            //highlight적용
+            $("#iptAnswer pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+            });
+
+            getChatHistory("1"); //이력 재조회
+          });
+        }
+      );
+    });
+  });
+</script>
 <div class="contents-wrap">
   <div class="tit-wrap">
     <h2 class="tit01">VectorDB Index 조회</h2>
@@ -16,7 +69,7 @@
       </div>
 
       <div class="col align-self-end">
-        <button type="button" class="btn btn-primary">조회</button>
+        <button type="button" class="btn btn-primary" id="btnQuery">조회</button>
       </div>
     </div>
   </div>
