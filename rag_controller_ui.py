@@ -9,7 +9,7 @@ class RAGController:
     def __init__(self, root):
         self.root = root
         self.root.title("RAG Controller")
-        self.root.geometry("1000x700")
+        self.root.geometry("1200x700")
 
         # 버튼 영역 생성
         self.create_buttons()
@@ -33,7 +33,6 @@ class RAGController:
             ("Compose Restart", self.compose_restart),
             ("Compose Start", self.compose_start),
             ("Compose Stop", self.compose_stop),
-            ("Containers", self.containers),
             ("RAG Server 시작", self.start_rag_server),
             ("로그 확인", self.show_logs),
         ]
@@ -49,18 +48,21 @@ class RAGController:
         # 테이블 생성
         self.table = ttk.Treeview(
             self.table_frame,
-            columns=("ID", "Image", "Command", "Status", "Action"),
+            columns=("Name", "ID", "Image", "Port", "Status", "Action"),
             show="headings",
         )
+  
+        self.table.heading("Name", text="Name")
         self.table.heading("ID", text="Container ID")
         self.table.heading("Image", text="Image")
-        self.table.heading("Command", text="Command")
+        self.table.heading("Port", text="Port")
         self.table.heading("Status", text="Status")
         self.table.heading("Action", text="Action")
 
-        self.table.column("ID", width=200)
+        self.table.column("Name", width=200)
+        self.table.column("ID", width=100)
         self.table.column("Image", width=150)
-        self.table.column("Command", width=250)
+        self.table.column("Port", width=250)
         self.table.column("Status", width=100)
         self.table.column("Action", width=150)
 
@@ -89,7 +91,7 @@ class RAGController:
             while True:
                 try:
                     result = subprocess.run(
-                        ["docker", "ps", "-a", "--format", "{{.ID}}|{{.Image}}|{{.Command}}|{{.Status}}"],
+                        ["docker", "ps", "-a", "--format", "{{.Names}}|{{.ID}}|{{.Image}}|{{.Ports}}|{{.Status}}"],
                         capture_output=True, text=True, encoding="utf-8",
                     )
                     containers = result.stdout.strip().split("\n")
@@ -151,10 +153,7 @@ class RAGController:
         self.run_command(["docker-compose", "start"])
 
     def compose_stop(self):
-        self.run_command(["docker-compose", "stop"])
-
-    def containers(self):
-        self.run_command(["docker", "ps", "-a"])
+        self.run_command(["docker-compose", "stop"])    
 
     def start_rag_server(self):
         commands = [
