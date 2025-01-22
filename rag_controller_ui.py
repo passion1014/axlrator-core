@@ -28,7 +28,6 @@ class RAGController:
         button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
         buttons = [
-            ("WSL", self.wsl),
             ("Compose Up", self.compose_up),
             ("Compose Down", self.compose_down),
             ("Compose Restart", self.compose_restart),
@@ -94,9 +93,10 @@ class RAGController:
             while True:
                 try:
                     result = subprocess.run(
-                        ["docker", "ps", "-a", "--format", "{{.Names}}|{{.ID}}|{{.Image}}|{{.Ports}}|{{.Status}}"],
+                         ["wsl", "-u", "root", "bash", "-c", "docker ps -a --format '{{.Names}}|{{.ID}}|{{.Image}}|{{.Ports}}|{{.Status}}'"],
                         capture_output=True, text=True, encoding="utf-8",
                     )
+                    print(result)
                     
                     if (result.stdout.strip() == stout):
                         continue
@@ -122,31 +122,29 @@ class RAGController:
                 sleep(5)  # 5초 간격으로 업데이트
 
         Thread(target=update_table, daemon=True).start()
-
-    def wsl(self):
-        self.run_command(["wsl"])
+    
 
     def compose_up(self):
-        self.run_command(["docker-compose", "up", "-d"])
+        self.run_command(["wsl", "--", "docker-compose", "up", "-d"])
 
     def compose_down(self):
-        self.run_command(["docker-compose", "down"])
+        self.run_command(["wsl", "--", "docker-compose", "down"])
 
     def compose_restart(self):
         self.compose_down()
         self.compose_up()
 
     def compose_start(self):
-        self.run_command(["docker-compose", "start"])
+        self.run_command(["wsl", "--", "docker-compose", "start"])
 
     def compose_stop(self):
-        self.run_command(["docker-compose", "stop"])
+        self.run_command(["wsl", "--", "docker-compose", "stop"])
 
     def container_start(self):
         selected_item = self.table.focus()
         if selected_item:
             container_name = self.table.item(selected_item)['values'][0]
-            self.run_command(["docker", "start", container_name])
+            self.run_command(["wsl", "--", "docker", "start", container_name])
         else:
             self.append_output("No container selected.")
 
@@ -154,7 +152,7 @@ class RAGController:
         selected_item = self.table.focus()
         if selected_item:
             container_name = self.table.item(selected_item)['values'][0]
-            self.run_command(["docker", "stop", container_name])
+            self.run_command(["wsl", "--", "docker", "stop", container_name])
         else:
             self.append_output("No container selected.")
 
@@ -165,11 +163,11 @@ class RAGController:
             "pip install -r requirements.txt",
         ]
         for cmd in commands:
-            self.run_command(["bash", "-c", cmd])
+            self.run_command(["wsl", "--", "bash", "-c", cmd])
 
     def show_logs(self):
         logs = subprocess.run(
-            ["docker-compose", "logs"], capture_output=True, text=True
+            ["wsl", "--","docker-compose", "logs"], capture_output=True, text=True
         ).stdout
 
         # 팝업 창으로 로그 표시
