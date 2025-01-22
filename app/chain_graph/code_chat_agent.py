@@ -19,7 +19,7 @@ from langfuse.callback import CallbackHandler
 import json
 from langchain_core.messages import ToolMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
-
+from langgraph.types import StreamWriter
 
 class CodeChatState(TypedDict):
     """The state of the agent."""
@@ -66,17 +66,22 @@ class CodeChatAgent:
 
 
     # Define the node that calls the model
-    def call_model(self,
+    async def call_model(self,
         state: CodeChatState,
         config: RunnableConfig,
+        writer: StreamWriter
     ):
         # this is similar to customizing the create_react_agent with state_modifier, but is a lot more flexible
         system_prompt = SystemMessage(
             "You are a helpful AI assistant, please respond to the users query to the best of your ability!"
         )
-        response = self.model.invoke([system_prompt] + state["messages"], config)
-        # We return a list, because this will get added to the existing list
-        return {"messages": [response]}
+
+        # Stream 방식
+        tokens = []
+        async for chunk in self.model.astream([system_prompt] + state["messages"], config):
+            writer(chunk)
+            tokens.append(chunk)
+        return {"messages": tokens}
 
 
     # Define the conditional edge that determines whether to continue or not

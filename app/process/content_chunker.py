@@ -55,7 +55,7 @@ class JavaChunkMeta(BaseChunkMeta):
         self.function_name = function_name
         self.return_type = return_type
         self.parameters = parameters
-        self.set_summary(f"Java function '{self.function_name}' ({self.return_type}) ({self.parameters})")
+        self.set_summary("")
 
     def __repr__(self):
         return (f"JavaChunkMeta:{self.to_json()}")
@@ -275,7 +275,7 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     if file_type == 'java' and "Dao.java" not in file_name:
         for chunk in chunks:
             # 함수의 라인 수를 기준으로 건너뛸지 여부를 확인
-            if not should_skip_by_line_count(function_body=chunk.chunk_content, max_lines=3):
+            if not should_skip_by_line_count(function_body=chunk.chunk_content, max_lines=20):
                 # 코드 요약정보 생성
                 summary = generate_code_context(chunk.chunk_content)
                 chunk.set_summary(summary)

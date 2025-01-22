@@ -148,38 +148,20 @@ async def chat(request: Request):
         max_size=20,
         kwargs=connection_kwargs,
     )
-
-    async def stream_response():
-        async with pool:
-            checkpointer = AsyncPostgresSaver(pool)
-            graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
-            config = {"configurable": {"thread_id": thread_id}}
-            input_message = HumanMessage(content=question)
-
-            async for event in graph.astream(
-                {"messages": [input_message]}, config, stream_mode="custom"
-            ):
-                print(f"### {event['messages'][-1].content}")
-                yield event["messages"][-1].content
-
-    return StreamingResponse(stream_response(), media_type="text/event-stream")    
     
+    checkpointer = AsyncPostgresSaver(pool)
     
-    # checkpointer = AsyncPostgresSaver(pool)
-    
-    # graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
-    # config = {"configurable": {"thread_id": thread_id}}
-    # input_message = HumanMessage(content=question)
+    graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": thread_id}}
+    input_message = HumanMessage(content=question)
 
-    # async def stream_response() :
-    #     async for event in graph.astream({"messages": [input_message]}, config, stream_mode="custom"):
-    #         print(f"### {event["messages"][-1].content}")
-    #         yield event["messages"][-1].content
+    async def stream_response() :
+        async for event in graph.astream({"messages": [input_message]}, config, stream_mode="custom"): #stream_mode = values
+            if event.content and len(event.content) > 0:
+                print(f"### {event.content[-1]['text']}")
+                yield event.content[-1]['text']
 
-    # return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-
-
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
     # async with AsyncConnectionPool(

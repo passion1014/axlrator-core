@@ -14,6 +14,22 @@
             ],
         },
         {
+            "name": "workflow-parse-code",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "workflow.workflow_parse_code",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env.testcase",
+        },
+        {
+            "name": "workflow-vector-code",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "workflow.workflow_vector_code",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env.testcase",
+        },
+        {
             "name": "DB 스키마 조회",
             "type": "debugpy",
             "request": "launch",

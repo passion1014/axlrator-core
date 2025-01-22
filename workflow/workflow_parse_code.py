@@ -105,7 +105,8 @@ class ProcessAllFiles(luigi.Task):
 
 # Luigi 실행: 프로젝트 폴더 지정
 if __name__ == "__main__":
-    dir = "/app/rag_data/is_modon_proto/src/main/java/com/modon/control/pig"
+    # dir = "/app/rag_data/is_modon_proto/src/main/java/com/modon/control/pig"
+    dir = "/Users/passion1014/project/langchain/rag_server/data/input/sample2"
     luigi.build([ProcessAllFiles(project_dir=dir)], local_scheduler=True)
 
 # python workflow_parse_code.py ProcessAllFiles --project-dir /your/project/path --index-name your_index_name --local-scheduler

@@ -313,17 +313,17 @@ def should_skip_by_line_count(function_body: str, max_lines: int = 3) -> bool:
     # 의미있는 라인 수가 max_lines 이하인지 확인
     return len(meaningful_lines) <= max_lines
 
-# Example usage:
-if __name__ == "__main__":
-    # Sample function body as a string
-    sample_function_body = """
-    def example_function():
-        # This is an example function
-        return 42
-    """
-    # Check if the function should be skipped
-    skip = should_skip_by_line_count(sample_function_body, max_lines=3)
-    if skip:
-        print("Function skipped.")
-    else:
-        print("Function processed.")
+# # Example usage:
+# if __name__ == "__main__":
+#     # Sample function body as a string
+#     sample_function_body = """
+#     def example_function():
+#         # This is an example function
+#         return 42
+#     """
+#     # Check if the function should be skipped
+#     skip = should_skip_by_line_count(sample_function_body, max_lines=3)
+#     if skip:
+#         print("Function skipped.")
+#     else:
+#         print("Function processed.")
