@@ -1,6 +1,8 @@
 from datetime import datetime
 import os
 from typing import List
+
+from sqlalchemy import desc
 from app.db_model.database_models import ChatHistory, ChunkedData, FaissInfo, OrgRSrc, RSrcTable, RSrcTableColumn, UserInfo
 
 class FaissInfoRepository:
@@ -341,15 +343,11 @@ class ChatHistoryRepository:
 
     # def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
     #     return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id).all()
-
-    def get_chat_history_by_thread_id(self, thread_id: int) -> List[ChatHistory]:
-        return self.session.query(ChatHistory).filter(ChatHistory.thread_id == thread_id).all()
-
     def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
-        return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id, ChatHistory.type_code == type_code).all()
+        return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id, ChatHistory.type_code == type_code).order_by(desc(ChatHistory.created_at)).all()
 
     def get_chat_history_by_title(self, title: str) -> List[ChatHistory]:
-        return self.session.query(ChatHistory).filter(ChatHistory.title == title).all()
+        return self.session.query(ChatHistory).filter(ChatHistory.title == title).order_by(desc(ChatHistory.created_at)).all()
 
     def create_chat_history(self, chat_data: dict) -> ChatHistory:
         new_chat = ChatHistory(**chat_data)
