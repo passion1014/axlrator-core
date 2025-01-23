@@ -1,4 +1,6 @@
+import os
 from typing import List, Optional
+import uuid
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -7,11 +9,22 @@ from app.config import setup_logging
 from app.db_model.database import SessionLocal
 from app.db_model.data_repository import ChatHistoryRepository
 from fastapi.responses import JSONResponse, StreamingResponse
+from langchain_core.messages import HumanMessage
+from app.chain_graph.code_chat_agent import CodeChatAgent
+from psycopg_pool import AsyncConnectionPool
+from psycopg_pool import ConnectionPool
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.checkpoint.postgres import PostgresSaver
 
 logger = setup_logging()
 router = APIRouter()
 code_assist = CodeAssistChain(index_name="cg_code_assist")
 
+class CodeAssistInfo(BaseModel):
+    indexname: str
+    question: str
+    current_code: str
+    sql_request: str
 
 class ChatInfo(BaseModel):
     seq: int
@@ -19,12 +32,12 @@ class ChatInfo(BaseModel):
     message_body: str
     send_time:str
 
-class CodeAssistInfo(BaseModel):
-    indexname: str
+class CodeChatInfo(BaseModel):
+    thread_id: str
     question: str
-    current_code: str
-    sql_request: str
     chat_history: Optional[list[ChatInfo]] = None  # 선택적 필드로 설정, 기본값 None
+
+
 
 @router.post("/api/predicate")
 async def predicate(request: CodeAssistInfo):
@@ -107,24 +120,40 @@ async def make_sql_endpoint(request: Request):
 # SQL 생성 요청 엔드포인트
 @router.post("/api/chat")
 async def chat(request: Request):
-    try:
-        body = await request.json()
-        message = CodeAssistInfo.model_validate(body)
-
-        # chain 생성
-        chain = code_assist.get_chain(task_type="05")
-
-        # chain 실행
-        response = chain.invoke(message)
-
-        # 결과 반환
-        return {"response": response}
+    # request 값 확인
+    body = await request.json()
+    message = CodeChatInfo.model_validate(body)
     
-    except Exception as e:
-        return JSONResponse(
-            content={"error": f"An error occurred: {str(e)}"},
-            status_code=500
-        )
+    # thread_id 셋팅
+    thread_id = message.thread_id or str(uuid.uuid4())
+    # config셋팅
+    config = {"configurable": {"thread_id": thread_id}}
+
+    pool = AsyncConnectionPool(
+        conninfo=os.getenv("DATABASE_URL"),
+        max_size=20,
+        kwargs={
+            "autocommit": True,
+            "prepare_threshold": 0,
+        },
+    )
+    checkpointer = AsyncPostgresSaver(pool)
+    checkpoint = await checkpointer.aget(config)
+
+    
+    # 채팅을 위한 에이전트
+    agent = CodeChatAgent(index_name="cg_code_assist")
+        
+    graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
+    input_message = HumanMessage(content=message.question)
+
+    async def stream_response() :
+        async for event in graph.astream({"messages": [input_message]}, config, stream_mode="custom"): #stream_mode = values
+            if event.content and len(event.content) > 0:
+                print(f"### {event.content[-1]['text']}")
+                yield event.content[-1]['text']
+
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
 class ChatHistoryService:

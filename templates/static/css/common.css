@@ -369,3 +369,10 @@ li.pointer:hover {
   border: 1px solid #ddd;
   border-radius: 5px;
 }
+
+.text-overflow {
+  /* width: 100px; */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

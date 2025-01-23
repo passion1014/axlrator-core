@@ -1,86 +1,85 @@
-	{% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
-	<div class="contents-wrap">
-		<div class="tit-wrap">
-			<h2 class="tit01">작업 대상 조회-벌크배치작업</h2>
-		</div>
-		
-		<div class="search-wrap mt-2">
-			<div class="row gy-2">
-				<div class="col-auto">
-					<label for="#" class="form-label">대상인덱스</label>
-					<input type="text" class="form-control">
-				</div>
-				<div class="col-auto">
-					<label for="#" class="form-label">타겟경로</label>
-					<input type="text" class="form-control">
-				</div>
-				<div class="col-auto">
-					<label for="#" class="form-label">처리유형</label>
-					<input type="text" class="form-control">
-				</div>
-				<div class="col-auto">
-					<label for="#" class="form-label">처리여부</label>
-					<input type="text" class="form-control">
-				</div>
-				<div class="col-auto">
-					<label for="#" class="form-label">처리결과</label>
-					<select class="form-select">
-					  <option selected>성공</option>
-					  <option value="1">실패</option>
-					</select>
-				</div>
-				
-				<div class="col align-self-end">
-					<button type="button" class="btn btn-primary">조회</button>
-				</div>
-			</div>
-		</div>
-		
-		
-		<table class="table table-bordered table-sm mt-4">
-			<thead class="table-secondary">
-				<tr class="text-center">
-					<th>대상인덱스</th>
-					<th>타겟경로</th>
-					<th>처리유형</th>
-					<th>처리여부</th>
-					<th>처리결과</th>
-					<th>실행</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr class="align-middle">
-					<td>대상인덱스</td>
-					<td>타겟경로</td>
-					<td>처리유형</td>
-					<td>처리여부</td>
-					<td>처리결과</td>
-					<td>실행</td>
-				</tr>
-				<tr class="align-middle">
-					<td>대상인덱스</td>
-					<td>타겟경로</td>
-					<td>처리유형</td>
-					<td>처리여부</td>
-					<td>처리결과</td>
-					<td>실행</td>
-				</tr>
-				<tr class="align-middle">
-					<td>대상인덱스</td>
-					<td>타겟경로</td>
-					<td>처리유형</td>
-					<td>처리여부</td>
-					<td>처리결과</td>
-					<td>실행</td>
-				</tr>
-			</tbody>
-			</table>
-			
-			<div class="row mt-2 btn-wrap">
-				<div class="d-flex justify-content-end gap-2">
-					<button type="button" class="btn btn-primary">등록</button>
-				</div>
-			</div>
-		</div>
-		
-		{% endblock %}
+{% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+<div class="contents-wrap">
+  <div class="tit-wrap">
+    <h2 class="tit01">작업 대상 조회-벌크배치작업</h2>
+  </div>
+
+  <div class="search-wrap mt-2">
+    <div class="row gy-2">
+      <div class="col-auto">
+        <label for="#" class="form-label">대상인덱스</label>
+        <input type="text" class="form-control" />
+      </div>
+      <div class="col-auto">
+        <label for="#" class="form-label">타겟경로</label>
+        <input type="text" class="form-control" />
+      </div>
+      <div class="col-auto">
+        <label for="#" class="form-label">처리유형</label>
+        <input type="text" class="form-control" />
+      </div>
+      <div class="col-auto">
+        <label for="#" class="form-label">처리여부</label>
+        <input type="text" class="form-control" />
+      </div>
+      <div class="col-auto">
+        <label for="#" class="form-label">처리결과</label>
+        <select class="form-select">
+          <option selected>성공</option>
+          <option value="1">실패</option>
+        </select>
+      </div>
+
+      <div class="col align-self-end">
+        <button type="button" class="btn btn-primary" id="btnQuery">조회</button>
+      </div>
+    </div>
+  </div>
+
+  <table class="table table-bordered table-sm mt-4">
+    <thead class="table-secondary">
+      <tr class="text-center">
+        <th>대상인덱스</th>
+        <th>타겟경로</th>
+        <th>처리유형</th>
+        <th>처리여부</th>
+        <th>처리결과</th>
+        <th>실행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="align-middle">
+        <td>대상인덱스</td>
+        <td>타겟경로</td>
+        <td>처리유형</td>
+        <td>처리여부</td>
+        <td>처리결과</td>
+        <td>실행</td>
+      </tr>
+      <tr class="align-middle">
+        <td>대상인덱스</td>
+        <td>타겟경로</td>
+        <td>처리유형</td>
+        <td>처리여부</td>
+        <td>처리결과</td>
+        <td>실행</td>
+      </tr>
+      <tr class="align-middle">
+        <td>대상인덱스</td>
+        <td>타겟경로</td>
+        <td>처리유형</td>
+        <td>처리여부</td>
+        <td>처리결과</td>
+        <td>실행</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="row mt-2 btn-wrap">
+    <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-primary" id="btnReg">등록</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
