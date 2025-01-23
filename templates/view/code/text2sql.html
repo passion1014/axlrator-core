@@ -19,6 +19,9 @@
       const question = $("#iptQuestion").val();
       const sql_request = $("#iptContext").val();
 
+      if (!question) return;
+      $("#iptAnswer").text("■");
+
       const param = {
         indexname: "",
         current_code: "",
@@ -34,10 +37,16 @@
         param,
         function (e) {
           const chunk = e.currentTarget.response;
-          $("#iptAnswer").html(marked.parse(chunk));
+          $("#iptAnswer").html(marked.parse(chunk + "■"));
         },
         function (data) {
           console.log("success");
+          const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
+
+          $("#iptAnswer").html(
+            $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
+          );
+
           //이력생성
           const param = {
             title: $("#iptQuestion").val(),
