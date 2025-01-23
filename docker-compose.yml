@@ -53,10 +53,10 @@ services:
       - alfred_network
     stdin_open: true # -i 옵션 (인터랙티브 모드)
     tty: true # -t 옵션 (터미널 할당)
-    command: >
-      bash -c "python3.12 -m venv venv &&
-               source venv/bin/activate &&
-               python -m app.server"
+#    command: >
+#       bash -c "python3.12 -m venv venv &&
+#                source venv/bin/activate &&
+#                python -m app.server"
 
   elasticsearch:
     image: elasticsearch:8.8.0

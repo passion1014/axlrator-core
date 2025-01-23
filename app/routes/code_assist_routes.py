@@ -125,7 +125,7 @@ async def chat(request: Request):
     checkpoint = await checkpointer.aget(config)
 
 
-    code_chat_info = checkpoint_to_code_chat_info(thead_id=thread_id, checkpoint=checkpoint)
+    #code_chat_info = checkpoint_to_code_chat_info(thead_id=thread_id, checkpoint=checkpoint)
 
     # 채팅을 위한 에이전트
     agent = CodeChatAgent(index_name="cg_code_assist")
