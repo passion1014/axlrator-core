@@ -120,40 +120,32 @@ async def make_sql_endpoint(request: Request):
 # SQL 생성 요청 엔드포인트
 @router.post("/api/chat")
 async def chat(request: Request):
-
-    DB_URI = os.getenv("DATABASE_URL")
-    connection_kwargs = {
-        "autocommit": True,
-        "prepare_threshold": 0,
-    }
-
-
-
+    # request 값 확인
     body = await request.json()
     message = CodeChatInfo.model_validate(body)
     
-    thread_id = message.thread_id
-    
-    if not thread_id:
-        thread_id = str(uuid.uuid4())
-    
-    question = message.question
+    # thread_id 셋팅
+    thread_id = message.thread_id or str(uuid.uuid4())
+    # config셋팅
+    config = {"configurable": {"thread_id": thread_id}}
 
+    pool = AsyncConnectionPool(
+        conninfo=os.getenv("DATABASE_URL"),
+        max_size=20,
+        kwargs={
+            "autocommit": True,
+            "prepare_threshold": 0,
+        },
+    )
+    checkpointer = AsyncPostgresSaver(pool)
+    checkpoint = await checkpointer.aget(config)
+
+    
     # 채팅을 위한 에이전트
     agent = CodeChatAgent(index_name="cg_code_assist")
-    
-    
-    pool = AsyncConnectionPool(
-        conninfo=DB_URI,
-        max_size=20,
-        kwargs=connection_kwargs,
-    )
-    
-    checkpointer = AsyncPostgresSaver(pool)
-    
+        
     graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
-    config = {"configurable": {"thread_id": thread_id}}
-    input_message = HumanMessage(content=question)
+    input_message = HumanMessage(content=message.question)
 
     async def stream_response() :
         async for event in graph.astream({"messages": [input_message]}, config, stream_mode="custom"): #stream_mode = values
@@ -162,43 +154,6 @@ async def chat(request: Request):
                 yield event.content[-1]['text']
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-
-    # async with AsyncConnectionPool(
-    #     conninfo=DB_URI,
-    #     max_size=20,
-    #     kwargs=connection_kwargs,
-    # ) as pool:
-    #     checkpointer = AsyncPostgresSaver(pool)
-
-    #     graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
-    #     config = {"configurable": {"thread_id": thread_id}}
-    #     input_message = HumanMessage(content=question)
-
-    #     async def stream_response() :
-    #         async for event in graph.astream({"messages": [input_message]}, config, stream_mode="values"):
-    #             yield event["messages"][-1]
-
-    #     return StreamingResponse(stream_response(), media_type="text/event-stream")
-    
-
-    # try:
-    #     body = await request.json()
-    #     message = CodeAssistInfo.model_validate(body)
-
-    #     async def stream_response() :
-    #         async for chunk in code_assist.get_chain(task_type="chat").astream(message, stream_mode="custom"):
-    #             print("## chucnk=", chunk.content)
-    #             yield chunk.content
-
-    #     return StreamingResponse(stream_response(), media_type="text/event-stream")
-    
-    # except Exception as e:
-    #     return JSONResponse(
-    #         content={"error": f"An error occurred: {str(e)}"},
-    #         status_code=500
-    #     )
-
 
 
 class ChatHistoryService:
