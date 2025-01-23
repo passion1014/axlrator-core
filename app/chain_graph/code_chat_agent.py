@@ -97,7 +97,7 @@ class CodeChatAgent:
 
     def get_chain(self, thread_id: str = str(uuid.uuid4()), checkpointer = None):
         tools = [self.get_weather]
-        self.model = self.model.bind_tools(tools)
+        # self.model = self.model.bind_tools(tools)
         
         workflow = StateGraph(CodeChatState)
         workflow.add_node("agent", self.call_model)

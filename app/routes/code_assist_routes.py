@@ -5,7 +5,9 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from app.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain 
+from app.common.chat_history_manager import checkpoint_to_code_chat_info
 from app.config import setup_logging
+from app.dataclasses.code_assist_data import CodeAssistInfo, CodeChatInfo
 from app.db_model.database import SessionLocal
 from app.db_model.data_repository import ChatHistoryRepository
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -19,24 +21,6 @@ from langgraph.checkpoint.postgres import PostgresSaver
 logger = setup_logging()
 router = APIRouter()
 code_assist = CodeAssistChain(index_name="cg_code_assist")
-
-class CodeAssistInfo(BaseModel):
-    indexname: str
-    question: str
-    current_code: str
-    sql_request: str
-
-class ChatInfo(BaseModel):
-    seq: int
-    messenger_type: str # 01:user, 02:agent, 
-    message_body: str
-    send_time:str
-
-class CodeChatInfo(BaseModel):
-    thread_id: str
-    question: str
-    chat_history: Optional[list[ChatInfo]] = None  # 선택적 필드로 설정, 기본값 None
-
 
 
 @router.post("/api/predicate")
@@ -140,7 +124,9 @@ async def chat(request: Request):
     checkpointer = AsyncPostgresSaver(pool)
     checkpoint = await checkpointer.aget(config)
 
-    
+
+    code_chat_info = checkpoint_to_code_chat_info(thead_id=thread_id, checkpoint=checkpoint)
+
     # 채팅을 위한 에이전트
     agent = CodeChatAgent(index_name="cg_code_assist")
         
@@ -150,8 +136,9 @@ async def chat(request: Request):
     async def stream_response() :
         async for event in graph.astream({"messages": [input_message]}, config, stream_mode="custom"): #stream_mode = values
             if event.content and len(event.content) > 0:
-                print(f"### {event.content[-1]['text']}")
-                yield event.content[-1]['text']
+                content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
+                print(f"### {content}")
+                yield content
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
