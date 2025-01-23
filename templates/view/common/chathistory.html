@@ -8,14 +8,52 @@
     }
 
     common.getRequest("/user/api/history", { type_code: type_code }, function (data) {
-      let html = "";
+      // let html = "";
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      let todayHtml = "";
+      let yesterdayHtml = "";
+      let etcHtml = "";
       data.response.forEach((item, index) => {
         const data = item.data.replaceAll('"', "&quot;");
-        html += `<li class="list-group-item pointer" data-id="${item.id}" data-data="${data}">${item.title}
+        const createdAt = new Date(item.created_at);
+
+        let listItem = `<li class="list-group-item pointer text-overflow" style="400px" data-id="${item.id}" data-data="${data}" title="${item.title}">${item.title}
                     <i class="fas fa-times delete-btn" data-id="${item.id}"></i>
                  </li> `;
+
+        // 오늘, 어제, 그 이전으로 구분
+        if (createdAt.toDateString() === today.toDateString()) {
+          todayHtml += listItem;
+        } else if (createdAt.toDateString() === yesterday.toDateString()) {
+          yesterdayHtml += listItem;
+        } else {
+          etcHtml += listItem;
+        }
       });
-      $("#chatHistory").html(html);
+
+      $("#chatHistoryToday").html(todayHtml);
+      if (todayHtml == "") {
+        $("#today").hide();
+      } else {
+        $("#today").show();
+      }
+
+      $("#chatHistoryYesterday").html(yesterdayHtml);
+      if (yesterdayHtml == "") {
+        $("#yesterday").hide();
+      } else {
+        $("#yesterday").show();
+      }
+
+      $("#chatHistoryEtc").html(etcHtml);
+      if (etcHtml == "") {
+        $("#etc").hide();
+      } else {
+        $("#etc").show();
+      }
 
       //이력 title버튼 클릭 이벤트
       $("#chatHistory li").click(function () {
@@ -53,11 +91,27 @@
   });
 </script>
 
-<div class="col-4">
-  <div class="d-flex justify-content-between align-items-center">
-    <h3 class="fs-5">이력</h3>
-    <button class="btn btn-danger" id="btnDeleteAllHistory"><i class="bi bi-trash"></i></button>
+<div class="col-4" id="chatHistory">
+  <div id="today" style="display: none">
+    <div class="d-flex justify-content-between align-items-center">
+      <!-- <h5 class="fs-5">오늘</h3> -->
+      <h7>📜오늘</h7>
+      <button class="btn btn-danger" id="btnDeleteAllHistory"><i class="bi bi-trash"></i></button>
+    </div>
+    <ul class="list-group" id="chatHistoryToday"></ul>
   </div>
 
-  <ul class="list-group" id="chatHistory"></ul>
+  <div id="yesterday" style="display: none">
+    <div class="d-flex justify-content-between align-items-center">
+      <h7>📜어제</h7>
+    </div>
+    <ul class="list-group" id="chatHistoryYesterday"></ul>
+  </div>
+
+  <div id="etc" style="display: none">
+    <div class="d-flex justify-content-between align-items-center">
+      <h7>📜이틀전</h7>
+    </div>
+    <ul class="list-group" id="chatHistoryEtc"></ul>
+  </div>
 </div>

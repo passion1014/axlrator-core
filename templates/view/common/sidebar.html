@@ -7,22 +7,22 @@
   <ul class="nav nav-fills flex-column">
     <li class="nav-item">
       <a class="nav-link {% if request.path == '/view/code/conversion' %}active{% endif %}" href="/view/code/conversion"
-        >용어변환</a
+        >📂용어변환</a
       >
     </li>
     <li class="nav-item">
       <a class="nav-link {% if request.path == '/view/code/completion' %}active{% endif %}" href="/view/code/completion"
-        >프로그램 코드생성</a
+        >📂프로그램 코드생성</a
       >
     </li>
     <li class="nav-item">
       <a class="nav-link {% if request.path == '/view/code/text2sql' %}active{% endif %}" href="/view/code/text2sql"
-        >SQL생성</a
+        >📂SQL생성</a
       >
     </li>
     <li class="nav-item">
       <a class="nav-link {% if request.path == '/view/code/chat' %}active{% endif %}" href="/view/code/chat"
-        >RAG 생성</a
+        >📂Code 채팅</a
       >
     </li>
     {% if user_info.user_id == "admin" %}
@@ -30,35 +30,35 @@
       <a
         class="nav-link {% if request.path == '/view/admin/vector-index-list' %}active{% endif %}"
         href="/view/admin/vector-index-list"
-        >VectorDB Index 조회</a
+        >🔍VectorDB Index 조회</a
       >
     </li>
     <li class="nav-item">
       <a
         class="nav-link {% if request.path == '/view/admin/vector-data-list' %}active{% endif %}"
         href="/view/admin/vector-data-list"
-        >VectorDB 조회</a
+        >🔍VectorDB 조회</a
       >
     </li>
     <li class="nav-item">
       <a
         class="nav-link {% if request.path == '/view/admin/org-resrc-list' %}active{% endif %}"
         href="/view/admin/org-resrc-list"
-        >원본 리소스 조회</a
+        >🔍원본 리소스 조회</a
       >
     </li>
     <li class="nav-item">
       <a
         class="nav-link {% if request.path == '/view/admin/org-resrc-chunk-list' %}active{% endif %}"
         href="/view/admin/org-resrc-chunk-list"
-        >원본 리소스청크 조회</a
+        >🔍원본 리소스청크 조회</a
       >
     </li>
     <li class="nav-item">
       <a
         class="nav-link {% if request.path == '/view/workflow/task-target-list' %}active{% endif %}"
         href="/view/workflow/task-target-list"
-        >작업 대상 조회 - 벌크배치작업</a
+        >🔍작업 대상 조회 - 벌크배치작업</a
       >
     </li>
 

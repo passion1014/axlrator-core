@@ -19,7 +19,7 @@
       const question = $("#iptQuestion").val();
       if (!question) return;
 
-      $("#iptAnswer").text("");
+      $("#iptAnswer").text("■");
       $("#iptQuestion").text("");
 
       const param = {
@@ -37,12 +37,17 @@
         function (e) {
           const chunk = e.currentTarget.response;
           // 마크다운 데이터를 HTML로 변환
-          $("#iptAnswer").html(marked.parse(chunk));
+          $("#iptAnswer").html(marked.parse(chunk + "■"));
         },
         function (data) {
           console.log("success");
-          //이력생성
+          const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
 
+          $("#iptAnswer").html(
+            $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
+          );
+
+          //이력생성
           const param = {
             title: $("#iptQuestion").val(),
             type_code: "1",
