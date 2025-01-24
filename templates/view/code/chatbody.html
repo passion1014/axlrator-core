@@ -1,0 +1,182 @@
+<script>
+  $(document).ready(function () {
+    //보내기 버튼 클릭
+    $("#btnSend").on("click", function () {
+      const question = $("#textMsg").val();
+      if (!question) return false;
+
+      $("#textMsg").val("");
+
+      //입력버튼 비활성화
+      $("#btnSend").prop("disabled", true);
+      $("#btnSend").removeClass("btn-send-animation");
+
+      // 사용자 질문 내용 출력
+      const humanMessage = `<div class="chat-item type2">
+                  <div class="text">${question}</div>
+                  <div class="msg-icon-btns">
+                      <button class="btn"><i class="bi bi-clipboard"></i></button>
+                      <button class="btn"><i class="bi bi-hand-thumbs-up"></i></button>
+                      <button class="btn"><i class="bi bi-hand-thumbs-down"></i></button>
+                      <button class="btn"><i class="bi bi-volume-up"></i></button>
+                      <button class="btn"><i class="bi bi-arrow-counterclockwise"></i></button>
+                  </div>
+              </div>
+             <div class="markdown-wrap pt-3 border-top">
+                  <div class="markdown-body">
+                      <p></p>
+                  </div>
+              </div>`;
+      $("#chatScroll").html($("#chatScroll").html() + humanMessage);
+
+      const param = {
+        thread_id: "",
+        question: question,
+      };
+
+      common.postStreamRequest(
+        "/codeassist/api/chat",
+        param,
+        function (e) {
+          //stream chunk cllback
+          const chunk = e.currentTarget.response;
+          console.log(chunk);
+          // $(".markdown-body:last>p").html($(".markdown-body:last>p").html() + chunk + "■");
+          $(".markdown-body:last>p").html(chunk);
+        },
+        function (data) {
+          debugger;
+          //stream end callback
+          console.log("success");
+
+          // 마크다운 데이터를 HTML로 변환
+          // $(".markdown-body:last").html(marked.parse($(".markdown-body:last").html()));
+
+          // getChatHistory("1"); //이력 재조회
+
+          //이력생성
+          // const param = {
+          //   title: $("#iptQuestion").val(),
+          //   type_code: "1",
+          //   data: JSON.stringify([
+          //     { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+          //   ]),
+          // };
+          // common.postRequest("/user/api/history", param, function (data) {
+          //   //highlight적용
+          //   $("#iptAnswer pre code").each(function (i, block) {
+          //     hljs.highlightElement(block);
+          //   });
+
+          //   getChatHistory("1"); //이력 재조회
+          // });
+        },
+        function (data) {
+          debugger;
+          //fail callback
+          console.log("error");
+          console.log(e);
+        },
+        function (data) {
+          //complete callback
+          console.log("complete");
+
+          const pTag = $(".markdown-body:last>p");
+          const lastIndex = pTag.html().lastIndexOf("■");
+          pTag.html(pTag.html().slice(0, lastIndex) + pTag.html().slice(lastIndex).replace("■", ""));
+
+          $("#btnSend").prop("disabled", false);
+          $("#btnSend").addClass("btn-send-animation");
+
+          // chatWrap.scrollDown();
+        }
+      );
+    });
+  }); //end of ready()
+
+  const chatWrap = {
+    el: document.getElementById("chatScroll"),
+    getHeight() {
+      return this.el.clientHeight;
+    },
+    getScrollTop() {
+      return this.el.scrollTop;
+    },
+    getScrollHeight() {
+      return this.el.scrollHeight;
+    },
+    scrollDown() {
+      this.el.scrollTo(0, this.getScrollHeight());
+    },
+    eventScroll() {
+      const btnDown = document.querySelector(".btn-scroll-down");
+      this.getScrollTop() + this.getHeight() >= this.getScrollHeight()
+        ? btnDown.classList.add("d-none")
+        : btnDown.classList.remove("d-none");
+    },
+  };
+
+  const clickBtn = function () {
+    const text = document.getElementById("textMsg");
+    const btn = document.getElementById("btnSend");
+    if (!text.value) return false;
+    btn.disabled = true;
+    btn.classList.remove("btn-send-animation");
+    text.value = "";
+  };
+
+  const inputText = function () {
+    const btn = document.getElementById("btnSend");
+    if (event.target.value.length > 0) {
+      btn.disabled = false;
+      btn.classList.add("btn-send-animation");
+    } else {
+      btn.disabled = true;
+      btn.classList.remove("btn-send-animation");
+    }
+  };
+
+  //코드복사 영역
+  document.querySelectorAll("pre").forEach((pre) => {
+    const divTop = document.createElement("div");
+    divTop.classList.add("code-top");
+    const copyBtn = document.createElement("button");
+    copyBtn.classList.add("btn", "text-white", "bi", "bi-clipboard");
+    copyBtn.innerText = "코드복사";
+    divTop.appendChild(copyBtn);
+    copyBtn.addEventListener("click", () => {
+      const code = divTop.parentNode.querySelector("code").textContent;
+      navigator.clipboard.writeText(code);
+    });
+    pre.insertBefore(divTop, pre.firstChild);
+  });
+</script>
+
+<div class="contents-wrap">
+  <div class="tit-wrap">
+    <h2 class="tit01">Code Chat</h2>
+  </div>
+  <div class="row">
+    <div class="col-8">
+      <div class="chat-scroll" id="chatScroll" onscroll="chatWrap.eventScroll()"></div>
+
+      <button class="btn btn-secondary btn-scroll-down d-none" onclick="chatWrap.scrollDown()">
+        <i class="bi bi-chevron-double-down"></i>
+      </button>
+
+      <div class="chat-msg-wrap">
+        <textarea placeholder="질문입력" class="form-control" id="textMsg" oninput="inputText()"></textarea>
+        <div class="chat-file">
+          <input type="file" class="form-control" />
+          <span class="icon-file"><i class="bi bi-paperclip"></i></span>
+        </div>
+        <div class="chat-btns">
+          <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring" disabled>
+            <i class="bi bi-arrow-up"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% include 'view/common/chathistory.html' %}
+  </div>
+</div>
