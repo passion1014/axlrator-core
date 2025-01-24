@@ -1,4 +1,5 @@
-{% extends 'view/common/frame.html' %} {% block title %}용어 변환{% endblock %} {% block content %}
+{% if request.path == "/view/code/chat" %} {% extends 'common/frame.html' %} {% else %} {% include
+'view/common/common.html' %} {% endif %} {% block content %}
 
 <script>
   $(document).ready(function () {
@@ -144,7 +145,7 @@
 
 <div class="contents-wrap">
   <div class="tit-wrap">
-    <h2 class="tit01">RAG 생성</h2>
+    <h2 class="tit01">Code Chat</h2>
   </div>
   <div class="row">
     <div class="col-8">
