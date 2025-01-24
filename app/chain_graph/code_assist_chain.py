@@ -1,10 +1,11 @@
 from langchain_core.prompts import PromptTemplate
-from app.chain_graph.agent_state import AgentState, CodeAssistState
+from langchain_core.runnables import RunnableConfig
+from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
 from app.process.reranker import AlfredReranker
-from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
-from langgraph.graph import StateGraph, END
+from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CHAT_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
+from langgraph.graph import StateGraph, START, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
 from app.vectordb.faiss_vectordb import FaissVectorDB
@@ -21,7 +22,7 @@ class CodeAssistChain:
         self.es_bm25 = ElasticsearchBM25(index_name=index_name)
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
-    def context_node(self, state: CodeAssistState, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
+    def contextual_reranker(self, state: CodeAssistState, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
         # VectorDB / BM25 조회
@@ -115,100 +116,109 @@ class CodeAssistChain:
 
         return state
 
-    def generate_node(self, state: CodeAssistState, prompt: str) -> CodeAssistState:
+    def search_similar_context(self, state: AgentState) -> AgentState:
+        enriched_query = state['question']
+        docs = self.faissVectorDB.search_similar_documents(query=enriched_query, k=2)
+        state['context'] = "\n".join(doc['content'] for doc in docs)
+        return state
+
+
+    def get_table_desc(self, state: AgentState) -> AgentState:
+        context = state['question']
+        table_json = {}
+        table_names = context.split(',')
+        rsrc_table_repo = RSrcTableRepository(session=self.db_session)
+        rsrc_table_column_repo = RSrcTableColumnRepository(session=self.db_session)
+
+        for table_name in table_names:
+            if table_name.strip():
+                table_data = rsrc_table_repo.get_data_by_table_name(table_name=table_name.strip())
+                for table in table_data:
+                    columns = rsrc_table_column_repo.get_data_by_table_id(rsrc_table_id=table.id)
+                    column_jsons = [{
+                        'name': column.column_name,
+                        'type': column.column_type,
+                        'desc': column.column_desc.strip()
+                    } for column in columns]
+
+                    table_json[table_name.strip()] = {
+                        'table_name': table_name.strip(),
+                        'columns': column_jsons
+                    }
+
+        state['context'] = table_json
+        return state
+
+    async def generate_talk(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
+        thread_id = state.get('thread_id', -1)
+        
+        config = RunnableConfig(
+            recursion_limit=10,  # 최대 10개의 노드까지 방문. 그 이상은 RecursionError 발생
+            configurable={"thread_id": thread_id},  # 스레드 ID 설정
+        )
+
+        prompt = CHAT_PROMPT.format(
+            QUESTION=state['question']
+        )
+
+        # 호출
+        chunks = []
+        async for chunk in self.model.astream(prompt, config=config):
+            writer(chunk)
+            chunks.append(chunk)
+            
+            print(str(chunk))
+        state['response'] = "".join(str(chunks))
+        return state
+
+    # below code is no longer used.
+    # each 'task_type' should be broken down into seperate 'def'
+    #   task_type 01 -> generate_nextcode (make next code)
+    #   task_type 02 -> generate_by_instruction (coding as ordered)
+    #   task_type 03 -> generate_comment
+    #   task_type 04 -> generate_DSC_mapdatautil (*DSC=Domain-Specific-Coding)
+    #   task_type 05 -> generate_text2sql
+    #   task_type ?? -> generate_talk
+    def generate_response(self, state: AgentState, task_type: str) -> AgentState:
+        if task_type == "01":
+            prompt = AUTO_CODE_TASK_PROMPT.format(SOURCE_CODE=state['question'])
+        elif task_type == "02":
+            prompt = CODE_ASSIST_TASK_PROMPT.format(
+                REFERENCE_CODE=state['context'],
+                TASK=state['question'],
+                CURRENT_CODE=state['current_code']
+            )
+        elif task_type == "03":
+            prompt = MAKE_CODE_COMMENT_PROMPT.format(SOURCE_CODE=state['question'])
+        elif task_type == "04":
+            prompt = MAKE_MAPDATAUTIL_PROMPT.format(TABLE_DESC=state['context'])
+        elif task_type == "05":
+            prompt = TEXT_SQL_PROMPT.format(TABLE_DESC=state['context'], SQL_REQUEST=state['sql_request'])
+        else:
+            prompt = CODE_ASSIST_TASK_PROMPT.format(
+                REFERENCE_CODE=state['context'],
+                TASK=state['question'],
+                CURRENT_CODE=state['current_code']
+            )
+
         response = self.model.invoke(prompt)
         state['response'] = response
         return state
-
-    def chain_predicate(self):
-        workflow = StateGraph(AgentState)
-        workflow.add_node("context_node", self.context_node)
-        workflow.add_node("generate_node", self.generate_node)
-        workflow.set_entry_point("context_node")
-        workflow.add_edge("context_node", END)
-
-        chain = workflow.compile()
-        chain.with_config(callbacks=[CallbackHandler()])
-        return chain
-
+    
     def get_chain(self, task_type: str):
-        def get_context(state: AgentState) -> AgentState:
-            enriched_query = state['question']
-            docs = self.faissVectorDB.search_similar_documents(query=enriched_query, k=2)
-            state['context'] = self.combine_documents_with_relevance(docs)
-            return state
-
-        def get_table_desc(state: AgentState) -> AgentState:
-            context = state['question']
-            table_json = {}
-            table_names = context.split(',')
-            rsrc_table_repo = RSrcTableRepository(session=self.db_session)
-            rsrc_table_column_repo = RSrcTableColumnRepository(session=self.db_session)
-
-            for table_name in table_names:
-                if table_name.strip():
-                    table_data = rsrc_table_repo.get_data_by_table_name(table_name=table_name.strip())
-                    for table in table_data:
-                        columns = rsrc_table_column_repo.get_data_by_table_id(rsrc_table_id=table.id)
-                        column_jsons = [{
-                            'name': column.column_name,
-                            'type': column.column_type,
-                            'desc': column.column_desc.strip()
-                        } for column in columns]
-
-                        table_json[table_name.strip()] = {
-                            'table_name': table_name.strip(),
-                            'columns': column_jsons
-                        }
-
-            state['context'] = table_json
-            return state
-
-        def generate_response(state: AgentState) -> AgentState:
-            if task_type == "01":
-                prompt = AUTO_CODE_TASK_PROMPT.format(SOURCE_CODE=state['question'])
-            elif task_type == "02":
-                prompt = CODE_ASSIST_TASK_PROMPT.format(
-                    REFERENCE_CODE=state['context'],
-                    TASK=state['question'],
-                    CURRENT_CODE=state['current_code']
-                )
-            elif task_type == "03":
-                prompt = MAKE_CODE_COMMENT_PROMPT.format(SOURCE_CODE=state['question'])
-            elif task_type == "04":
-                prompt = MAKE_MAPDATAUTIL_PROMPT.format(TABLE_DESC=state['context'])
-            elif task_type == "05":
-                prompt = TEXT_SQL_PROMPT.format(TABLE_DESC=state['context'], SQL_REQUEST=state['sql_request'])
-            else:
-                prompt = CODE_ASSIST_TASK_PROMPT.format(
-                    REFERENCE_CODE=state['context'],
-                    TASK=state['question'],
-                    CURRENT_CODE=state['current_code']
-                )
-
-            response = self.model.invoke(prompt)
-            state['response'] = response
-            return state
-
-        workflow = StateGraph(AgentState)
-        if task_type in ["01", "03"]:
-            workflow.add_node("generate_response", generate_response)
-            workflow.set_entry_point("generate_response")
-            workflow.add_edge("generate_response", END)
-        elif task_type in ["02", "04", "05"]:
-            workflow.add_node("get_context", get_context if task_type == "02" else get_table_desc)
-            workflow.add_node("generate_response", generate_response)
-            workflow.set_entry_point("get_context")
-            workflow.add_edge("get_context", "generate_response")
-            workflow.add_edge("generate_response", END)
-
-        chain = workflow.compile()
-        chain.with_config(callbacks=[CallbackHandler()])
-        return chain
-
-    @staticmethod
-    def combine_documents_with_relevance(docs):
-        return "\n".join(doc['content'] for doc in docs)
+        if task_type in ["chat"]:
+            memory = HybridSaver()
+            
+            workflow = StateGraph(CodeAssistChatState)
+            workflow.add_node("generate_talk", self.generate_talk)
+            workflow.set_entry_point("generate_talk")
+            workflow.add_edge("generate_talk", END)
+            chain = workflow.compile(checkpointer=memory).with_config(callbacks=[CallbackHandler()])
+            
+            # workflow.get_state(config)
+            
+            return chain
+        pass
 
 
 # ------------------------------------------------
@@ -385,28 +395,3 @@ def combine_documents_with_relevance(docs):
     combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context
 
-
-# 테스트 실행
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    import os
-
-    print(f"### {os.getcwd()}")
-
-    # 작업디렉토리를 상위경로로 변경
-    parent_dir = os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
-    os.chdir(parent_dir)
-
-    # 환경변수 설정
-    load_dotenv(dotenv_path=".env.testcase", override=True)
-
-    from app.db_model.database import SessionLocal
-    from app.vectordb.faiss_vectordb import FaissVectorDB
-    # session = SessionLocal()
-    # faissVectorDB = FaissVectorDB(db_session=session, index_name='cg_code_assist')    
-        
-    state = CodeAssistState()
-    state.question = "스페인의 비는 어디에 내리나요?"
-    
-    code_assist_chain = CodeAssistChain()
-    code_assist_state = code_assist_chain.context_node(state=state, k=3)

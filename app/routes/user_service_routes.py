@@ -1,29 +1,26 @@
 from datetime import datetime
-import json
-from app.config import setup_logging
-from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
-from app.db_model.database import SessionLocal
-from app.db_model.database_models import ChatHistory, UserInfo
-from fastapi import FastAPI, APIRouter, Request
-from fastapi.responses import JSONResponse, RedirectResponse
-from starlette.middleware.sessions import SessionMiddleware
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional
 from typing import List
+# from app.config import setup_logging
+from app.db_model.database import SessionLocal
+from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
+from app.db_model.database_models import ChatHistory, UserInfo
 
 # 라우터 정의
 router = APIRouter()
 
-class LoginRequest(BaseModel):
+class LoginInfo(BaseModel):
     user_id: str
     password: str
-class HistoryRequest(BaseModel):
+class HistoryInfo(BaseModel):
     data: str
     title: str
     type_code: str
 
 @router.post("/api/login")
-async def login(request: Request, loginRequest: LoginRequest):
+async def login(request: Request, loginRequest: LoginInfo):
     print(f"### {loginRequest}")
 
     user_service = UserService()
@@ -73,7 +70,7 @@ async def login(request: Request):
 @router.get("/api/history")
 async def history(request: Request, type_code: str):
     print(f"### {request}")
-     # 세션에서 사용자 정보 가져오기
+    # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
     print(user_info)
 
@@ -84,16 +81,15 @@ async def history(request: Request, type_code: str):
 
 
 @router.post("/api/history")
-async def create_chat_history(request: Request, historyRequest: HistoryRequest):
-    print(f"### aaaa {historyRequest}")
-     # 세션에서 사용자 정보 가져오기
+async def create_chat_history(request: Request, historyInfo: HistoryInfo):
+    print(f"### aaaa {historyInfo}")
+    # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 
-
     history = {
-        'title': historyRequest.title,
-        'type_code': historyRequest.type_code,
-        'data': historyRequest.data,
+        'title': historyInfo.title,
+        'type_code': historyInfo.type_code,
+        'data': historyInfo.data,
         'user_info_id': user_info['id'],
         'modified_at': datetime.now(),
         'created_at':  datetime.now(),
@@ -105,9 +101,10 @@ async def create_chat_history(request: Request, historyRequest: HistoryRequest):
 
     return {"message": ""}
 
+
 @router.post("/api/deletehistory")
 async def delete_chat_history(request: Request):
-     # 세션에서 사용자 정보 가져오기
+    # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
     
     data = await request.json()
@@ -119,7 +116,7 @@ async def delete_chat_history(request: Request):
 
 @router.post("/api/deleteallhistory")
 async def delete_all_chat_history(request: Request):
-     # 세션에서 사용자 정보 가져오기
+    # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 
     chatHistoryService = ChatHistoryService()
@@ -149,55 +146,30 @@ class UserService:
     def get_user_by_email(self, email: str):
         """
         주어진 이메일로 사용자를 조회합니다.
-        
-        Args:
-            email: 조회할 사용자 이메일
-            
-        Returns:
-            조회된 사용자 정보. 없으면 None 반환
         """
         return self.user_info_repository.get_user_by_email(email)
 
     def get_all_users(self):
         """
         모든 사용자를 조회합니다.
-        
-        Returns:
-            모든 사용자 정보 리스트
         """
         return self.user_info_repository.get_all_users()
 
     def create_user(self, user_data: dict):
         """
         새로운 사용자를 생성합니다.
-        
-        Args:
-            user_data: 생성할 사용자 정보
-            
-        Returns:
-            생성된 사용자 정보
         """
         return self.user_info_repository.create_user(user_data)
 
     def update_user(self, user_id: str, user_data: dict):
         """
         주어진 사용자 ID로 사용자를 업데이트합니다.
-        
-        Args:
-            user_id: 업데이트할 사용자 ID
-            user_data: 업데이트할 사용자 정보
-            
-        Returns:
-            업데이트된 사용자 정보
         """
         return self.user_info_repository.update_user(user_id, user_data)
 
     def delete_user(self, user_id: str):
         """
         주어진 사용자 ID로 사용자를 삭제합니다.
-        
-        Args:
-            user_id: 삭제할 사용자 ID
         """
         self.user_info_repository.delete_user(user_id)
 
@@ -214,10 +186,8 @@ class ChatHistoryService:
     def create_chat_history(self, history: dict) -> ChatHistory:
         return self.chat_history_repository.create_chat_history(history)  
     
-       
     def delete_chat_history(self, chat_id: int, userInfo_id: int) -> ChatHistory:
         return self.chat_history_repository.delete_chat_history(chat_id, userInfo_id)  
     
-       
     def delete_all_chat_history(self, user_info_id: int) -> ChatHistory:
         return self.chat_history_repository.delete_all_chat_history(user_info_id)  

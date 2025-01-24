@@ -214,3 +214,9 @@ Using the **<Table Info List>**, write SQL according to the details provided in 
 **<SQL Request>**
 
 """)
+
+
+CHAT_PROMPT = PromptTemplate.from_template("""
+{QUESTION}
+""")
+
