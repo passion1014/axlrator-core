@@ -102,7 +102,7 @@ textarea {
 }
 
 .chat-wrap {
-  height: 100vh;
+  height: 85vh;
   display: flex;
   flex-direction: column;
 }
@@ -375,4 +375,11 @@ li.pointer:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.codecopy {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 10;
 }
