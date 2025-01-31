@@ -22,7 +22,7 @@
                       <button class="btn"><i class="bi bi-arrow-counterclockwise"></i></button>
                   </div>
               </div>
-             <div class="markdown-wrap pt-3 border-top">
+             <div class="markdown-wrap pt-3 border-top pb-3">
                   <div class="markdown-body">
                       <p></p>
                   </div>
@@ -42,15 +42,17 @@
           const chunk = e.currentTarget.response;
           console.log(chunk);
           // $(".markdown-body:last>p").html($(".markdown-body:last>p").html() + chunk + "■");
-          $(".markdown-body:last>p").html(chunk);
+          //$(".markdown-body:last>p").html(chunk);
+
+          // 마크다운 데이터를 HTML로 변환
+          $(".markdown-body:last>p").html(marked.parse(chunk));
         },
         function (data) {
-          debugger;
           //stream end callback
           console.log("success");
 
           // 마크다운 데이터를 HTML로 변환
-          // $(".markdown-body:last").html(marked.parse($(".markdown-body:last").html()));
+          //$(".markdown-body:last").html(marked.parse($(".markdown-body:last").html()));
 
           // getChatHistory("1"); //이력 재조회
 
@@ -72,7 +74,6 @@
           // });
         },
         function (data) {
-          debugger;
           //fail callback
           console.log("error");
           console.log(e);
