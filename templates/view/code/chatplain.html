@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chat CGAI</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}화면{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {% include 'view/common/common.html' %}
   </head>
   <style>
@@ -23,9 +27,11 @@
     .chat-scroll {
       width: 90%;
     }
-
-    .btn-scroll-down {
-      bottom: 170px;
+    .chat-msg-wrap {
+      width: 90%;
+    }
+    .tn-scroll-down {
+      bottom: 269px;
     }
   </style>
   <body>

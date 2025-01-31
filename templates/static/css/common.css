@@ -102,7 +102,7 @@ textarea {
 }
 
 .chat-wrap {
-  height: 85vh;
+  height: 76vh;
   display: flex;
   flex-direction: column;
 }
@@ -200,7 +200,7 @@ textarea {
 .btn-scroll-down {
   opacity: 0.7;
   position: absolute;
-  bottom: 100px;
+  bottom: 200px;
   left: calc(50% - 19px);
   z-index: 2;
   height: 30px;
