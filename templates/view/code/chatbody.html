@@ -46,6 +46,11 @@
           // 마크다운 데이터를 HTML로 변환
           $(".markdown-body:last>p").html(marked.parse(chunk + "■"));
 
+          //highlight적용
+          $(".markdown-body:last pre code").each(function (i, block) {
+            hljs.highlightElement(block);
+          });
+
           chatWrap.scrollDown();
 
           //window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -132,7 +137,6 @@
           //   });
           // });
 
-          //코드에 복사 버튼 출력
           chatWrap.scrollDown();
         }
       );
@@ -203,9 +207,8 @@
 
   //클립보드 복사
   const copyToClipboard = function (e) {
-    // e.preventDefault();
     const target = $(e.currentTarget);
-    const text = target.parents("code").find("div.text").text();
+    const text = target.parents("div.chat-item").find("div.text").text();
 
     navigator.clipboard.writeText(text).then(
       function () {
