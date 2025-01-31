@@ -139,8 +139,6 @@ class UserService:
         Returns:
             조회된 사용자 정보. 없으면 None 반환
         """        
-        if (user_id == 'admin'): # admin은 임시로 일단 로그인
-            return UserInfo(user_id='admin', password='admin', email='admin@temp.com', user_name='관리자', is_active=True)
         return self.user_info_repository.get_user_by_id(user_id)
 
     def get_user_by_email(self, email: str):

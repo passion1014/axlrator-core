@@ -60,7 +60,7 @@ const common = {
       },
     });
   },
-  postStreamRequest: function (url, params, onprogress, successFunc, failFunc) {
+  postStreamRequest: function (url, params, onprogress, successFunc, failFunc, completeFunc) {
     $.ajax({
       url: url,
       type: "POST",
@@ -81,6 +81,9 @@ const common = {
       },
       fail: function (data) {
         if (failFunc) failFunc(data);
+      },
+      complete: function () {
+        if (completeFunc) completeFunc();
       },
     });
   },

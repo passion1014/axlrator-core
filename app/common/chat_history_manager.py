@@ -37,6 +37,8 @@ def merge_ai_messages(messages: list[Dict[str, Any]]) -> list[ChatInfo]:
     return chat_infos
 
 def checkpoint_to_code_chat_info(thead_id, checkpoint) -> CodeChatInfo:
+    if checkpoint is None:
+        return None 
     messages = checkpoint.get('channel_values')['messages']
     
     human_messages = [msg for msg in messages if isinstance(msg, HumanMessage)]
