@@ -6,6 +6,7 @@
       if (!question) return false;
 
       $("#textMsg").val("");
+      disableSendButton(true);
 
       //입력버튼 비활성화
       $("#btnSend").prop("disabled", true);
@@ -89,6 +90,7 @@
           $("#btnSend").prop("disabled", false);
           $("#btnSend").addClass("btn-send-animation");
 
+          disableSendButton(false);
           // chatWrap.scrollDown();
         }
       );
@@ -126,14 +128,14 @@
     text.value = "";
   };
 
-  const inputText = function () {
+  const disableSendButton = function (disabledYn) {
     const btn = document.getElementById("btnSend");
-    if (event.target.value.length > 0) {
-      btn.disabled = false;
-      btn.classList.add("btn-send-animation");
-    } else {
+    if (disabledYn) {
       btn.disabled = true;
       btn.classList.remove("btn-send-animation");
+    } else {
+      btn.disabled = false;
+      btn.classList.add("btn-send-animation");
     }
   };
 
@@ -151,6 +153,14 @@
     });
     pre.insertBefore(divTop, pre.firstChild);
   });
+
+  function handleQuestionEnter(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      disableSendButton();
+      $("#btnSend").click();
+    }
+  }
 </script>
 
 <div class="contents-wrap">
@@ -166,7 +176,12 @@
       </button>
 
       <div class="chat-msg-wrap">
-        <textarea placeholder="질문입력" class="form-control" id="textMsg" oninput="inputText()"></textarea>
+        <textarea
+          placeholder="질문입력"
+          class="form-control"
+          id="textMsg"
+          onkeydown="handleQuestionEnter(event)"
+        ></textarea>
         <div class="chat-file">
           <input type="file" class="form-control" />
           <span class="icon-file"><i class="bi bi-paperclip"></i></span>
