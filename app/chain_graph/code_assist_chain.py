@@ -22,7 +22,7 @@ class CodeAssistChain:
         self.es_bm25 = ElasticsearchBM25(index_name=index_name)
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
-    def contextual_reranker(self, state: CodeAssistState, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
+    def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
         # VectorDB / BM25 조회
@@ -35,11 +35,10 @@ class CodeAssistChain:
         # VectorDB의 doc_id, original_index값 추출
         ranked_chunk_ids = [
             (
-                result['metadata'].get('doc_id', None), 
-                result['metadata'].get('original_index', None)
+                result['org_resrc_id'], 
+                result['seq']
             )
             for result in semantic_results
-            if 'metadata' in result and isinstance(result['metadata'], dict)
         ]
 
         # BM25조회 결과의 doc_id, original_index값 추출
@@ -79,11 +78,10 @@ class CodeAssistChain:
         # docid와 content/value를 매핑한 딕셔너리 생성
         semantic_docid_to_content = {
             (
-                result['metadata'].get('doc_id', None),
-                result['metadata'].get('original_index', None)
-            ): result.get('content', '')
+                result['org_resrc_id'], 
+                result['seq']
+            ): result['content']
             for result in semantic_results
-            if 'metadata' in result and isinstance(result['metadata'], dict)
         }
         bm25_docid_to_value = {
             (
@@ -121,7 +119,6 @@ class CodeAssistChain:
         docs = self.faissVectorDB.search_similar_documents(query=enriched_query, k=2)
         state['context'] = "\n".join(doc['content'] for doc in docs)
         return state
-
 
     def get_table_desc(self, state: AgentState) -> AgentState:
         context = state['question']
@@ -179,46 +176,41 @@ class CodeAssistChain:
     #   task_type 04 -> generate_DSC_mapdatautil (*DSC=Domain-Specific-Coding)
     #   task_type 05 -> generate_text2sql
     #   task_type ?? -> generate_talk
-    def generate_response(self, state: AgentState, task_type: str) -> AgentState:
-        if task_type == "01":
-            prompt = AUTO_CODE_TASK_PROMPT.format(SOURCE_CODE=state['question'])
-        elif task_type == "02":
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
-                TASK=state['question'],
-                CURRENT_CODE=state['current_code']
-            )
-        elif task_type == "03":
-            prompt = MAKE_CODE_COMMENT_PROMPT.format(SOURCE_CODE=state['question'])
-        elif task_type == "04":
-            prompt = MAKE_MAPDATAUTIL_PROMPT.format(TABLE_DESC=state['context'])
-        elif task_type == "05":
-            prompt = TEXT_SQL_PROMPT.format(TABLE_DESC=state['context'], SQL_REQUEST=state['sql_request'])
-        else:
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
-                TASK=state['question'],
-                CURRENT_CODE=state['current_code']
-            )
-
-        response = self.model.invoke(prompt)
-        state['response'] = response
+    # def generate_response(self, state: AgentState, task_type: str) -> AgentState:
+    async def generate_response_astream(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
+        prompt = state['prompt']
+        print(f'### generate_response_astream\n = {prompt}')
+        
+        # Stream 방식
+        chunks = []
+        async for chunk in self.model.astream(prompt):
+            writer(chunk)
+            chunks.append(chunk)
+        state['response'] = "".join(str(chunks))
         return state
     
-    def get_chain(self, task_type: str):
-        if task_type in ["chat"]:
-            memory = HybridSaver()
-            
-            workflow = StateGraph(CodeAssistChatState)
-            workflow.add_node("generate_talk", self.generate_talk)
-            workflow.set_entry_point("generate_talk")
-            workflow.add_edge("generate_talk", END)
-            chain = workflow.compile(checkpointer=memory).with_config(callbacks=[CallbackHandler()])
-            
-            # workflow.get_state(config)
-            
-            return chain
-        pass
+    def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
+        state['prompt'] = CODE_ASSIST_TASK_PROMPT.format(
+            REFERENCE_CODE=state['context'],
+            TASK=state['question'],
+            CURRENT_CODE=state['current_code']
+        )
+
+    def chain_codeassist(self) -> CodeAssistState:
+        graph = StateGraph(CodeAssistState)
+        graph.add_node("contextual_reranker", self.contextual_reranker) # 컨텍스트 정보 조회
+        graph.add_node("choose_prompt_for_task", self.choose_prompt_for_task) # 프롬프트 선택
+        graph.add_node("generate_response_astream", self.generate_response_astream) # 모델호출
+        
+        graph.set_entry_point("contextual_reranker")
+        graph.add_edge("contextual_reranker", "choose_prompt_for_task")
+        graph.add_edge("choose_prompt_for_task", "generate_response_astream")
+        graph.add_edge("generate_response_astream", END)
+
+        chain = graph.compile() # CompiledStateGraph
+        chain.with_config(callbacks=[CallbackHandler()])
+        
+        return chain
 
 
 # ------------------------------------------------

@@ -13,6 +13,7 @@ from langchain.schema import Document
 
 
 from app.db_model.database import SessionLocal
+from app.utils import get_rerank_model, get_server_type
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
 
@@ -78,14 +79,8 @@ class AlfredReranker:
         - LangChain 등의 프레임워크에서 CrossEncoderReranker 컴포넌트를 통해 쉽게 통합 가능
 
         '''
-
-        # *** ollama로 변경 필요
-
-        # 모델 초기화
-        model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-v2-m3") #TODO model명은 환경변수로 추출
-
         # 상위 3개의 문서 선택
-        compressor = CrossEncoderReranker(model=model, top_n=3)
+        compressor = CrossEncoderReranker(model="BAAI/bge-reranker-v2-m3", top_n=3)
 
         # 문서 압축 검색기 초기화
         compression_retriever = ContextualCompressionRetriever(
@@ -117,9 +112,9 @@ class AlfredReranker:
         반환값:
             List[Dict[str, Any]]: 상위 k개의 재정렬된 문서 목록.
         '''
-
+        
         # Initialize the cross-encoder model
-        model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-v2-m3") # TODO: Model name can be externalized
+        model = get_rerank_model()
 
         # Convert input documents to LangChain's Document format
         langchain_docs = [Document(page_content=doc["content"]) for doc in documents]

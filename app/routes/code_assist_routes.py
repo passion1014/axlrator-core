@@ -24,34 +24,39 @@ code_assist = CodeAssistChain(index_name="cg_code_assist")
 
 
 @router.post("/api/predicate")
-async def predicate(request: CodeAssistInfo):
-    chain = code_assist.get_chain(task_type="01")
-    
-    state = {"indexname": request.indexname, "question": request.question, "current_code": request.current_code}
-    response = chain.invoke(state)
-    return {"response": response}
-
-@router.post("/api/code")
-# async def sample_endpoint(request: CodeAssistInfo):
-async def sample_endpoint(request: Request):
+async def predicate(request: Request):
     try:
         body = await request.json()
         message = CodeAssistInfo.model_validate(body)
 
-        # chain 생성
-        chain = code_assist.get_chain(task_type="01")
-
-        # chain 실행
-        response = chain.invoke(message)
-
         # 결과 반환
-        return {"response": response}
+        return {"response": ''}
     
     except Exception as e:
         return JSONResponse(
             content={"error": f"An error occurred: {str(e)}"},
             status_code=500
         )
+
+
+@router.post("/api/code")
+async def sample_endpoint(request: Request):
+    # try:
+        body = await request.json()
+        message = CodeAssistInfo.model_validate(body)
+
+        async def stream_response() :
+            async for chunk in code_assist.chain_codeassist().astream(message, stream_mode="custom"):
+                print("## chucnk=", chunk.content)
+                yield chunk.content
+
+        return StreamingResponse(stream_response(), media_type="text/event-stream")
+    
+    # except Exception as e:
+    #     return JSONResponse(
+    #         content={"error": f"An error occurred: {str(e)}"},
+    #         status_code=500
+    #     )
 
 
 @router.post("/api/autocode")
@@ -123,7 +128,6 @@ async def chat(request: Request):
     )
     checkpointer = AsyncPostgresSaver(pool)
     checkpoint = await checkpointer.aget(config)
-
 
     code_chat_info = checkpoint_to_code_chat_info(thead_id=thread_id, checkpoint=checkpoint)
 

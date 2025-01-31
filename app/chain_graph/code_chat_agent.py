@@ -99,16 +99,16 @@ class CodeChatAgent:
         tools = [self.get_weather]
         # self.model = self.model.bind_tools(tools)
         
-        workflow = StateGraph(CodeChatState)
-        workflow.add_node("agent", self.call_model)
-        workflow.add_node("tools", self.tool_node)
+        graph = StateGraph(CodeChatState)
+        graph.add_node("agent", self.call_model)
+        graph.add_node("tools", self.tool_node)
 
         # Set the entrypoint as `agent`
         # This means that this node is the first one called
-        workflow.set_entry_point("agent")
+        graph.set_entry_point("agent")
 
         # We now add a conditional edge
-        workflow.add_conditional_edges(
+        graph.add_conditional_edges(
             # First, we define the start node. We use `agent`.
             # This means these are the edges taken after the `agent` node is called.
             "agent",
@@ -130,10 +130,10 @@ class CodeChatAgent:
 
         # We now add a normal edge from `tools` to `agent`.
         # This means that after `tools` is called, `agent` node is called next.
-        workflow.add_edge("tools", "agent")
+        graph.add_edge("tools", "agent")
 
-        graph = workflow.compile(checkpointer=checkpointer)
-        return graph, thread_id
+        chain = graph.compile(checkpointer=checkpointer)
+        return chain, thread_id
 
 
 if __name__ == "__main__":

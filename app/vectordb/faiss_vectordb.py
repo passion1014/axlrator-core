@@ -81,10 +81,12 @@ class PostgresDocstore:
             .join(FaissInfo, ChunkedData.faiss_info_id == FaissInfo.id)
             .where((ChunkedData.vector_index == vector_index) & (FaissInfo.index_name == self.index_name))
         )
-        result = self.session.execute(stmt).scalar_one_or_none()
+        chunked_data = self.session.execute(stmt).scalar_one_or_none()
         
-        if result:
-            return {"vector_index": vector_index, "content": result.content, "metadata": result.document_metadata}
+        if chunked_data:
+            result = chunked_data.__dict__
+            result['vector_index'] = vector_index
+            return result
         return None
 
     def delete_document(self, document_id) -> None:
@@ -147,6 +149,11 @@ class FaissVectorDB:
                 docstore=self.psql_docstore,
                 index_to_docstore_id={},
             )
+
+            # 없으면 인덱스 생성
+            if not os.path.exists(self.index_file_path):
+                faiss.write_index(self.vector_store.index, self.index_file_path)
+                print(f"### {self.index_name} 인덱스를 신규로 생성합니다.")
 
             # 인덱스 파일에서 로드
             self.read_index()

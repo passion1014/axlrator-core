@@ -60,6 +60,39 @@ def get_llm_model():
     
     return model
 
+def get_rerank_model():
+    '''
+    Rerank 모델 가져오기
+    '''
+    rerank_model_name = os.getenv("RERANK_MODEL_NAME")
+    model = None
+
+    if rerank_model_name in ['BAAI/bge-reranker-v2-m3']:
+        if get_server_type() == "P":
+            model_kwargs = {}
+        else:
+            # model_kwargs = {'device': 'cpu', 'trust_remote_code': True, "batch_size": 2,}
+            model_kwargs = {'device': 'cpu',}
+
+        from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+        model = HuggingFaceCrossEncoder(model_name=rerank_model_name, model_kwargs=model_kwargs)
+    else:
+        raise ValueError("지원되지 않는 Rerank 모델입니다.")
+    
+    return model
+
+def get_server_type():
+    """
+    서버 타입을 .env 파일에서 읽어옵니다.
+    """
+    environment = os.getenv("ENVIRONMENT")
+    if environment == "production":
+        return "P"
+    elif environment == "development":
+        return "D"
+    else:
+        raise ValueError("알 수 없는 서버 타입입니다.")
+
 def combine_documents(docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"):
     doc_strings = [format_document(doc, document_prompt) for doc in docs]
     return document_separator.join(doc_strings)
