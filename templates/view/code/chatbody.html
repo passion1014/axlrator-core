@@ -8,10 +8,6 @@
       $("#textMsg").val("");
       disableSendButton(true);
 
-      //입력버튼 비활성화
-      $("#btnSend").prop("disabled", true);
-      $("#btnSend").removeClass("btn-send-animation");
-
       // 사용자 질문 내용 출력
       const humanMessage = `<div class="chat-item type2">
                   <div class="text">${question}</div>
@@ -47,6 +43,7 @@
 
           // 마크다운 데이터를 HTML로 변환
           $(".markdown-body:last>p").html(marked.parse(chunk));
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         },
         function (data) {
           //stream end callback
@@ -91,7 +88,6 @@
           $("#btnSend").addClass("btn-send-animation");
 
           disableSendButton(false);
-          // chatWrap.scrollDown();
         }
       );
     });
@@ -119,15 +115,7 @@
     },
   };
 
-  const clickBtn = function () {
-    const text = document.getElementById("textMsg");
-    const btn = document.getElementById("btnSend");
-    if (!text.value) return false;
-    btn.disabled = true;
-    btn.classList.remove("btn-send-animation");
-    text.value = "";
-  };
-
+  // Send 버튼 활성화/비활성화
   const disableSendButton = function (disabledYn) {
     const btn = document.getElementById("btnSend");
     if (disabledYn) {
@@ -154,6 +142,7 @@
     pre.insertBefore(divTop, pre.firstChild);
   });
 
+  // Enter 키 입력시 질문 전송
   function handleQuestionEnter(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -187,7 +176,7 @@
           <span class="icon-file"><i class="bi bi-paperclip"></i></span>
         </div>
         <div class="chat-btns">
-          <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring" disabled>
+          <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring">
             <i class="bi bi-arrow-up"></i>
           </button>
         </div>
