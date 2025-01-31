@@ -84,6 +84,11 @@
           $("#btnSend").addClass("btn-send-animation");
 
           disableSendButton(false);
+
+          //highlight적용
+          $(".markdown-body:last pre code").each(function (i, block) {
+            hljs.highlightElement(block);
+          });
         }
       );
     });
