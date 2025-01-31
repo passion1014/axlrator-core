@@ -12,11 +12,7 @@
       const humanMessage = `<div class="chat-item type2">
                   <div class="text">${question}</div>
                   <div class="msg-icon-btns">
-                      <button class="btn"><i class="bi bi-clipboard"></i></button>
-                      <button class="btn"><i class="bi bi-hand-thumbs-up"></i></button>
-                      <button class="btn"><i class="bi bi-hand-thumbs-down"></i></button>
-                      <button class="btn"><i class="bi bi-volume-up"></i></button>
-                      <button class="btn"><i class="bi bi-arrow-counterclockwise"></i></button>
+                      <button class="btn" onclick="copyToClipboard(event)"><i class="bi bi-copy"></i></button>                      
                   </div>
               </div>
              <div class="markdown-wrap pt-3 border-top pb-3">
@@ -149,6 +145,25 @@
     });
     pre.insertBefore(divTop, pre.firstChild);
   });
+
+  const copyToClipboard = function (e) {
+    // e.preventDefault();
+    const target = $(e.currentTarget);
+    const text = target.parents("div.chat-item").find("div.text").text();
+
+    navigator.clipboard.writeText(text).then(
+      function () {
+        let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+        if (icon.hasClass("bi-copy")) {
+          icon.removeClass("bi-copy").addClass("bi-check"); // 아이콘 변경
+        }
+        console.log("Copying to clipboard was successful!");
+      },
+      function (err) {
+        console.error("Could not copy text: ", err);
+      }
+    );
+  };
 </script>
 
 <div class="contents-wrap">
