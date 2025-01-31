@@ -91,6 +91,14 @@
         }
       );
     });
+
+    // Enter 키 입력시 질문 전송
+    $("#textMsg").keydown(function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        $("#btnSend").click();
+      }
+    });
   }); //end of ready()
 
   const chatWrap = {
@@ -141,15 +149,6 @@
     });
     pre.insertBefore(divTop, pre.firstChild);
   });
-
-  // Enter 키 입력시 질문 전송
-  function handleQuestionEnter(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      disableSendButton();
-      $("#btnSend").click();
-    }
-  }
 </script>
 
 <div class="contents-wrap">
@@ -165,12 +164,7 @@
       </button>
 
       <div class="chat-msg-wrap">
-        <textarea
-          placeholder="질문입력"
-          class="form-control"
-          id="textMsg"
-          onkeydown="handleQuestionEnter(event)"
-        ></textarea>
+        <textarea placeholder="질문입력" class="form-control" id="textMsg"></textarea>
         <div class="chat-file">
           <input type="file" class="form-control" />
           <span class="icon-file"><i class="bi bi-paperclip"></i></span>
