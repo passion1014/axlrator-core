@@ -176,13 +176,16 @@
     <h2 class="tit01">Code Chat</h2>
   </div>
   <div class="row">
-    <div class="col-8">
+    <div class="col-8 chat-wrap">
+      <!--채팅영역-->
       <div class="chat-scroll" id="chatScroll" onscroll="chatWrap.eventScroll()"></div>
 
+      <!--스크롤 다운 버튼 -->
       <button class="btn btn-secondary btn-scroll-down d-none" onclick="chatWrap.scrollDown()">
         <i class="bi bi-chevron-double-down"></i>
       </button>
 
+      <!--질문영역 -->
       <div class="chat-msg-wrap">
         <textarea placeholder="질문입력" class="form-control" id="textMsg"></textarea>
         <div class="chat-file">
