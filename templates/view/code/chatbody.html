@@ -17,7 +17,7 @@
               </div>
              <div class="markdown-wrap pt-3 border-top pb-3">
                   <div class="markdown-body">
-                      <p></p>
+                      <p>■</p>
                   </div>
               </div>`;
       $("#chatScroll").html($("#chatScroll").html() + humanMessage);
@@ -38,7 +38,7 @@
           //$(".markdown-body:last>p").html(chunk);
 
           // 마크다운 데이터를 HTML로 변환
-          $(".markdown-body:last>p").html(marked.parse(chunk));
+          $(".markdown-body:last>p").html(marked.parse(chunk + "■"));
           window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         },
         function (data) {
