@@ -16,10 +16,7 @@
 
       // 사용자 질문 내용 출력
       const humanMessage = `<div class="chat-item type2">
-                  <div class="text">${question}</div>
-                  <div class="msg-icon-btns">
-                      <button class="btn" onclick="copyToClipboard(event)"><i class="bi bi-copy"></i></button>                      
-                  </div>
+                  <div class="text">${question}</div>                  
               </div>
              <div class="markdown-wrap pt-3 border-top pb-3">
                   <div class="markdown-body">
@@ -204,25 +201,6 @@
     });
     pre.insertBefore(divTop, pre.firstChild);
   });
-
-  //클립보드 복사
-  const copyToClipboard = function (e) {
-    const target = $(e.currentTarget);
-    const text = target.parents("div.chat-item").find("div.text").text();
-
-    navigator.clipboard.writeText(text).then(
-      function () {
-        let icon = target.find("i"); // 버튼 내부 아이콘 찾기
-        if (icon.hasClass("bi-copy")) {
-          icon.removeClass("bi-copy").addClass("bi-check"); // 아이콘 변경
-        }
-        console.log("Copying to clipboard was successful!");
-      },
-      function (err) {
-        console.error("Could not copy text: ", err);
-      }
-    );
-  };
 
   //클립보드 복사
   const copyCodeToClipboard = function (e) {
