@@ -6,25 +6,18 @@
       if (!question) return false;
 
       $("#textMsg").val("");
-
-      //입력버튼 비활성화
-      $("#btnSend").prop("disabled", true);
-      $("#btnSend").removeClass("btn-send-animation");
+      disableSendButton(true);
 
       // 사용자 질문 내용 출력
       const humanMessage = `<div class="chat-item type2">
                   <div class="text">${question}</div>
                   <div class="msg-icon-btns">
-                      <button class="btn"><i class="bi bi-clipboard"></i></button>
-                      <button class="btn"><i class="bi bi-hand-thumbs-up"></i></button>
-                      <button class="btn"><i class="bi bi-hand-thumbs-down"></i></button>
-                      <button class="btn"><i class="bi bi-volume-up"></i></button>
-                      <button class="btn"><i class="bi bi-arrow-counterclockwise"></i></button>
+                      <button class="btn" onclick="copyToClipboard(event)"><i class="bi bi-copy"></i></button>                      
                   </div>
               </div>
-             <div class="markdown-wrap pt-3 border-top">
+             <div class="markdown-wrap pt-3 border-top pb-3">
                   <div class="markdown-body">
-                      <p></p>
+                      <p>■</p>
                   </div>
               </div>`;
       $("#chatScroll").html($("#chatScroll").html() + humanMessage);
@@ -42,15 +35,18 @@
           const chunk = e.currentTarget.response;
           console.log(chunk);
           // $(".markdown-body:last>p").html($(".markdown-body:last>p").html() + chunk + "■");
-          $(".markdown-body:last>p").html(chunk);
+          //$(".markdown-body:last>p").html(chunk);
+
+          // 마크다운 데이터를 HTML로 변환
+          $(".markdown-body:last>p").html(marked.parse(chunk + "■"));
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         },
         function (data) {
-          debugger;
           //stream end callback
           console.log("success");
 
           // 마크다운 데이터를 HTML로 변환
-          // $(".markdown-body:last").html(marked.parse($(".markdown-body:last").html()));
+          //$(".markdown-body:last").html(marked.parse($(".markdown-body:last").html()));
 
           // getChatHistory("1"); //이력 재조회
 
@@ -72,7 +68,6 @@
           // });
         },
         function (data) {
-          debugger;
           //fail callback
           console.log("error");
           console.log(e);
@@ -88,9 +83,22 @@
           $("#btnSend").prop("disabled", false);
           $("#btnSend").addClass("btn-send-animation");
 
-          // chatWrap.scrollDown();
+          disableSendButton(false);
+
+          //highlight적용
+          $(".markdown-body:last pre code").each(function (i, block) {
+            hljs.highlightElement(block);
+          });
         }
       );
+    });
+
+    // Enter 키 입력시 질문 전송
+    $("#textMsg").keydown(function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        $("#btnSend").click();
+      }
     });
   }); //end of ready()
 
@@ -116,23 +124,15 @@
     },
   };
 
-  const clickBtn = function () {
-    const text = document.getElementById("textMsg");
+  // Send 버튼 활성화/비활성화
+  const disableSendButton = function (disabledYn) {
     const btn = document.getElementById("btnSend");
-    if (!text.value) return false;
-    btn.disabled = true;
-    btn.classList.remove("btn-send-animation");
-    text.value = "";
-  };
-
-  const inputText = function () {
-    const btn = document.getElementById("btnSend");
-    if (event.target.value.length > 0) {
-      btn.disabled = false;
-      btn.classList.add("btn-send-animation");
-    } else {
+    if (disabledYn) {
       btn.disabled = true;
       btn.classList.remove("btn-send-animation");
+    } else {
+      btn.disabled = false;
+      btn.classList.add("btn-send-animation");
     }
   };
 
@@ -150,6 +150,25 @@
     });
     pre.insertBefore(divTop, pre.firstChild);
   });
+
+  const copyToClipboard = function (e) {
+    // e.preventDefault();
+    const target = $(e.currentTarget);
+    const text = target.parents("div.chat-item").find("div.text").text();
+
+    navigator.clipboard.writeText(text).then(
+      function () {
+        let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+        if (icon.hasClass("bi-copy")) {
+          icon.removeClass("bi-copy").addClass("bi-check"); // 아이콘 변경
+        }
+        console.log("Copying to clipboard was successful!");
+      },
+      function (err) {
+        console.error("Could not copy text: ", err);
+      }
+    );
+  };
 </script>
 
 <div class="contents-wrap">
@@ -165,18 +184,17 @@
       </button>
 
       <div class="chat-msg-wrap">
-        <textarea placeholder="질문입력" class="form-control" id="textMsg" oninput="inputText()"></textarea>
+        <textarea placeholder="질문입력" class="form-control" id="textMsg"></textarea>
         <div class="chat-file">
           <input type="file" class="form-control" />
           <span class="icon-file"><i class="bi bi-paperclip"></i></span>
         </div>
         <div class="chat-btns">
-          <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring" disabled>
+          <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring">
             <i class="bi bi-arrow-up"></i>
           </button>
         </div>
       </div>
     </div>
-    {% include 'view/common/chathistory.html' %}
   </div>
 </div>

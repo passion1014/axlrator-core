@@ -22,6 +22,8 @@
       if (!question) return;
       $("#iptAnswer").text("■");
 
+      $("#btnInput").attr("disabled", true);
+
       const param = {
         indexname: "",
         current_code: "",
@@ -61,10 +63,28 @@
               hljs.highlightElement(block);
             });
 
+            $("#iptQuestion").val("");
+
             getChatHistory("2"); //이력 재조회
           });
+        },
+        function (data) {
+          console.log("error");
+          console.log(e);
+        },
+        function (data) {
+          console.log("complete");
+          $("#btnInput").prop("disabled", false);
         }
       );
+    });
+
+    // Enter 키 입력시 질문 전송
+    $("#iptQuestion").keydown(function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        $("#btnInput").click();
+      }
     });
   });
 </script>

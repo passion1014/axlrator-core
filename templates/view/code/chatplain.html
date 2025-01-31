@@ -10,6 +10,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {% include 'view/common/common.html' %}
   </head>
+  <style>
+    .row {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .col-8 {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90%;
+    }
+
+    .chat-scroll {
+      width: 90%;
+    }
+    .chat-msg-wrap {
+      width: 90%;
+    }
+  </style>
   <body>
     {% include 'view/code/chatbody.html' %} {% block content %} {% endblock %}
   </body>

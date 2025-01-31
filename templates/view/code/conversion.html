@@ -26,7 +26,7 @@
                     <span class="text-break col">${camel}</span>
                     <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
                     <button type="button" class="btn btn-sm btn-secondary align-self-start">
-                      <i class="bi bi-clipboard-check"></i>
+                      <i class="bi bi-copy"></i>
                     </button>
                   </div>
                   </td>
@@ -40,7 +40,7 @@
                     <span class="text-break col">${snake}</span>
                     <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
                     <button type="button" class="btn btn-sm btn-secondary align-self-start">
-                      <i class="bi bi-clipboard-check"></i>
+                      <i class="bi bi-copy"></i>
                     </button>
                   </div>
                   </td>
@@ -52,16 +52,20 @@
 
         //복사버튼 클릭
         $("button.btn-sm").on("click", function () {
+          const target = $(this);
           const text = $(this).parent().find("span.text-break").text();
-          navigator.clipboard.writeText(text);
-
-          const copiedText = $(this)[0].previousElementSibling; // 버튼 옆의 span 요소
-          copiedText.style.display = "inline"; // 텍스트 표시
-
-          // 일정 시간 후 "COPIED" 숨기기
-          setTimeout(() => {
-            copiedText.style.display = "none";
-          }, 2000); // 2초 후에 숨김
+          navigator.clipboard.writeText(text).then(
+            function () {
+              let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+              if (icon.hasClass("bi-copy")) {
+                icon.removeClass("bi-copy").addClass("bi-check"); // 아이콘 변경
+              }
+              console.log("Copying to clipboard was successful!");
+            },
+            function (err) {
+              console.error("Could not copy text: ", err);
+            }
+          );
         });
       });
     });
