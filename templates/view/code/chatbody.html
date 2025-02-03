@@ -1,3 +1,9 @@
+<style>
+  /* code 요소에 상대 위치 설정 */
+  code {
+    position: relative;
+  }
+</style>
 <script>
   $(document).ready(function () {
     //보내기 버튼 클릭
@@ -10,10 +16,7 @@
 
       // 사용자 질문 내용 출력
       const humanMessage = `<div class="chat-item type2">
-                  <div class="text">${question}</div>
-                  <div class="msg-icon-btns">
-                      <button class="btn" onclick="copyToClipboard(event)"><i class="bi bi-copy"></i></button>                      
-                  </div>
+                  <div class="text">${question}</div>                  
               </div>
              <div class="markdown-wrap pt-3 border-top pb-3">
                   <div class="markdown-body">
@@ -39,7 +42,15 @@
 
           // 마크다운 데이터를 HTML로 변환
           $(".markdown-body:last>p").html(marked.parse(chunk + "■"));
-          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+
+          //highlight적용
+          $(".markdown-body:last pre code").each(function (i, block) {
+            hljs.highlightElement(block);
+          });
+
+          chatWrap.scrollDown();
+
+          //window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         },
         function (data) {
           //stream end callback
@@ -88,7 +99,42 @@
           //highlight적용
           $(".markdown-body:last pre code").each(function (i, block) {
             hljs.highlightElement(block);
+            $(this).append(
+              '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
+            );
           });
+
+          // 마크다운 코드 블록에 복사 버튼 추가
+          // $(".markdown-body:last code").each(function () {
+          //   // 복사 버튼 생성
+          //   const copyBtn = $("<button>").addClass("btn bi bi-clipboard copy-btn").text("복사");
+
+          //   // code 요소에 복사 버튼 추가
+          //   $(this).append(copyBtn);
+
+          //   // 마우스 오버 시 버튼 표시
+          //   $(this).on("mouseover", function () {
+          //     copyBtn.show();
+          //   });
+
+          //   // 마우스 아웃 시 버튼 숨김
+          //   $(this).on("mouseout", function () {
+          //     copyBtn.hide();
+          //   });
+
+          //   // 복사 버튼 클릭 시 이벤트 처리
+          //   copyBtn.on("click", function () {
+          //     const codeText = $(this).siblings("code").text();
+          //     navigator.clipboard.writeText(codeText).then(() => {
+          //       copyBtn.text("복사됨!");
+          //       setTimeout(function () {
+          //         copyBtn.text("복사");
+          //       }, 2000); // 2초 후 "복사"로 돌아감
+          //     });
+          //   });
+          // });
+
+          chatWrap.scrollDown();
         }
       );
     });
@@ -105,18 +151,23 @@
   const chatWrap = {
     el: document.getElementById("chatScroll"),
     getHeight() {
+      if (this.el === null) this.el = document.getElementById("chatScroll");
       return this.el.clientHeight;
     },
     getScrollTop() {
+      if (this.el === null) this.el = document.getElementById("chatScroll");
       return this.el.scrollTop;
     },
     getScrollHeight() {
+      if (this.el === null) this.el = document.getElementById("chatScroll");
       return this.el.scrollHeight;
     },
     scrollDown() {
+      if (this.el === null) this.el = document.getElementById("chatScroll");
       this.el.scrollTo(0, this.getScrollHeight());
     },
     eventScroll() {
+      if (this.el === null) this.el = document.getElementById("chatScroll");
       const btnDown = document.querySelector(".btn-scroll-down");
       this.getScrollTop() + this.getHeight() >= this.getScrollHeight()
         ? btnDown.classList.add("d-none")
@@ -151,10 +202,11 @@
     pre.insertBefore(divTop, pre.firstChild);
   });
 
-  const copyToClipboard = function (e) {
+  //클립보드 복사
+  const copyCodeToClipboard = function (e) {
     // e.preventDefault();
     const target = $(e.currentTarget);
-    const text = target.parents("div.chat-item").find("div.text").text();
+    const text = target.parents("code").text();
 
     navigator.clipboard.writeText(text).then(
       function () {
@@ -173,16 +225,19 @@
 
 <div class="contents-wrap">
   <div class="tit-wrap">
-    <h2 class="tit01">Code Chat</h2>
+    <h2 class="tit01">Chat CGAI</h2>
   </div>
   <div class="row">
-    <div class="col-8">
+    <div class="col-8 chat-wrap">
+      <!--채팅영역-->
       <div class="chat-scroll" id="chatScroll" onscroll="chatWrap.eventScroll()"></div>
 
-      <button class="btn btn-secondary btn-scroll-down d-none" onclick="chatWrap.scrollDown()">
+      <!--스크롤 다운 버튼 -->
+      <button class="btn btn-secondary btn-scroll-down d-none" onclick="chatWrap.scrollDown()" style="display: none">
         <i class="bi bi-chevron-double-down"></i>
       </button>
 
+      <!--질문영역 -->
       <div class="chat-msg-wrap">
         <textarea placeholder="질문입력" class="form-control" id="textMsg"></textarea>
         <div class="chat-file">

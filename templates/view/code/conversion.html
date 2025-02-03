@@ -69,6 +69,14 @@
         });
       });
     });
+
+    // Enter 키 입력시 질문 전송
+    $("#iptTerm").keydown(function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        $("#convBtn").click();
+      }
+    });
   });
 </script>
 <div class="contents-wrap">
