@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-load_dotenv(dotenv_path=".env.testcase", override=True) # .env, .env.testcase
+load_dotenv(dotenv_path=".env", override=True) # .env, .env.testcase
 
 import argparse
 from pydantic import BaseModel
