@@ -8,9 +8,70 @@
       if (!term) return;
 
       common.postRequest("/termsconversion/api/conv", { question: term }, function (data) {
+        $("#korWord").empty();
         $("#camelCase").empty();
         $("#snakeCase").empty();
 
+        if ('response' in data) {
+          $("#iptResponse").val(data.response);
+        }
+
+
+        if ('context' in data) {
+          const context = data.context;
+          const keyArr = Object.keys(data.context);
+
+          keyArr.forEach((item, index) => {
+            camel = context[item]['CAMEL'];
+            snake = context[item]['SNAKE'];
+
+            const korWord = `
+                <tr>
+                  <td>
+                  <div class="d-flex">
+                    <span class="text-break col">${item}</span>
+                    <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+                    <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                      <i class="bi bi-copy"></i>
+                    </button>
+                  </div>
+                  </td>
+                </tr> `;
+            $("#korWord").append(korWord);
+
+            const camelHtml = `
+                <tr>
+                  <td>
+                  <div class="d-flex">
+                    <span class="text-break col">${camel}</span>
+                    <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+                    <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                      <i class="bi bi-copy"></i>
+                    </button>
+                  </div>
+                  </td>
+                </tr> `;
+            $("#camelCase").append(camelHtml);
+
+            const snamelHtml = `
+                <tr>
+                  <td>
+                  <div class="d-flex">
+                    <span class="text-break col">${snake}</span>
+                    <span class="ms-2 copied-text" style="display: none; color: green;">Copied!</span>
+                    <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                      <i class="bi bi-copy"></i>
+                    </button>
+                  </div>
+                  </td>
+                </tr> `;
+
+            $("#snakeCase").append(snamelHtml);
+            
+          });
+        }
+
+        /*
         data.response.forEach((item, index) => {
           // const title = `<h5>${index + 1}. ${item.title}</h5>`;
 
@@ -49,6 +110,7 @@
             $("#snakeCase").append(snamelHtml);
           }
         });
+        */
 
         //복사버튼 클릭
         $("button.btn-sm").on("click", function () {
@@ -97,8 +159,37 @@
       <button type="button" class="btn btn-primary" id="convBtn">변환</button>
     </div>
   </div>
+  <div class="form-wrap">
+    <div class="row">
+      <div class="col">
+        <label for="#" class="form-label">결과</label>
+        <textarea class="form-control" rows="5" id="iptResponse" disabled></textarea>
+      </div>
+    </div>
+  </div>
 
   <div class="row mt-4">
+    <div class="col">
+      <table class="table table-bordered table-sm">
+        <thead class="table-secondary">
+          <tr>
+            <th class="text-center">한글 용어</th>
+          </tr>
+        </thead>
+        <tbody id="korWord">
+          <!-- <tr>
+            <td>
+              <div class="d-flex">
+                <span class="text-break col">userName</span>
+                <button type="button" class="btn btn-sm btn-secondary align-self-start">
+                  <i class="bi bi-clipboard-check"></i>
+                </button>
+              </div>
+            </td>
+          </tr> -->
+        </tbody>
+      </table>
+    </div>
     <div class="col">
       <table class="table table-bordered table-sm">
         <thead class="table-secondary">
