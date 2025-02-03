@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html data-bs-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Completion</title>
+  </head>
+  {% include 'view/common/common.html' %}
+  <!-- <link href="/static/css/common.css" rel="stylesheet" />
+  <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script> -->
+  <script>
+    $(document).ready(function () {
+      //입력버튼 클릭이벤트 핸들러
+      $("#btnInput").on("click", function () {
+        const question = $("#iptQuestion").val();
+        if (!question) return;
+
+        $("#iptAnswer").text("■");
+        $("#btnInput").attr("disabled", true);
+
+        const param = {
+          indexname: "",
+          current_code: "",
+          category: "",
+          question: question,
+          context: "",
+          sql_request: "",
+        };
+
+        common.postStreamRequest(
+          "/codeassist/api/autocode",
+          param,
+          function (e) {
+            const chunk = e.currentTarget.response;
+            // 마크다운 데이터를 HTML로 변환
+            $("#iptAnswer").html(marked.parse(chunk + "■"));
+          },
+          function (data) {
+            console.log("success");
+            const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
+
+            $("#iptAnswer").html(
+              $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
+            );
+          },
+          function (data) {
+            console.log("error");
+            console.log(e);
+          },
+          function (data) {
+            console.log("complete");
+            $("#btnInput").prop("disabled", false);
+          }
+        );
+      });
+
+      // Enter 키 입력시 질문 전송
+      $("#iptQuestion").keydown(function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          $("#btnInput").click();
+        }
+      });
+    });
+  </script>
+
+  <div class="contents-wrap">
+    <div class="tit-wrap">
+      <h2 class="tit01">프로그램 코드 생성</h2>
+    </div>
+    <div class="row">
+      <div class="col-8">
+        <div class="form-wrap">
+          <div class="row">
+            <!-- <div class="col-12">
+              <label for="#" class="form-label">컨텍스트</label>
+              <textarea class="form-control" rows="5" id="iptContext" disabled></textarea>
+            </div> -->
+            <div class="col-12 mt-3">
+              <span class="form-label d-inline-block">답변결과</span>
+              <!-- <pre id="iptAnswer"></pre> -->
+              <div id="iptAnswer" class="markdown-body"></div>
+            </div>
+            <!-- <div class="col-12 mt-3">
+              <label for="#" class="form-label">파일첨부</label>
+              <input type="file" class="form-control" />
+            </div> -->
+            <div class="col-12 mt-3">
+              <label for="#" class="form-label">질문 입력</label>
+              <textarea class="form-control" rows="5" id="iptQuestion"></textarea>
+              <div class="mt-2 text-end">
+                <button type="button" class="btn btn-primary" id="btnInput">입력</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</html>
