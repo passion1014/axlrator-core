@@ -9,6 +9,8 @@ parser.add_argument("--env", type=str, default=".env", help="Path to .env file")
 parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
 parser.add_argument("--port", type=int, default=8000, help="서버 포트")
 parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
+parser.add_argument("--cert-file", type=str, default=None)
+parser.add_argument("--key-file", type=str, default=None)
 args = parser.parse_args()
 
 # .env 파일 로드
@@ -44,18 +46,6 @@ warnings.simplefilter("always", UserWarning)# 항상 경고를 표시하도록 �
 import logging
 logging.basicConfig(level=logging.INFO) # 로그설정
 
-
-
-# ---------------------------------------
-# 파라미터 처리
-# ---------------------------------------
-parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
-parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
-parser.add_argument("--port", type=int, default=8000, help="서버 포트")
-parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
-parser.add_argument("--cert-file", type=str, default=None)
-parser.add_argument("--key-file", type=str, default=None)
-args = parser.parse_args()
 
 
 # FastAPI 앱 설정
