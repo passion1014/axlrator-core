@@ -1,5 +1,19 @@
+import argparse
 from dotenv import load_dotenv
-load_dotenv(dotenv_path=".env", override=True) # .env, .env.testcase
+
+# ---------------------------------------
+# 파라미터 처리
+# ---------------------------------------
+parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
+parser.add_argument("--env", type=str, default=".env", help="Path to .env file") # 값이 없을 경우 .env 기본 설정
+parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
+parser.add_argument("--port", type=int, default=8000, help="서버 포트")
+parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
+args = parser.parse_args()
+
+# .env 파일 로드
+load_dotenv(dotenv_path=args.env, override=True)
+
 
 import argparse
 from pydantic import BaseModel
@@ -30,16 +44,6 @@ warnings.simplefilter("always", UserWarning)# 항상 경고를 표시하도록 �
 import logging
 logging.basicConfig(level=logging.INFO) # 로그설정
 
-
-
-# ---------------------------------------
-# 파라미터 처리
-# ---------------------------------------
-parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
-parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
-parser.add_argument("--port", type=int, default=8000, help="서버 포트")
-parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
-args = parser.parse_args()
 
 
 # FastAPI 앱 설정
@@ -108,6 +112,7 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 
 # ---------------------------------------
 # 애플리케이션 실행
+# 로컬 : python -m app.server --env .env.test --port 8001 --debug debug
 # ---------------------------------------
 if __name__ == "__main__":
     print(f"Starting server on {args.host}:{args.port} (debug={args.debug})")

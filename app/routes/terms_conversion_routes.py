@@ -33,6 +33,7 @@ async def ui_code(request: Request):
 # code assist 요청 엔드포인트
 @router.post("/api/conv")
 async def term_conversion_endpoint(request: CodeRequest):
+    result = {}
     input_text = request.question
     
     # 입력된 text의 한글 단어를 추출하여 용어집을 만든다.
@@ -40,30 +41,32 @@ async def term_conversion_endpoint(request: CodeRequest):
 
     # 입력값이 한글 1단어만 들어왔을 경우 전환된 값을 그대로 출력
     if len(extract_korean_words) == 1 and input_text == extract_korean_words[0]:
-        split_result = CompoundWordSplitter.conv_compound_word(input_text)
-        if split_result and len(split_result) > 0:
-            return {"response": split_result}
+        conv_result = CompoundWordSplitter.conv_compound_word(input_text)
+        if conv_result and len(conv_result) > 0:
+            # return {"response": conv_result}
+            result["context"] = conv_result
+            return result
 
     # 용어집을 생성
     split_words = []
     for word in extract_korean_words:
-        result = CompoundWordSplitter.split_compound_word(word)
-        if result:
-            split_words.append(result[0])
+        split_result = CompoundWordSplitter.split_compound_word(word)
+        if split_result:
+            split_words.append(split_result[0])
     
     merge_meta_voca = CompoundWordSplitter.merge_translations(split_words)
-    context = ", ".join([f"{key}={value}" for key, value in merge_meta_voca.items()])
+    result["context"] = merge_meta_voca
     
     # LLM 호출
-    chain = create_term_conversion_chain2()
     state = {
         "question": input_text, 
-        "context": context
+        "context": ", ".join([f"{key}={value}" for key, value in merge_meta_voca.items()])
     }
+    llm_response = create_term_conversion_chain2().invoke(state)
     
-    response = chain.invoke(state)
+    if llm_response["response"] and not isinstance(llm_response["response"], list):
+        result["response"] = llm_response["response"]
+    else:
+        result = llm_response
     
-    if response["response"] and not isinstance(response["response"], list):
-        response = {"response": [response["response"]]}
-    
-    return response
+    return result

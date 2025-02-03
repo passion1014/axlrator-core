@@ -9,3 +9,4 @@ data/vector
 .env.testcase
 alembic/versions
 data
+*.code-workspace
