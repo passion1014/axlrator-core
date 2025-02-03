@@ -1,3 +1,4 @@
+import re
 from typing import List, Tuple
 from langchain_core.prompts import format_document
 from app.prompts.prompts import DEFAULT_DOCUMENT_PROMPT
@@ -113,3 +114,8 @@ def ensure_dict(x):
         return x.__dict__
     else:
         return {"input": x}
+
+def remove_markdown_code_block(text: str) -> str:
+    # 이 함수는 주어진 텍스트에서 마크다운 코드 블록을 제거합니다.
+    # 마크다운 코드 블록은 ```로 시작하고 끝나는 부분을 의미합니다.
+    return re.sub(r"^```[\w]*\n|\n```$", "", text)

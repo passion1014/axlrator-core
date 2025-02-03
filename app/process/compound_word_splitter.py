@@ -119,3 +119,4 @@ class CompoundWordSplitter:
         snake_str = snake_str.lower()
         words = snake_str.split('_')
         return words[0] + ''.join(word.capitalize() for word in words[1:])
+    

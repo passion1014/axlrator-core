@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.chain_graph.term_conversion_chain import create_term_conversion_chain, create_term_conversion_chain2
 from app.process.compound_word_splitter import CompoundWordSplitter
+from app.utils import remove_markdown_code_block
 
 
 logger = setup_logging()
@@ -65,7 +66,7 @@ async def term_conversion_endpoint(request: CodeRequest):
     llm_response = create_term_conversion_chain2().invoke(state)
     
     if llm_response["response"] and not isinstance(llm_response["response"], list):
-        result["response"] = llm_response["response"]
+        result["response"] = remove_markdown_code_block(llm_response["response"])
     else:
         result = llm_response
     

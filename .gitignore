@@ -10,3 +10,4 @@ data/vector
 alembic/versions
 data
 *.code-workspace
+copy_changed_files.sh
