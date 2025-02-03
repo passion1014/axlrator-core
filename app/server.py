@@ -39,6 +39,8 @@ parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
 parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
 parser.add_argument("--port", type=int, default=8000, help="서버 포트")
 parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
+parser.add_argument("--cert-file", type=str, default=None)
+parser.add_argument("--key-file", type=str, default=None)
 args = parser.parse_args()
 
 
@@ -111,6 +113,12 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 # ---------------------------------------
 if __name__ == "__main__":
     print(f"Starting server on {args.host}:{args.port} (debug={args.debug})")
-    uvicorn.run(webServerApp, host=args.host, port=args.port, reload=args.debug)
+    uvicorn.run(webServerApp, 
+                host=args.host, 
+                port=args.port, 
+                reload=args.debug,
+                ssl_certfile=args.cert_file,  # 인증서 파일 추가
+                ssl_keyfile=args.key_file  # 키 파일 추가                
+                )
 
 
