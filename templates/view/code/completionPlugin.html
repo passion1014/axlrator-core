@@ -29,6 +29,8 @@
         if (!question) return;
 
         $("#iptAnswer").text("■");
+
+        $("#iptQuestion").attr("disabled", true);
         $("#btnInput").attr("disabled", true);
 
         const param = {
@@ -56,22 +58,20 @@
               $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
             );
 
-            //이력생성
-            const param = {
-              title: $("#iptQuestion").val(),
-              type_code: "1",
-              data: JSON.stringify([
-                { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
-              ]),
-            };
-            common.postRequest("/user/api/history", param, function (data) {
-              //highlight적용
-              $("#iptAnswer pre code").each(function (i, block) {
-                hljs.highlightElement(block);
-              });
+            //highlight적용
+            $(".markdown-body:last pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+              $(this).append(
+                '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
+              );
 
-              $("#iptQuestion").val("");
-              getChatHistory("1"); //이력 재조회
+              // 플러그인에서 열었을 때만 플러그인 복사 버튼 추가
+              const view = new URLSearchParams(window.location.search).get("view");
+              if (this && view === "plugin") {
+                $(this).append(
+                  '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
+                );
+              }
             });
           },
           function (data) {
@@ -81,6 +81,7 @@
           function (data) {
             console.log("complete");
             $("#btnInput").prop("disabled", false);
+            $("#iptQuestion").attr("disabled", false);
           }
         );
       });
