@@ -33,7 +33,7 @@ async def view_code(request: Request):
     user_info = request.session.get('user_info', None)
     if not user_info:
 
-        if "/completionPlugin" in url_path:
+        if "/completionplugin" in url_path:
             pass
         elif "/chatplain" in url_path:
             # 사용자 정보 user_info테이블에 없으면 저장
