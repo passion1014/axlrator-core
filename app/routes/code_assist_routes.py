@@ -9,7 +9,7 @@ from app.common.chat_history_manager import checkpoint_to_code_chat_info
 from app.config import setup_logging
 from app.dataclasses.code_assist_data import CodeAssistInfo, CodeChatInfo
 from app.db_model.database import SessionLocal
-from app.db_model.data_repository import ChatHistoryRepository
+from app.db_model.data_repository import ChatHistoryRepository, RSrcTableRepository
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import HumanMessage
 from app.chain_graph.code_chat_agent import CodeChatAgent
@@ -63,9 +63,19 @@ async def sample_endpoint(request: Request):
 async def autocode_endpoint(request: Request):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    
+    call_type = "01" # 코드 생성
+    
+    # 단순히 테이블명 하나만 들어올 경우 MapDataUtil을 만든다.
+    rsrc_table_repository = RSrcTableRepository(session=SessionLocal())
+    table_data = rsrc_table_repository.get_data_by_table_name(table_name=message.question)
+    
+    if table_data:
+        call_type="04" # MapDataUtil 생성
+        message.sql_request = message.question
 
     async def stream_response() :
-        async for chunk in code_assist_chain(type="01").astream(message, stream_mode="custom"):
+        async for chunk in code_assist_chain(type=call_type).astream(message, stream_mode="custom"):
             print("## chucnk=", chunk.content)
             yield chunk.content
 

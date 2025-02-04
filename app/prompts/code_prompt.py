@@ -168,35 +168,38 @@ Use the functions in **<Function List>** for `MapDataUtil` based on the data typ
 **<Function List>**  
 ```text
   getString(Map, String)
-  setString(Map, String, String)
-  setString(Map, String, String, int)
-  setString(Map, String, String, boolean)
-  setString(Map, String, String, boolean, int)
   getInt(Map, String)
   getInt(Map, String, int)
   getLong(Map, String)
-  setLong(Map, String, long)
   getBoolean(Map, String)
   getBoolean(Map, String, boolean)
   getDouble(Map, String)
   getDouble(Map, String, double)
   getBigDecimal(Map, String)
-  setBigDecimal(Map, String, BigDecimal)
   getStringArray(Map, String)
-  setStringArray(Map, String, String[])
   getList(Map, String)
-  setList(Map, String, List)
   getByte(Map, String)
+  setString(Map, String, String)
+  setString(Map, String, String, int)
+  setString(Map, String, String, boolean)
+  setString(Map, String, String, boolean, int)
+  setLong(Map, String, long)
+  setBigDecimal(Map, String, BigDecimal)
+  setStringArray(Map, String, String[])
+  setList(Map, String, List)
   setByte(Map, String, byte[])
 ```
 
 ### Example:  
-Input: Table Name = `Person`, Column Name = `last_name`, Type = `varchar(50)`, Comment = `First Name`  
+Input: Table Name = `Person`, Column Name = `last_name`, Type = `varchar(50)`, Comment = `Last Name`  
 Output:  
 ```java
-MapDataUtil.setString(PersonDoc, "LAST_NAME", last_name); // First Name
-String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // First Name
+String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // Last Name
+MapDataUtil.setString(PersonDoc, "LAST_NAME", last_name); // Last Name
 ```  
+
+Sort when generating code
+List everything from 'MapDataUtil.get' and then 'MapDataUtil.set'
 
 """)
 

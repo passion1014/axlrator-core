@@ -222,7 +222,7 @@ def code_assist_chain(type:str):
     
     session = SessionLocal()
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
-
+    
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
