@@ -11,6 +11,9 @@
     {% include 'view/common/common.html' %}
   </head>
   <style>
+    code {
+      position: relative;
+    }
     .delete-btn {
       position: absolute;
       top: 50%;
@@ -57,22 +60,6 @@
             $("#iptAnswer").html(
               $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
             );
-
-            //highlight적용
-            $(".markdown-body:last pre code").each(function (i, block) {
-              hljs.highlightElement(block);
-              $(this).append(
-                '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
-              );
-
-              // 플러그인에서 열었을 때만 플러그인 복사 버튼 추가
-              const view = new URLSearchParams(window.location.search).get("view");
-              if (this && view === "plugin") {
-                $(this).append(
-                  '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
-                );
-              }
-            });
           },
           function (data) {
             console.log("error");
@@ -80,6 +67,18 @@
           },
           function (data) {
             console.log("complete");
+
+            //highlight적용
+            $(".markdown-body pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+              $(this).append(
+                '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
+              );
+
+              $(this).append(
+                '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
+              );
+            });
             $("#btnInput").prop("disabled", false);
             $("#iptQuestion").attr("disabled", false);
           }
@@ -94,6 +93,51 @@
         }
       });
     });
+
+    //플러그인으로 복사
+    const copyCodeToPlugin = function (e) {
+      const target = $(e.currentTarget);
+      const text = target.parents("code").text();
+
+      common.sendTextToPlugin(
+        1, // 1: editor창으로 붙여넣기
+        text,
+        function () {
+          //success
+          let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+          if (icon.hasClass("bi-box-arrow-up")) {
+            icon.removeClass("bi-box-arrow-up").addClass("bi-check"); // 아이콘 변경
+          }
+        },
+        function (err) {
+          //fail
+          console.error("Could not copy text: ", err);
+        }
+      );
+    };
+
+    //클립보드 복사
+    const copyCodeToClipboard = function (e) {
+      // e.preventDefault();
+      const target = $(e.currentTarget);
+      const text = target.parents("code").text();
+
+      common.copyTextToClipboard(
+        text,
+        function () {
+          //success
+          let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+          if (icon.hasClass("bi-copy")) {
+            icon.removeClass("bi-copy").addClass("bi-check"); // 아이콘 변경
+          }
+          console.log("Copying to clipboard was successful!");
+        },
+        function (err) {
+          //fail
+          console.error("Could not copy text: ", err);
+        }
+      );
+    };
   </script>
 
   <div class="contents-wrap">
