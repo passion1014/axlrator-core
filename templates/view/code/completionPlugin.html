@@ -41,7 +41,7 @@
           current_code: "",
           category: "",
           question: question,
-          context: "",
+          context: $("#iptContext").val(),
           sql_request: "",
         };
 
@@ -138,6 +138,13 @@
         }
       );
     };
+
+    //plugin에서 보낸 메시지의 수신 처리
+    const autoCompletion = function (data) {
+      $("#iptQuestion").val(data.prompt);
+      $("#iptContext").val(data.code);
+      $("#btnInput").click();
+    };
   </script>
 
   <div class="contents-wrap">
@@ -148,6 +155,10 @@
       <div>
         <div class="form-wrap">
           <div class="row">
+            <div class="col-12">
+              <label for="#" class="form-label">컨텍스트</label>
+              <textarea class="form-control" rows="5" id="iptContext" style="display: none"></textarea>
+            </div>
             <div class="col-12 mt-3">
               <span class="form-label d-inline-block">답변결과</span>
               <!-- <pre id="iptAnswer"></pre> -->
