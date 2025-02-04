@@ -3,11 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Code Completion</title>
+    <title>Chat CGAI</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}화면{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% include 'view/common/common.html' %}
   </head>
-  {% include 'view/common/common.html' %}
-  <!-- <link href="/static/css/common.css" rel="stylesheet" />
-  <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script> -->
+  <style>
+    .delete-btn {
+      position: absolute;
+      top: 50%;
+      right: 10px; /* 우측에 위치 */
+      transform: translateY(-50%); /* 수직 중앙 정렬 */
+      cursor: pointer;
+      display: none;
+      color: #dc3545; /* 빨간색 아이콘 */
+    }
+  </style>
   <script>
     $(document).ready(function () {
       //입력버튼 클릭이벤트 핸들러
@@ -42,6 +55,24 @@
             $("#iptAnswer").html(
               $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
             );
+
+            //이력생성
+            const param = {
+              title: $("#iptQuestion").val(),
+              type_code: "1",
+              data: JSON.stringify([
+                { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
+              ]),
+            };
+            common.postRequest("/user/api/history", param, function (data) {
+              //highlight적용
+              $("#iptAnswer pre code").each(function (i, block) {
+                hljs.highlightElement(block);
+              });
+
+              $("#iptQuestion").val("");
+              getChatHistory("1"); //이력 재조회
+            });
           },
           function (data) {
             console.log("error");
@@ -69,22 +100,15 @@
       <h2 class="tit01">프로그램 코드 생성</h2>
     </div>
     <div class="row">
-      <div class="col-8">
+      <div>
         <div class="form-wrap">
           <div class="row">
-            <!-- <div class="col-12">
-              <label for="#" class="form-label">컨텍스트</label>
-              <textarea class="form-control" rows="5" id="iptContext" disabled></textarea>
-            </div> -->
             <div class="col-12 mt-3">
               <span class="form-label d-inline-block">답변결과</span>
               <!-- <pre id="iptAnswer"></pre> -->
               <div id="iptAnswer" class="markdown-body"></div>
             </div>
-            <!-- <div class="col-12 mt-3">
-              <label for="#" class="form-label">파일첨부</label>
-              <input type="file" class="form-control" />
-            </div> -->
+
             <div class="col-12 mt-3">
               <label for="#" class="form-label">질문 입력</label>
               <textarea class="form-control" rows="5" id="iptQuestion"></textarea>

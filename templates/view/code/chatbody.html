@@ -16,7 +16,7 @@
 
       // 사용자 질문 내용 출력
       const humanMessage = `<div class="chat-item type2">
-                  <div class="text">${question}</div>                  
+                  <div class="text">${question}</div>
               </div>
              <div class="markdown-wrap pt-3 border-top pb-3">
                   <div class="markdown-body">
@@ -102,6 +102,14 @@
             $(this).append(
               '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
             );
+
+            // 플러그인에서 열었을 때만 플러그인 복사 버튼 추가
+            const view = new URLSearchParams(window.location.search).get("view");
+            if (this && view === "plugin") {
+              $(this).append(
+                '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
+              );
+            }
           });
 
           // 마크다운 코드 블록에 복사 버튼 추가
@@ -202,14 +210,38 @@
     pre.insertBefore(divTop, pre.firstChild);
   });
 
+  //플러그인으로 복사
+  const copyCodeToPlugin = function (e) {
+    const target = $(e.currentTarget);
+    const text = target.parents("code").text();
+
+    common.sendTextToPlugin(
+      1, // 1: editor창으로 붙여넣기
+      text,
+      function () {
+        //success
+        let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+        if (icon.hasClass("bi-box-arrow-up")) {
+          icon.removeClass("bi-box-arrow-up").addClass("bi-check"); // 아이콘 변경
+        }
+      },
+      function (err) {
+        //fail
+        console.error("Could not copy text: ", err);
+      }
+    );
+  };
+
   //클립보드 복사
   const copyCodeToClipboard = function (e) {
     // e.preventDefault();
     const target = $(e.currentTarget);
     const text = target.parents("code").text();
 
-    navigator.clipboard.writeText(text).then(
+    common.copyTextToClipboard(
+      text,
       function () {
+        //success
         let icon = target.find("i"); // 버튼 내부 아이콘 찾기
         if (icon.hasClass("bi-copy")) {
           icon.removeClass("bi-copy").addClass("bi-check"); // 아이콘 변경
@@ -217,6 +249,7 @@
         console.log("Copying to clipboard was successful!");
       },
       function (err) {
+        //fail
         console.error("Could not copy text: ", err);
       }
     );
