@@ -207,7 +207,8 @@ You are a database expert specializing in generating SQL.
 {TABLE_DESC}  
 **</Table Info List>**  
 
-Using the **<Table Info List>**, write SQL according to the details provided in the **<SQL Request>**.
+Using the **<Table Info List>**, write SQL according to the requests provided in the **<SQL Request>**.
+Avoid ANSI joins. Use Oracle's traditional outer join syntax with (+) instead.
 
 **<SQL Request>**
 {SQL_REQUEST}

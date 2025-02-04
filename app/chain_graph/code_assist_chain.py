@@ -195,6 +195,7 @@ class CodeAssistChain:
             TASK=state['question'],
             CURRENT_CODE=state['current_code']
         )
+        print(f"####### state={state}")
 
     def chain_codeassist(self) -> CodeAssistState:
         graph = StateGraph(CodeAssistState)
@@ -240,7 +241,7 @@ def code_assist_chain(type:str):
         return state
 
     def get_table_desc(state: AgentState) -> AgentState:
-        context = state['question']
+        context = state['sql_request']
 
         rsrc_table_repository = RSrcTableRepository(session=session)
         rsrc_table_column_repository = RSrcTableColumnRepository(session=session)
@@ -298,7 +299,7 @@ def code_assist_chain(type:str):
         elif ("05" == type) : # SQL 생성하기
             prompt = TEXT_SQL_PROMPT.format(
                 TABLE_DESC=state['context'],
-                SQL_REQUEST=state['sql_request']
+                SQL_REQUEST=state['question']
             )
 
         else:
