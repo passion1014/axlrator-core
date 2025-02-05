@@ -47,7 +47,6 @@ async def sample_endpoint(request: Request):
 
         async def stream_response() :
             async for chunk in code_assist.chain_codeassist().astream(message, stream_mode="custom"):
-                print("## chucnk=", chunk.content)
                 yield chunk.content
 
         return StreamingResponse(stream_response(), media_type="text/event-stream")
@@ -76,7 +75,6 @@ async def autocode_endpoint(request: Request):
 
     async def stream_response() :
         async for chunk in code_assist_chain(type=call_type).astream(message, stream_mode="custom"):
-            print("## chucnk=", chunk.content)
             yield chunk.content
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
@@ -111,7 +109,6 @@ async def make_sql_endpoint(request: Request):
 
     async def stream_response() :
         async for chunk in code_assist_chain(type="05").astream(message, stream_mode="custom"):
-            print("## chucnk=", chunk.content)
             yield chunk.content
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
@@ -151,7 +148,6 @@ async def chat(request: Request):
         async for event in graph.astream({"messages": [input_message]}, config, stream_mode="custom"): #stream_mode = values
             if event.content and len(event.content) > 0:
                 content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
-                print(f"### {content}")
                 yield content
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")

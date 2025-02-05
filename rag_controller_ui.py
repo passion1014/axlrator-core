@@ -96,7 +96,6 @@ class RAGController:
                          ["wsl", "-u", "root", "bash", "-c", "docker ps -a --format '{{.Names}}|{{.ID}}|{{.Image}}|{{.Ports}}|{{.Status}}'"],
                         capture_output=True, text=True, encoding="utf-8",
                     )
-                    print(result)
                     
                     if (result.stdout.strip() == stout):
                         continue

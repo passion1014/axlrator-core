@@ -23,11 +23,9 @@ def create_term_conversion_chain():
 
     def get_context(state: AgentState) -> AgentState:
         docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
-        print(f"### [create_term_conversion_chain] search_result = {docs}")
 
         # content 값만 추출하여 콤마로 구분된 문자열 생성
         context_string = ", ".join([doc['content'] for doc in docs if doc and 'content' in doc])
-        print(f"### [create_term_conversion_chain] context_string = {context_string}")
 
         state['context'] = context_string
         return state
@@ -39,12 +37,10 @@ def create_term_conversion_chain():
         try:
             chunkedDataRepository = ChunkedDataRepository(session=session)
             rdb_contexts = chunkedDataRepository.get_chunked_data_by_content(data_type='terms', content=state['question'])
-            print(f"### get_chunked_data_by_content result = {rdb_contexts}")
             
             # content 컬럼 값만 추출하여 콤마로 구분된 문자열 생성
             content_values = [data.content for data in rdb_contexts if hasattr(data, 'content')]
             content_string = ", ".join(content_values)
-            print(f"### Extracted content values: {content_string}")
 
             state['context'] = content_string
         except Exception as e:

@@ -125,8 +125,8 @@ def read_file(file_path):
 
 def save_chunks(chunks, extension, last_modified):
     """chunk를 데이터베이스에 저장"""
-    for idx, chunk in enumerate(chunks, 1):
-        print("=============================================")
+    # for idx, chunk in enumerate(chunks, 1):
+    #     print("=============================================")
         
 def get_file_extension(file_path):
     """Return the file extension of the given file path."""
@@ -306,8 +306,6 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
         # 원본 파일 정보 저장
         orgRSrcRepository = OrgRSrcRepository(session=session)
         org_resrc = orgRSrcRepository.create_org_resrc(file_path=file_path, type="01", desc="JAVA")
-        
-        print(f" ### org_resrc = {str(org_resrc)}")
 
         # 파일 chunking
         file_chunk_list = chunk_file(file_path)
@@ -316,8 +314,6 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
         for idx, chunk in enumerate(file_chunk_list, start=1):
             if chunk is None:
                 continue
-            
-            print(f"청크 타입: {type(chunk)}")
             
             if isinstance(chunk, JavaChunkMeta):
                 data_name = chunk.function_name # 함수명

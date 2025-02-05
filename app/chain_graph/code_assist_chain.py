@@ -163,8 +163,6 @@ class CodeAssistChain:
         async for chunk in self.model.astream(prompt, config=config):
             writer(chunk)
             chunks.append(chunk)
-            
-            print(str(chunk))
         state['response'] = "".join(str(chunks))
         return state
 
@@ -179,7 +177,6 @@ class CodeAssistChain:
     # def generate_response(self, state: AgentState, task_type: str) -> AgentState:
     async def generate_response_astream(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
         prompt = state['prompt']
-        print(f'### generate_response_astream\n = {prompt}')
         
         # Stream 방식
         chunks = []
@@ -195,7 +192,6 @@ class CodeAssistChain:
             TASK=state['question'],
             CURRENT_CODE=state['current_code']
         )
-        print(f"####### state={state}")
 
     def chain_codeassist(self) -> CodeAssistState:
         graph = StateGraph(CodeAssistState)
@@ -230,11 +226,9 @@ def code_assist_chain(type:str):
         # 질문의 추가 맥락 생성
         # enriched_query = contextual_enrichment(state['question'])  # 맥락을 추가로 풍부화
         enriched_query = state['question']
-        print(f"### enriched_query = {enriched_query}")
         
         # 맥락 기반 검색
         docs = faissVectorDB.search_similar_documents(query=enriched_query, k=2)
-        print(f"### search_result = {docs}")
         
         # 문서 결합
         state['context'] = combine_documents_with_relevance(docs)  # 단순 병합 대신 관련성을 고려하여 결합

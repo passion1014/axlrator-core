@@ -22,9 +22,7 @@ def create_text_to_sql_chain():
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
     def get_context(state: AgentState) -> AgentState:
-        print(f"------------------------ get_context state['question'] = {state['question']}")
         docs = faissVectorDB.search_similar_documents(query=state['question'], k=5)
-        print(f"### search_result = {docs}")
 
         state['context'] = docs # state['context'] = combine_documents(docs)
         return state

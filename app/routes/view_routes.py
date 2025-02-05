@@ -25,8 +25,6 @@ async def view_login(request: Request):
 # view/code/**
 @router.get("/code/{subpath:path}", response_class=HTMLResponse)
 async def view_code(request: Request):
-    print(f"Requested URL path: {request.url.path}")
-
     url_path = request.url.path
 
 
@@ -87,8 +85,6 @@ def insert_ip_to_database(ip: str):
 # view/admin/**
 @router.get("/admin/{subpath:path}", response_class=HTMLResponse)
 async def view_admin(request: Request):
-    print(f"Requested URL path: {request.url.path}")
-    
     # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 
@@ -112,8 +108,6 @@ async def view_admin(request: Request):
 # view/workflow/**
 @router.get("/workflow/{subpath:path}", response_class=HTMLResponse)
 async def view_workflow(request: Request):
-    print(f"Requested URL path: {request.url.path}")
-    
     # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 

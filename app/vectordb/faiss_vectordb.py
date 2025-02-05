@@ -100,14 +100,12 @@ class PostgresDocstore:
         langchain_community.docstore.base의 추상함수
         -> 클래스가 faiss의 docstore에 parameter로 사용될 경우 반드시 구현해야 함
         '''
-        print(f"### docstroe search = {search}")
         doc = self.get_document(document_id=search)
         
         document = Document(
             page_content=doc.get("content"),
             metadata=doc.get("metadata"),
         )
-        print(f"### docstroe search result = {document}")
         
         return document
 
@@ -221,8 +219,8 @@ class FaissVectorDB:
         try:
             # 전체 벡터 개수 확인
             total_vectors = self.vector_store.index.ntotal
-            print(f"### 전체 벡터 개수: {total_vectors}")
-            print(f"### self.vector_store.index_to_docstore_id: {self.vector_store.index_to_docstore_id}")
+            # print(f"### 전체 벡터 개수: {total_vectors}")
+            # print(f"### self.vector_store.index_to_docstore_id: {self.vector_store.index_to_docstore_id}")
             
             # 모든 문서 정보를 저장할 리스트
             all_documents = []
@@ -231,7 +229,6 @@ class FaissVectorDB:
             for idx in range(total_vectors):
                 # docstore_id 가져오기 
                 docstore_id = self.vector_store.index_to_docstore_id.get(idx)
-                print(f"##### docstore_id = {idx}, {docstore_id}")
                 
                 if docstore_id:
                     # PostgreSQL에서 문서 정보 조회
@@ -255,7 +252,7 @@ class FaissVectorDB:
         
         # 벡터를 2차원 배열로 변환 (1x3072)
         query_embedding = query_embedding.reshape(1, -1)
-        print(f"### query_embedding.shape = {query_embedding.shape}")
+        # print(f"### query_embedding.shape = {query_embedding.shape}")
 
         # FAISS에서 유사한 벡터 검색 (k는 찾을 유사 벡터의 수)
         distances, indices = self.vector_store.index.search(query_embedding, k)
@@ -294,9 +291,9 @@ class FaissVectorDB:
 
             print(f"### {self.index_name} 인덱스와 매핑 정보를 디스크에서 로드했습니다.")
             # 인덱스의 기본 정보 출력
-            print(f"### PostgresDocstore에서 FAISS 정보 읽기 >> index_name={self.index_name}, index_file_path={faiss_info.index_file_path}")
-            print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력
-            print(f"### Dimension of vectors: {self.vector_store.index.d}")  # 벡터의 차원 출력
+            # print(f"### PostgresDocstore에서 FAISS 정보 읽기 >> index_name={self.index_name}, index_file_path={faiss_info.index_file_path}")
+            # print(f"### Total vectors in index: {self.vector_store.index.ntotal}")  # 저장된 벡터 개수 출력
+            # print(f"### Dimension of vectors: {self.vector_store.index.d}")  # 벡터의 차원 출력
         else:
             # raise ValueError(f"{self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")
             print(f"### {self.index_name}에 대한 FAISS 정보가 존재하지 않습니다.")

@@ -36,7 +36,6 @@ class ElasticsearchBM25:
         }
         if not self.es_client.indices.exists(index=self.index_name):
             self.es_client.indices.create(index=self.index_name, body=index_settings)
-            print(f"### Created index: {self.index_name}")
         else :
             print(f"### Index already exists: {self.index_name}")
 
@@ -98,8 +97,6 @@ def create_elasticsearch_bm25_index(index_name: str, org_resrc, chunk_list: List
         for chunk in chunk_list
     ]
     
-    print(f"### create_elasticsearch_bm25_index = {documents}")
-
     es_bm25 = ElasticsearchBM25(index_name=index_name)
     es_bm25.index_documents(documents)
     
@@ -215,7 +212,7 @@ def evaluate_db_advanced(db: FaissVectorDB, original_jsonl_path: str, k: int):
                         golden_contents.append(golden_chunk['content'].strip())
             
             if not golden_contents:
-                print(f"Warning: No golden contents found for query: {query}")
+                # print(f"Warning: No golden contents found for query: {query}")
                 continue
             
             retrieved_docs, semantic_count, bm25_count = retrieve_advanced(query, db, es_bm25, k)
@@ -249,11 +246,9 @@ def evaluate_db_advanced(db: FaissVectorDB, original_jsonl_path: str, k: int):
             "total_queries": total_queries
         }
         
-        print(f"Pass@{k}: {pass_at_n:.2f}%")
-        print(f"Average Score: {average_score:.2f}")
-        print(f"Total queries: {total_queries}")
-        print(f"Percentage of results from semantic search: {semantic_percentage:.2f}%")
-        print(f"Percentage of results from BM25: {bm25_percentage:.2f}%")
+        print(f"Pass@{k}: {pass_at_n:.2f}%, Average Score: {average_score:.2f}, Total queries: {total_queries}, "
+              f"Percentage of results from semantic search: {semantic_percentage:.2f}%, "
+              f"Percentage of results from BM25: {bm25_percentage:.2f}%")
         
         return results, {"semantic": semantic_percentage, "bm25": bm25_percentage}
     

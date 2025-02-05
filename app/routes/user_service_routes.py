@@ -21,8 +21,6 @@ class HistoryInfo(BaseModel):
 
 @router.post("/api/login")
 async def login(request: Request, loginRequest: LoginInfo):
-    print(f"### {loginRequest}")
-
     user_service = UserService()
     
     # user_id로 조회
@@ -69,10 +67,8 @@ async def login(request: Request):
 
 @router.get("/api/history")
 async def history(request: Request, type_code: str):
-    print(f"### {request}")
     # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
-    print(user_info)
 
     chatHistoryService = ChatHistoryService()
     list = chatHistoryService.get_chat_history_by_user_id_and_type_code(user_info['user_id'], type_code)
@@ -82,7 +78,6 @@ async def history(request: Request, type_code: str):
 
 @router.post("/api/history")
 async def create_chat_history(request: Request, historyInfo: HistoryInfo):
-    print(f"### aaaa {historyInfo}")
     # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 

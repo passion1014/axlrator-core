@@ -91,11 +91,11 @@ class AlfredReranker:
         compressed_docs = compression_retriever.invoke(query)
 
         # 결과값 출력하여 확인
-        print(
-            f"\n{'-' * 100}\n".join(
-                [f"Document {i+1}:\n\n" + d.page_content for i, d in enumerate(compressed_docs)]
-            )
-        )
+        # print(
+        #     f"\n{'-' * 100}\n".join(
+        #         [f"Document {i+1}:\n\n" + d.page_content for i, d in enumerate(compressed_docs)]
+        #     )
+        # )
         
         return compressed_docs
 
@@ -127,13 +127,6 @@ class AlfredReranker:
 
         # Convert back to the original dictionary format for output
         output_docs = [{"page_content": doc.page_content} for doc in reranked_docs]
-
-        # Print results for debugging
-        print(
-            f"\n{'-' * 100}\n".join(
-                [f"Document {i+1}:\n\n" + doc["page_content"] for i, doc in enumerate(output_docs)]
-            )
-        )
 
         return output_docs
         
@@ -208,8 +201,4 @@ class AlfredReranker:
         
     #     # 압축된 문서 검색
     #     compressed_docs = compression_retriever.invoke(query)
-
-    #     # 문서 ID 출력
-    #     print([doc.metadata["id"] for doc in compressed_docs])
-        
     #     return compressed_docs

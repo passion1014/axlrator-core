@@ -37,8 +37,6 @@ async def ui_chat(request: Request):
 # code assist 요청 엔드포인트
 @router.post("/api/test-rerank")
 async def sample_endpoint(request: SampleRequest):
-    print("-------------------------------")
-    
     # 예시 쿼리와 타겟 리스트
     query = "example query"
     target_list = [
@@ -57,8 +55,6 @@ async def sample_endpoint(request: SampleRequest):
     # 결과 출력
     for result in results:
         print(f"Chunk: {result['chunk']}, Score: {result['score']}")
-
-    
     pass
     
 

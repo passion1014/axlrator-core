@@ -23,11 +23,9 @@ def create_rag_chain():
         
         # 질문의 추가 맥락 생성
         enriched_query = contextual_enrichment(state['question'])  # 맥락을 추가로 풍부화
-        print(f"### enriched_query = {enriched_query}")
         
         # 맥락 기반 검색
         docs = faissVectorDB.search_similar_documents(query=enriched_query, k=5)
-        print(f"### search_result = {docs}")
         
         # 문서 결합
         state['context'] = combine_documents_with_relevance(docs)  # 단순 병합 대신 관련성을 고려하여 결합

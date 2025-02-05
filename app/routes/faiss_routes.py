@@ -55,7 +55,6 @@ async def search_faiss_vector(request: Request, db: Session = Depends(get_db)):
         # FAISS 벡터 DB 초기화
         faiss_vector_db = FaissVectorDB(db_session=db, index_name=index_name)
         faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
-        print(f"### FAISS 정보 >> id={faiss_info.id}, index_name={faiss_info.index_name}, index_desc={faiss_info.index_desc}, index_file_path={faiss_info.index_file_path}")
         
         # 유사도 검색 실행
         # faiss_vector_db.read_index() 
@@ -82,8 +81,6 @@ async def search_faiss_vector(request: Request, db: Session = Depends(get_db)):
 @router.post("/api/create")
 async def create_faiss_info(request: Request, db: Session = Depends(get_db)):
     try:
-        print(f"### /faiss/api/create 호출됨 - data = {request}")
-        
         # 요청 데이터 파싱
         data = await request.json()
         
@@ -100,7 +97,6 @@ async def create_faiss_info(request: Request, db: Session = Depends(get_db)):
         # 기존재하는지 체크
         faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
         if faiss_info is not None:
-            print(f"# 기저장된 {index_name}의 FAISS 정보가 있습니다.")
             return {
                 "success": True,
                 "message": "이미 FAISS 정보가 존재합니다.",
