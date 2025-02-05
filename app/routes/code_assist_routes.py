@@ -39,7 +39,7 @@ async def predicate(request: Request):
         )
 
 
-@router.post("/api/code")
+@router.post("/api/code_contextual")
 async def sample_endpoint(request: Request):
     # try:
         body = await request.json()
@@ -56,6 +56,17 @@ async def sample_endpoint(request: Request):
     #         content={"error": f"An error occurred: {str(e)}"},
     #         status_code=500
     #     )
+
+@router.post("/api/code")
+async def call_api_code(request: Request):
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
+    
+    async def stream_response() :
+        async for chunk in code_assist_chain(type="02").astream(message, stream_mode="custom"):
+            yield chunk.content
+
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
 @router.post("/api/autocode")
