@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html data-bs-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chat CGAI</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}화면{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% include 'view/common/common.html' %}
+  </head>
+  <style>
+    code {
+      position: relative;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 50%;
+      right: 10px; /* 우측에 위치 */
+      transform: translateY(-50%); /* 수직 중앙 정렬 */
+      cursor: pointer;
+      display: none;
+      color: #dc3545; /* 빨간색 아이콘 */
+    }
+  </style>
+  <script>
+    $(document).ready(function () {
+      //입력버튼 클릭이벤트 핸들러
+      $("#btnInput").on("click", function () {
+        const question = $("#iptQuestion").val();
+        if (!question) return;
+
+        $("#iptAnswer").text("■");
+
+        $("#iptQuestion").attr("disabled", true);
+        $("#btnInput").attr("disabled", true);
+
+        const param = {
+          indexname: "",
+          current_code: "",
+          category: "",
+          question: question,
+          context: $("#iptContext").val(),
+          sql_request: "",
+        };
+
+        common.postStreamRequest(
+          "/codeassist/api/autocode",
+          param,
+          function (e) {
+            const chunk = e.currentTarget.response;
+            // 마크다운 데이터를 HTML로 변환
+            $("#iptAnswer").html(marked.parse(chunk + "■"));
+          },
+          function (data) {
+            console.log("success");
+            const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
+
+            $("#iptAnswer").html(
+              $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
+            );
+          },
+          function (data) {
+            console.log("error");
+            console.log(e);
+          },
+          function (data) {
+            console.log("complete");
+
+            //highlight적용
+            $(".markdown-body pre code").each(function (i, block) {
+              hljs.highlightElement(block);
+              $(this).append(
+                '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
+              );
+
+              $(this).append(
+                '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
+              );
+            });
+            $("#btnInput").prop("disabled", false);
+            $("#iptQuestion").attr("disabled", false);
+          }
+        );
+      });
+
+      // Enter 키 입력시 질문 전송
+      $("#iptQuestion").keydown(function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          $("#btnInput").click();
+        }
+      });
+    });
+
+    //플러그인으로 복사
+    const copyCodeToPlugin = function (e) {
+      const target = $(e.currentTarget);
+      const text = target.parents("code").text();
+
+      common.sendTextToPlugin(
+        1, // 1: editor창으로 붙여넣기
+        text,
+        function () {
+          //success
+          let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+          if (icon.hasClass("bi-box-arrow-up")) {
+            icon.removeClass("bi-box-arrow-up").addClass("bi-check"); // 아이콘 변경
+          }
+        },
+        function (err) {
+          //fail
+          console.error("Could not copy text: ", err);
+        }
+      );
+    };
+
+    //클립보드 복사
+    const copyCodeToClipboard = function (e) {
+      // e.preventDefault();
+      const target = $(e.currentTarget);
+      const text = target.parents("code").text();
+
+      common.copyTextToClipboard(
+        text,
+        function () {
+          //success
+          let icon = target.find("i"); // 버튼 내부 아이콘 찾기
+          if (icon.hasClass("bi-copy")) {
+            icon.removeClass("bi-copy").addClass("bi-check"); // 아이콘 변경
+          }
+          console.log("Copying to clipboard was successful!");
+        },
+        function (err) {
+          //fail
+          console.error("Could not copy text: ", err);
+        }
+      );
+    };
+
+    //plugin에서 보낸 메시지의 수신 처리
+    const autoCompletion = function (data) {
+      $("#iptQuestion").val(data.prompt);
+      $("#iptContext").val(data.code);
+      $("#btnInput").click();
+    };
+  </script>
+
+  <div class="contents-wrap">
+    <!-- <div class="tit-wrap">
+      <h2 class="tit01">프로그램 코드 생성</h2>
+    </div> -->
+    <div class="row">
+      <div>
+        <div class="form-wrap">
+          <div class="row">
+            <div class="col-12" style="display: none">
+              <label for="#" class="form-label">컨텍스트</label>
+              <textarea class="form-control" rows="5" id="iptContext"></textarea>
+            </div>
+            <div class="col-12 mt-3">
+              <span class="form-label d-inline-block">답변결과</span>
+              <!-- <pre id="iptAnswer"></pre> -->
+              <div id="iptAnswer" class="markdown-body"></div>
+            </div>
+
+            <div class="col-12 mt-3" style="display: none">
+              <label for="#" class="form-label">질문 입력</label>
+              <textarea class="form-control" rows="5" id="iptQuestion"></textarea>
+              <div class="mt-2 text-end">
+                <button type="button" class="btn btn-primary" id="btnInput">입력</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</html>

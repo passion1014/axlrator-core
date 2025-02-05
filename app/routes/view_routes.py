@@ -30,10 +30,12 @@ async def view_code(request: Request):
 
     user_info = request.session.get('user_info', None)
     if not user_info:
-        if "/chatplain" in url_path:
+
+        if "/completionplugin" in url_path:
+            pass
+        elif "/chatplain" in url_path:
             # 사용자 정보 user_info테이블에 없으면 저장
             user_info = insert_ip_to_database(request.client.host) 
-            
 
             # 사용자 정보를 세션에 저장
             request.session["user_info"] = {
@@ -46,16 +48,16 @@ async def view_code(request: Request):
             
     if "/conversion" in url_path:
         return templates.TemplateResponse("view/code/conversion.html", {"request": request, "message": "용어변환", "user_info":user_info })
+    elif "/completionplugin" in url_path:
+        return templates.TemplateResponse("view/code/completionPlugin.html", {"request": request, "message": "프로그램 코드 생성"})
     elif "/completion" in url_path:
         return templates.TemplateResponse("view/code/completion.html", {"request": request, "message": "프로그램 코드 생성", "user_info":user_info })
-    elif "/completion2" in url_path:
-        return templates.TemplateResponse("view/code/completion.html", {"request": request, "message": "프로그램 코드 생성2", "user_info":user_info })
     elif "/text2sql" in url_path:
         return templates.TemplateResponse("view/code/text2sql.html", {"request": request, "message": "SQL 생성", "user_info":user_info })    
     elif "/chatplain" in url_path: #sidebar, header 없는 채팅 화면
-        return templates.TemplateResponse("view/code/chatplain.html", {"request": request, "message": "Code Chat", "user_info":user_info })   
+        return templates.TemplateResponse("view/code/chatplain.html", {"request": request, "message": "CHATCGAI", "user_info":user_info })   
     elif "/chat" in url_path:
-        return templates.TemplateResponse("view/code/chat.html", {"request": request, "message": "Code Chat", "user_info":user_info })    
+        return templates.TemplateResponse("view/code/chat.html", {"request": request, "message": "CHATCGAI", "user_info":user_info })    
     else :
         return templates.TemplateResponse("error.html", {"request": request, "message": "요청하신 페이지를 찾을 수 없습니다.", "user_info":user_info }, status_code=404)
 

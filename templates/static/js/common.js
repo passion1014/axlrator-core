@@ -1,4 +1,5 @@
 const common = {
+  // HTTP Get 요청
   getRequest: function (url, params, successFunc, failFunc) {
     $.ajax({
       url: url,
@@ -29,6 +30,7 @@ const common = {
       },
     });
   },
+  // HTTP Post 요청
   postRequest: function (url, params, successFunc, failFunc) {
     $.ajax({
       url: url,
@@ -60,6 +62,7 @@ const common = {
       },
     });
   },
+  //HTTP 스트림 요청
   postStreamRequest: function (url, params, onprogress, successFunc, failFunc, completeFunc) {
     $.ajax({
       url: url,
@@ -86,5 +89,37 @@ const common = {
         if (completeFunc) completeFunc();
       },
     });
+  },
+  //플러그인으로 메시지 전송
+  sendTextToPlugin: function (type, message, successFunc, failFunc) {
+    if (!window.cefQuery) {
+      alert("Eclipse Plugin에서 실행되지 않았거나, 플러그인 설정이 올바르지 않습니다.");
+      return;
+    }
+
+    let request = { type: type, message: message };
+
+    window.cefQuery({
+      request: JSON.stringify(request),
+      onSuccess: function () {
+        console.log("success");
+        if (successFunc) successFunc();
+      },
+      onFailure: function () {
+        console.log("error");
+        if (failFunc) failFunc();
+      },
+    });
+  },
+  //클립보드 복사
+  copyTextToClipboard: function (text, successFunc, failFunc) {
+    navigator.clipboard.writeText(text).then(
+      function () {
+        if (successFunc) successFunc();
+      },
+      function (err) {
+        if (failFunc) failFunc();
+      }
+    );
   },
 };
