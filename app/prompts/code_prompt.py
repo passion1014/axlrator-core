@@ -120,7 +120,7 @@ You will be given three pieces of information:
 3. <reference_code>{REFERENCE_CODE}</reference_code>
    This is a list of code snippets that can be used as reference or inspiration.
 
-Write only the source code without any explanation!!
+** Write only the source code without any explanation!! **
 """)
 
 # 입력된 소스코드의 다음 코드를 예측하는 프롬프트
@@ -133,6 +133,7 @@ You are CodeAssist, an AI designed to help with coding tasks.
 ** Please complete the SOURCE_CODE without any explanation!! **
 ** Don't repeat what I wrote. Just write next part  **
 ** this program language is JAVA **
+** Think in English but write the comments in 한국어(korean). **
 
 """)
 
@@ -146,7 +147,7 @@ You are a code analyzer that understands source code and explains its content to
 
 
 ** Understand the above <SOURCE_CODE> and generate comments. **
-** Think in English but write the comments in Korean. **
+** Think in English but write the comments in 한국어(korean). **
 """)
 
 
@@ -198,9 +199,8 @@ String last_name = MapDataUtil.getString(PersonDoc, "LAST_NAME"); // Last Name
 MapDataUtil.setString(PersonDoc, "LAST_NAME", last_name); // Last Name
 ```  
 
-Sort when generating code
-List everything from 'MapDataUtil.get' and then 'MapDataUtil.set'
-
+** Sort when generating code List everything from 'MapDataUtil.get' and then 'MapDataUtil.set' **
+** Think in English but write the comments in 한국어(korean). **
 """)
 
 TEXT_SQL_PROMPT = PromptTemplate.from_template("""
@@ -210,17 +210,24 @@ You are a database expert specializing in generating SQL.
 {TABLE_DESC}  
 **</Table Info List>**  
 
-Using the **<Table Info List>**, write SQL according to the requests provided in the **<SQL Request>**.
+**<SQL>**  
+{SQL_REFERENCE}  
+**</SQL>**  
+
+Using the **<Table Info List>** and **<SQL>**, write SQL according to the requests provided in the **<SQL Request>**.
 Avoid ANSI joins. Use Oracle's traditional outer join syntax with (+) instead.
 
 **<SQL Request>**
 {SQL_REQUEST}
 **<SQL Request>**
 
+** Think in English but write the comments in 한국어(korean). **
 """)
 
 
 CHAT_PROMPT = PromptTemplate.from_template("""
 {QUESTION}
+
+** Think in English but write the comments in 한국어(korean). **
 """)
 

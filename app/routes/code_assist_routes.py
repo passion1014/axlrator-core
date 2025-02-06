@@ -116,12 +116,15 @@ async def make_sql_endpoint(request: Request):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
 
-    #TODO: insert history
-
     async def stream_response() :
         async for chunk in code_assist_chain(type="05").astream(message, stream_mode="custom"):
             yield chunk.content
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+# SQL 생성 요청 엔드포인트
+@router.post("/api/get-threadid")
+async def get_thread_id(request: Request):
+    return str(uuid.uuid4())
 
 
 # SQL 생성 요청 엔드포인트
@@ -130,6 +133,9 @@ async def chat(request: Request):
     # request 값 확인
     body = await request.json()
     message = CodeChatInfo.model_validate(body)
+    
+    # 항상 한글로 답변하도록    
+    question = message.question + "\n** Think in English but write the response in 한국어(korean). **"
     
     # thread_id 셋팅
     thread_id = message.thread_id or str(uuid.uuid4())
@@ -153,7 +159,7 @@ async def chat(request: Request):
     agent = CodeChatAgent(index_name="cg_code_assist")
         
     graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
-    input_message = HumanMessage(content=message.question)
+    input_message = HumanMessage(content=question)
 
     async def stream_response() :
         async for event in graph.astream({"messages": [input_message]}, config, stream_mode="custom"): #stream_mode = values

@@ -1,6 +1,8 @@
+import re
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
+from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
 from app.process.reranker import AlfredReranker
@@ -236,34 +238,41 @@ def code_assist_chain(type:str):
 
     def get_table_desc(state: AgentState) -> AgentState:
         context = state['sql_request']
+        
+        if is_table_name(context):
+            rsrc_table_repository = RSrcTableRepository(session=session)
+            rsrc_table_column_repository = RSrcTableColumnRepository(session=session)
 
-        rsrc_table_repository = RSrcTableRepository(session=session)
-        rsrc_table_column_repository = RSrcTableColumnRepository(session=session)
-
-        table_json = {}
-        table_names = context.split(',')
-        for table_name in table_names:
-            if table_name.strip():  # 빈 문자열이 아닌 경우에만 처리
-                table_data = rsrc_table_repository.get_data_by_table_name(table_name=table_name.strip())
-                for table in table_data:
-                    columns = rsrc_table_column_repository.get_data_by_table_id(rsrc_table_id=table.id)
+            table_json = {}
+            table_names = context.split(',')
+            for table_name in table_names:
+                if table_name.strip():  # 빈 문자열이 아닌 경우에만 처리
+                    table_data = rsrc_table_repository.get_data_by_table_name(table_name=table_name.strip())
                     
-                    column_jsons = []
-                    for column in columns:
-                        column_jsons.append({
-                            'name': column.column_name,
-                            # 'column_korean_name': column.column_korean_name,
-                            'type': column.column_type,
-                            'desc': column.column_desc.strip()
-                        })
-                    
-                    table_json[table_name.strip()] = {
-                        'table_name': table_name.strip(),
-                        'columns': column_jsons
-                    }
-                    
-        # 문서 결합
-        state['context'] = table_json
+                    for table in table_data:
+                        columns = rsrc_table_column_repository.get_data_by_table_id(rsrc_table_id=table.id)
+                        
+                        column_jsons = []
+                        for column in columns:
+                            column_jsons.append({
+                                'name': column.column_name,
+                                # 'column_korean_name': column.column_korean_name,
+                                'type': column.column_type,
+                                'desc': column.column_desc.strip()
+                            })
+                        
+                        table_json[table_name.strip()] = {
+                            'table_name': table_name.strip(),
+                            'columns': column_jsons
+                        }
+                        
+            # 문서 결합
+            state['context'] = table_json
+            state['current_code'] = ""
+        else:
+            state['context'] = ""
+            state['current_code'] = context
+            
         return state
 
 
@@ -293,6 +302,7 @@ def code_assist_chain(type:str):
         elif ("05" == type) : # SQL 생성하기
             prompt = TEXT_SQL_PROMPT.format(
                 TABLE_DESC=state['context'],
+                SQL_REFERENCE=state['current_code'],
                 SQL_REQUEST=state['question']
             )
 
@@ -381,4 +391,3 @@ def combine_documents_with_relevance(docs):
     # combined_context = "\n".join([doc['content'] for doc in sorted(docs, key=lambda x: x['score'], reverse=True)])
     combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context
-
