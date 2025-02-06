@@ -190,7 +190,7 @@ class CodeAssistChain:
     
     def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
         state['prompt'] = CODE_ASSIST_TASK_PROMPT.format(
-            REFERENCE_CODE=state['context'],
+            REFERENCE_CODE="", # state['context'],
             TASK=state['question'],
             CURRENT_CODE=state['current_code']
         )
@@ -284,7 +284,7 @@ def code_assist_chain(type:str):
             )
         elif ("02" == type) :
             prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
+                REFERENCE_CODE="", # state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
@@ -308,7 +308,7 @@ def code_assist_chain(type:str):
 
         else:
             prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
+                REFERENCE_CODE="", # state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
