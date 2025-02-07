@@ -12,7 +12,7 @@
 <script>
   $(document).ready(function () {
     //보내기 버튼 클릭
-    $("#btnSend").on("click", function () {
+    $("#btnSend111111111").on("click", function () {
       const question = $("#textMsg").val();
       if (!question) return false;
 
@@ -297,10 +297,11 @@
       <div id="input-container" class="input-container">
         <div id="input-box" class="input-group input-box">
           <textarea placeholder="질문입력..." class="form-control" id="question-input"></textarea>
-
-          <div class="input-group-append">
-            <button id="submit-btn" class="btn btn-primary" type="button">Submit</button>
-          </div>
+        </div>
+        <div class="chat-btns">
+          <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring">
+            <i class="bi bi-arrow-up"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -326,7 +327,7 @@
 
 <script>
   $(document).ready(function () {
-    $("#submit-btn").on("click", function () {
+    $("#btnSend").on("click", function () {
       $("#input-container").addClass("fixed-bottom").css({
         transition: "all 0.6s ease",
         "padding-top": "10px",
