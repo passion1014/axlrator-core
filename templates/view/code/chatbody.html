@@ -294,9 +294,10 @@
           </button>
         </div>
       </div> -->
-      <div id="input-container">
-        <div id="input-box" class="input-group">
-          <input type="text" id="question-input" class="form-control" placeholder="Enter your question..." />
+      <div id="input-container" class="input-container">
+        <div id="input-box" class="input-group input-box">
+          <textarea placeholder="질문입력..." class="form-control" id="question-input"></textarea>
+
           <div class="input-group-append">
             <button id="submit-btn" class="btn btn-primary" type="button">Submit</button>
           </div>
@@ -312,13 +313,7 @@
     height: 100%;
     margin: 0;
   }
-  #input-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    transition: all 0.6s ease; /* 부드러운 이동 애니메이션 */
-  }
+
   #input-container.fixed-bottom {
     height: auto;
     padding-bottom: 20px; /* 아래 마진 추가 */
