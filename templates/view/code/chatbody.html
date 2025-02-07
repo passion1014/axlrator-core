@@ -3,6 +3,11 @@
   code {
     position: relative;
   }
+
+  /* #input-box {
+    width: 100%;
+    max-width: 500px;
+  } */
 </style>
 <script>
   $(document).ready(function () {
@@ -10,6 +15,11 @@
     $("#btnSend").on("click", function () {
       const question = $("#textMsg").val();
       if (!question) return false;
+
+      $(".input-container").addClass("bottom").css({
+        transition: "all 0.6s ease",
+        "padding-top": "10px",
+      });
 
       $("#textMsg").val("");
       disableSendButton(true);
@@ -271,19 +281,61 @@
         <i class="bi bi-chevron-double-down"></i>
       </button>
 
-      <!--질문영역 -->
-      <div class="chat-msg-wrap">
+      <!--질문영역 백업업-->
+      <!-- <div class="chat-msg-wrap"  style="display: none;">
         <textarea placeholder="질문입력" class="form-control" id="textMsg"></textarea>
-        <!-- <div class="chat-file">
+        <div class="chat-file">
           <input type="file" class="form-control" />
           <span class="icon-file"><i class="bi bi-paperclip"></i></span>
-        </div> -->
+        </div>
         <div class="chat-btns">
           <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring">
-            <i class="bi bi-send"></i>
+            <i class="bi bi-arrow-up"></i>
           </button>
+        </div>
+      </div> -->
+      <div id="input-container">
+        <div id="input-box" class="input-group">
+          <input type="text" id="question-input" class="form-control" placeholder="Enter your question..." />
+          <div class="input-group-append">
+            <button id="submit-btn" class="btn btn-primary" type="button">Submit</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  body,
+  html {
+    height: 100%;
+    margin: 0;
+  }
+  #input-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    transition: all 0.6s ease; /* 부드러운 이동 애니메이션 */
+  }
+  #input-container.fixed-bottom {
+    height: auto;
+    padding-bottom: 20px; /* 아래 마진 추가 */
+  }
+  #input-box {
+    width: 100%;
+    max-width: 500px;
+  }
+</style>
+
+<script>
+  $(document).ready(function () {
+    $("#submit-btn").on("click", function () {
+      $("#input-container").addClass("fixed-bottom").css({
+        transition: "all 0.6s ease",
+        "padding-top": "10px",
+      });
+    });
+  });
+</script>
