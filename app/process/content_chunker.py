@@ -6,7 +6,6 @@ import re
 from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
 from app.db_model.database import SessionLocal
 from app.db_model.database_models import OrgRSrc
-from app.formatter.code_formatter import parse_augmented_chunk
 from app.process.contextual_process import generate_code_context
 from app.process.java_parser import parse_java_file, should_skip_by_line_count
 

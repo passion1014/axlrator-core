@@ -97,18 +97,24 @@ async def autocode_endpoint(request: Request):
 async def makecomment_endpoint(request: Request):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
-    
-    response = code_assist_chain(type="03").invoke(message)
-    return {"response": response}
+
+    async def stream_response() :
+        async for chunk in code_assist_chain(type="03").astream(message, stream_mode="custom"):
+            yield chunk.content
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
+
 
 # MapDataUtil 생성 요청 엔드포인트
 @router.post("/api/makemapdatautil")
 async def make_mapdatautil_endpoint(request: Request):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
-    
-    response = code_assist_chain(type="04").invoke(message)
-    return {"response": response}
+
+    async def stream_response() :
+        async for chunk in code_assist_chain(type="04").astream(message, stream_mode="custom"):
+            yield chunk.content
+    return StreamingResponse(stream_response(), media_type="text/event-stream")
+
 
 # SQL 생성 요청 엔드포인트
 @router.post("/api/makesql")

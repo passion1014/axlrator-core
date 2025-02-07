@@ -1,7 +1,5 @@
 # 필요한 라이브러리 import하기
-import argparse
 import os
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker

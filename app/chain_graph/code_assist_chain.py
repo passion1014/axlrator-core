@@ -5,6 +5,7 @@ from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAss
 from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
+from app.formatter.code_assist_parser import map_data_util_parser
 from app.process.reranker import AlfredReranker
 from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CHAT_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
 from langgraph.graph import StateGraph, START, END
@@ -13,6 +14,7 @@ from app.vectordb.bm25_search import ElasticsearchBM25
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
 from langgraph.types import StreamWriter
+
 
 import logging
 
@@ -296,7 +298,8 @@ def code_assist_chain(type:str):
 
         elif ("04" == type) : # 테이블명으로 MapDataUtil 생성하기
             prompt = MAKE_MAPDATAUTIL_PROMPT.format(
-                TABLE_DESC=state['context']
+                TABLE_DESC=state['context'],
+                format = map_data_util_parser.get_format_instructions()
             )
 
         elif ("05" == type) : # SQL 생성하기
@@ -324,6 +327,7 @@ def code_assist_chain(type:str):
             chunks.append(chunk)
         state['response'] = "".join(str(chunks))
         return state
+    
 
     workflow = StateGraph(AgentState)
 
@@ -365,6 +369,7 @@ def code_assist_chain(type:str):
     elif ("05" == type) : # SQL 생성하기
         workflow.add_node("get_table_desc", get_table_desc)
         workflow.add_node("generate_response", generate_response)
+        # workflow.add_node("generate_response", generate_response)
         
         workflow.set_entry_point("get_table_desc")
         workflow.add_edge("get_table_desc", "generate_response")

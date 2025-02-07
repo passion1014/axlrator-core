@@ -120,7 +120,7 @@ You will be given three pieces of information:
 3. <reference_code>{REFERENCE_CODE}</reference_code>
    This is a list of code snippets that can be used as reference or inspiration.
 
-** Write only the source code without any explanation!! **
+** Think in English but write the comments in 한국어(korean). **
 """)
 
 # 입력된 소스코드의 다음 코드를 예측하는 프롬프트
