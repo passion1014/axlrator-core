@@ -44,8 +44,8 @@ def compare_files(file1, file2):
     lines1 = read_file_safe(file1)
     lines2 = read_file_safe(file2)
 
-    diff = list(difflib.unified_diff(lines1, lines2, lineterm='', fromfile=file1, tofile=file2))
-    return "\n".join(diff) if diff else None
+    diff = list(difflib.unified_diff(lines1, lines2, lineterm='\n', fromfile=file1, tofile=file2))
+    return "".join(diff) if diff else None
 
 def compare_folders(folder1, folder2):
     """폴더 비교 후 결과를 보고서 파일로 저장"""
