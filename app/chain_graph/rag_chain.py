@@ -1,20 +1,17 @@
-from typing import TypedDict
 from app.chain_graph.agent_state import AgentState
 from app.db_model.database import SessionLocal
-from app.prompts.code_prompt import CODE_ASSIST_TASK_PROMPT
 from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
-
-
+from langfuse import Langfuse
 
 
 def create_rag_chain():
     # retriever 선언
     session = SessionLocal()
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
-    # faissVectorDB.read_index()
+    langfuse = Langfuse()
 
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
@@ -32,11 +29,9 @@ def create_rag_chain():
         return state
 
     def generate_response(state: AgentState) -> AgentState:
-        prompt = CODE_ASSIST_TASK_PROMPT.format(
-            REFERENCE_CODE=state['context'],
-            TASK=state['question'],
-            CURRENT_CODE=''
-        )
+        langfuse_prompt = langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+        prompt = langfuse_prompt.compile(REFERENCE_CODE=state['context'], TASK=state['question'], CURRENT_CODE='')
+        
         response = model.invoke(prompt)
         
         state['response'] = response

@@ -2,10 +2,10 @@ from app.chain_graph.agent_state import AgentState
 from app.db_model.data_repository import ChunkedDataRepository
 from app.db_model.database import SessionLocal
 from app.process.compound_word_splitter import CompoundWordSplitter
-from app.prompts.term_conversion_prompt import TERM_CONVERSION_PROMPT1, TERM_CONVERSION_PROMPT2
 from app.utils import get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
+from langfuse import Langfuse
 from langgraph.graph import END, StateGraph
 import re
 
@@ -16,6 +16,7 @@ def create_term_conversion_chain():
     """
     session = SessionLocal()
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_terms")
+    langfuse = Langfuse()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
@@ -49,7 +50,8 @@ def create_term_conversion_chain():
         return state
 
     def generate_response(state: AgentState) -> AgentState:
-        prompt = TERM_CONVERSION_PROMPT1.format(korean_term=state['question'], related_info=state['context'])
+        langfuse_prompt = langfuse.get_prompt("TERM_CONVERSION_PROMPT1", version=1)
+        prompt = langfuse_prompt.compile(korean_term=state['question'], related_info=state['context'])
         response = model.invoke(prompt)
 
         # AIMessage 객체에서 텍스트 콘텐츠 추출
@@ -90,12 +92,12 @@ def create_term_conversion_chain2():
     """
     용어를 변환하기 위한 체인을 생성합니다
     """
-    
-    # 모델 선언
+    langfuse = Langfuse()
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
     
     def generate_response(state: AgentState) -> AgentState:
-        prompt = TERM_CONVERSION_PROMPT2.format(request=state['question'], context=state['context'])
+        langfuse_prompt = langfuse.get_prompt("TERM_CONVERSION_PROMPT2", version=1)
+        prompt = langfuse_prompt.compile(request=state['question'], context=state['context'])
         response = model.invoke(prompt)
 
         # AIMessage 객체에서 텍스트 콘텐츠 추출

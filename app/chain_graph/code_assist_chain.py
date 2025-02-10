@@ -1,20 +1,17 @@
 import re
-from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
 from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import SessionLocal
-from app.formatter.code_assist_parser import map_data_util_parser
 from app.process.reranker import AlfredReranker
-from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CHAT_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
 from langgraph.graph import StateGraph, START, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
 from app.vectordb.faiss_vectordb import FaissVectorDB
 from langfuse.callback import CallbackHandler
 from langgraph.types import StreamWriter
-
+from langfuse import Langfuse
 
 import logging
 
@@ -25,6 +22,7 @@ class CodeAssistChain:
         self.faissVectorDB = FaissVectorDB(db_session=self.db_session, index_name=index_name)
         self.es_bm25 = ElasticsearchBM25(index_name=index_name)
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+        self.langfuse = Langfuse()
 
     def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
@@ -158,9 +156,8 @@ class CodeAssistChain:
             configurable={"thread_id": thread_id},  # 스레드 ID 설정
         )
 
-        prompt = CHAT_PROMPT.format(
-            QUESTION=state['question']
-        )
+        langfuse_prompt = self.langfuse.get_prompt("CHAT_PROMPT", version=1)
+        prompt = langfuse_prompt.compile(QUESTION=state['question'])
 
         # 호출
         chunks = []
@@ -191,11 +188,13 @@ class CodeAssistChain:
         return state
     
     def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
-        state['prompt'] = CODE_ASSIST_TASK_PROMPT.format(
-            REFERENCE_CODE="", # state['context'],
+        langfuse_prompt = self.langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+        prompt = langfuse_prompt.compile(
+            REFERENCE_CODE="",
             TASK=state['question'],
             CURRENT_CODE=state['current_code']
         )
+        state['prompt'] = prompt
 
     def chain_codeassist(self) -> CodeAssistState:
         graph = StateGraph(CodeAssistState)
@@ -222,6 +221,7 @@ def code_assist_chain(type:str):
     
     session = SessionLocal()
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
+    langfuse = Langfuse()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
@@ -281,45 +281,45 @@ def code_assist_chain(type:str):
     async def generate_response(state: AgentState, writer: StreamWriter) -> AgentState:
         
         if ("01" == type) : # autocode
-            prompt = AUTO_CODE_TASK_PROMPT.format(
-                SOURCE_CODE=state['question']
-            )
+            langfuse_prompt = langfuse.get_prompt("AUTO_CODE_TASK_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(SOURCE_CODE=state['question'])
+
         elif ("02" == type) :
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
+            langfuse_prompt = langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
                 REFERENCE_CODE="", # state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
             
         elif ("03" == type) : # 주석생성하기
-            prompt = MAKE_CODE_COMMENT_PROMPT.format(
+            langfuse_prompt = langfuse.get_prompt("MAKE_CODE_COMMENT_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
                 SOURCE_CODE=state['question']
             )
 
         elif ("04" == type) : # 테이블명으로 MapDataUtil 생성하기
-            prompt = MAKE_MAPDATAUTIL_PROMPT.format(
-                TABLE_DESC=state['context'],
-                format = map_data_util_parser.get_format_instructions()
+            langfuse_prompt = langfuse.get_prompt("MAKE_MAPDATAUTIL_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
+                TABLE_DESC=state['context']
             )
 
         elif ("05" == type) : # SQL 생성하기
-            prompt = TEXT_SQL_PROMPT.format(
+            langfuse_prompt = langfuse.get_prompt("TEXT_SQL_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
                 TABLE_DESC=state['context'],
                 SQL_REFERENCE=state['current_code'],
                 SQL_REQUEST=state['question']
             )
 
         else:
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
+            langfuse_prompt = langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
                 REFERENCE_CODE="", # state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
-            pass
 
-        # response = model.invoke(prompt)
-        # state['response'] = response
-        
         # Stream 방식
         chunks = []
         async for chunk in model.astream(prompt):
@@ -393,6 +393,5 @@ def code_assist_chain(type:str):
 
 # Helper function: combine_documents_with_relevance
 def combine_documents_with_relevance(docs):
-    # combined_context = "\n".join([doc['content'] for doc in sorted(docs, key=lambda x: x['score'], reverse=True)])
     combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context

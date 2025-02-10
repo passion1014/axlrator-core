@@ -1,7 +1,6 @@
 import re
 from typing import List, Tuple
 from langchain_core.prompts import format_document
-from app.prompts.prompts import DEFAULT_DOCUMENT_PROMPT
 import os
 
 def get_embedding_model():
@@ -93,11 +92,6 @@ def get_server_type():
         return "D"
     else:
         raise ValueError("알 수 없는 서버 타입입니다.")
-
-def combine_documents(docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"):
-    doc_strings = [format_document(doc, document_prompt) for doc in docs]
-    return document_separator.join(doc_strings)
-
 
 def merge_chat_history(chat_history: List[Tuple]) -> str:
     buffer = ""

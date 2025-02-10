@@ -1,11 +1,11 @@
 from app.chain_graph.agent_state import AgentState
 from app.db_model.database import SessionLocal
-from app.prompts.sql_prompt import SQL_QUERY_PROMPT
 from app.utils import get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
 
 from langfuse.callback import CallbackHandler
+from langfuse import Langfuse
 from langgraph.graph import END, StateGraph
 
 
@@ -16,7 +16,7 @@ def create_text_to_sql_chain():
     session = SessionLocal()
 
     faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_text_to_sql")
-    # faissVectorDB.read_index()
+    langfuse = Langfuse()
 
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
@@ -28,11 +28,11 @@ def create_text_to_sql_chain():
         return state
 
     def generate_response(state: AgentState) -> AgentState:
-        prompt = SQL_QUERY_PROMPT.format(database_schema=state['context'], question=state['question'])
+        langfuse_prompt = langfuse.get_prompt("SQL_QUERY_PROMPT", version=1)
+        prompt = langfuse_prompt.compile(database_schema=state['context'], question=state['question'])
         response = model.invoke(prompt)
 
         state['response'] = response
-
         return state
 
     workflow = StateGraph(AgentState)
