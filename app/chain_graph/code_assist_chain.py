@@ -1,14 +1,14 @@
-import re
+from fastapi import Depends
 from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
 from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_session, get_async_session
 from app.process.reranker import AlfredReranker
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
-from app.vectordb.faiss_vectordb import FaissVectorDB
+from app.vectordb.faiss_vectordb import get_vector_db
 from langfuse.callback import CallbackHandler
 from langgraph.types import StreamWriter
 from langfuse import Langfuse
@@ -16,10 +16,10 @@ from langfuse import Langfuse
 import logging
 
 class CodeAssistChain:
-    def __init__(self, index_name:str="cg_code_assist"):
+    def __init__(self, session, index_name:str="cg_code_assist"):
         self.index_name = index_name
-        self.db_session = SessionLocal()
-        self.faissVectorDB = FaissVectorDB(db_session=self.db_session, index_name=index_name)
+        self.db_session = session
+        self.faissVectorDB = get_vector_db(index_name=index_name, session=session)
         self.es_bm25 = ElasticsearchBM25(index_name=index_name)
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
         self.langfuse = Langfuse()
@@ -126,6 +126,7 @@ class CodeAssistChain:
         context = state['question']
         table_json = {}
         table_names = context.split(',')
+        
         rsrc_table_repo = RSrcTableRepository(session=self.db_session)
         rsrc_table_column_repo = RSrcTableColumnRepository(session=self.db_session)
 
@@ -175,7 +176,7 @@ class CodeAssistChain:
     #   task_type 04 -> generate_DSC_mapdatautil (*DSC=Domain-Specific-Coding)
     #   task_type 05 -> generate_text2sql
     #   task_type ?? -> generate_talk
-    # def generate_response(self, state: AgentState, task_type: str) -> AgentState:
+    # TODO : async, sync 둘다 가능하도록 변경 필요
     async def generate_response_astream(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
         prompt = state['prompt']
         
@@ -189,12 +190,12 @@ class CodeAssistChain:
     
     def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
         langfuse_prompt = self.langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
-        prompt = langfuse_prompt.compile(
+
+        state['prompt'] = langfuse_prompt.compile(
             REFERENCE_CODE="",
             TASK=state['question'],
             CURRENT_CODE=state['current_code']
         )
-        state['prompt'] = prompt
 
     def chain_codeassist(self) -> CodeAssistState:
         graph = StateGraph(CodeAssistState)
@@ -211,34 +212,40 @@ class CodeAssistChain:
         chain.with_config(callbacks=[CallbackHandler()])
         
         return chain
+    
+    def chain_make_comment(self) -> CodeAssistState:
+        pass
+        # elif ("03" == type) : # 주석생성하기
+        #     langfuse_prompt = langfuse.get_prompt("MAKE_CODE_COMMENT_PROMPT", version=1)
+        #     prompt = langfuse_prompt.compile(
+        #         SOURCE_CODE=state['question']
+        #     )
 
 
 # ------------------------------------------------
 # 아래는 이전 버전 - 삭제필요
 # ------------------------------------------------
 # 임시로 사용하는 함수 - 추후에는 사용하지 않음
-def code_assist_chain(type:str):
-    
-    session = SessionLocal()
-    faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
+async def code_assist_chain(type:str, session):
+    faissVectorDB = await get_vector_db(index_name="cg_code_assist", session=session)
     langfuse = Langfuse()
     
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
-    def get_context(state: AgentState) -> AgentState:
+    async def get_context(state: AgentState) -> AgentState:
         # 질문의 추가 맥락 생성
         # enriched_query = contextual_enrichment(state['question'])  # 맥락을 추가로 풍부화
         enriched_query = state['question']
         
         # 맥락 기반 검색
-        docs = faissVectorDB.search_similar_documents(query=enriched_query, k=2)
+        docs = await faissVectorDB.search_similar_documents(query=enriched_query, k=2)
         
         # 문서 결합
         state['context'] = combine_documents_with_relevance(docs)  # 단순 병합 대신 관련성을 고려하여 결합
         return state
 
-    def get_table_desc(state: AgentState) -> AgentState:
+    async def get_table_desc(state: AgentState) -> AgentState:
         context = state['sql_request']
         
         if is_table_name(context):
@@ -249,10 +256,10 @@ def code_assist_chain(type:str):
             table_names = context.split(',')
             for table_name in table_names:
                 if table_name.strip():  # 빈 문자열이 아닌 경우에만 처리
-                    table_data = rsrc_table_repository.get_data_by_table_name(table_name=table_name.strip())
+                    table_data = await rsrc_table_repository.get_data_by_table_name(table_name=table_name.strip())
                     
                     for table in table_data:
-                        columns = rsrc_table_column_repository.get_data_by_table_id(rsrc_table_id=table.id)
+                        columns = await rsrc_table_column_repository.get_data_by_table_id(rsrc_table_id=table.id)
                         
                         column_jsons = []
                         for column in columns:

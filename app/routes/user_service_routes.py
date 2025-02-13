@@ -1,10 +1,12 @@
 from datetime import datetime
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
+
+from requests import Session
 # from app.config import setup_logging
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database_models import ChatHistory, UserInfo
 
@@ -121,8 +123,8 @@ async def delete_all_chat_history(request: Request):
 
 class UserService:
     def __init__(self):
-        self.session = SessionLocal()
-        self.user_info_repository = UserInfoRepository(self.session)
+        with get_async_session() as session:
+            self.user_info_repository = UserInfoRepository(session)
 
     def get_user_by_id(self, user_id: str):
         """
@@ -170,8 +172,8 @@ class UserService:
 
 class ChatHistoryService:
     def __init__(self):
-        self.session = SessionLocal()
-        self.chat_history_repository = ChatHistoryRepository(self.session)
+        with get_async_session() as session:
+            self.chat_history_repository = ChatHistoryRepository(session)
 
     def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
         return self.chat_history_repository.get_chat_history_by_user_id_and_type_code(user_id=user_id, type_code=type_code)

@@ -17,6 +17,7 @@ database_url = os.getenv("DATABASE_URL")
 
 
 
+from app.db_model.database import get_async_session
 from app.db_model.database_models import RSrcTable, RSrcTableColumn
 
 
@@ -27,7 +28,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def insert_data_from_file(file_path):
     # 데이터베이스 세션 생성
-    session = SessionLocal()
+    session = get_async_session()
     
     try:
         # 파일 읽기

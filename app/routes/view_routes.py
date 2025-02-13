@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.config import TEMPLATE_DIR, setup_logging
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database_models import ChatHistory, UserInfo
 
@@ -124,7 +124,7 @@ async def view_workflow(request: Request):
 # 임시코드        
 class UserService:
     def __init__(self):
-        self.session = SessionLocal()
+        self.session = get_async_session()
         self.user_info_repository = UserInfoRepository(self.session)
 
     def get_user_by_id(self, user_id: str):

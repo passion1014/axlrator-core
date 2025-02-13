@@ -2,14 +2,15 @@ from datetime import datetime
 import os
 from typing import List
 
-from sqlalchemy import desc
+from sqlalchemy import desc, select, update, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db_model.database_models import ChatHistory, ChunkedData, FaissInfo, OrgRSrc, RSrcTable, RSrcTableColumn, UserInfo
 
 class FaissInfoRepository:
     def __init__(self, session):
         self.session = session
     
-    def get_faiss_info_by_id(self, faiss_info_id: int) -> 'FaissInfo':
+    async def get_faiss_info_by_id(self, faiss_info_id: int) -> 'FaissInfo':
         """
         ID로 FAISS 정보를 조회합니다.
         
@@ -19,7 +20,9 @@ class FaissInfoRepository:
         Returns:
             조회된 FaissInfo 객체. 없으면 None 반환
         """
-        return self.session.query(FaissInfo).filter(FaissInfo.id == faiss_info_id).first()
+        stmt = select(FaissInfo).where(FaissInfo.id == faiss_info_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
 class OrgRSrcRepository:
     def __init__(self, session):
@@ -31,7 +34,7 @@ class OrgRSrcRepository:
         """
         self.session = session
 
-    def get_org_resrc_by_id(self, org_resrc_id: int) -> OrgRSrc:
+    async def get_org_resrc_by_id(self, org_resrc_id: int) -> OrgRSrc:
         """
         ID로 원본 리소스 정보를 조회합니다.
         
@@ -41,34 +44,36 @@ class OrgRSrcRepository:
         Returns:
             조회된 OrgRSrc 객체. 없으면 None 반환
         """
-        return self.session.query(OrgRSrc).filter(OrgRSrc.id == org_resrc_id).first()
+        stmt = select(OrgRSrc).where(OrgRSrc.id == org_resrc_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
-    def get_org_resrc(self, resrc_name: str = None, resrc_type: str = None, 
-                    resrc_path: str = None, resrc_desc: str = None, 
-                    is_vector: bool = None) -> list[OrgRSrc] | OrgRSrc:
-        query = self.session.query(OrgRSrc)
+    async def get_org_resrc(self, resrc_name: str = None, resrc_type: str = None, 
+                            resrc_path: str = None, resrc_desc: str = None, 
+                            is_vector: bool = None) -> list[OrgRSrc] | OrgRSrc:
+        stmt = select(OrgRSrc)
         
         # 각 파라미터가 있는 경우에만 필터 조건 추가
         if resrc_name is not None:
-            query = query.filter(OrgRSrc.resrc_name == resrc_name)
+            stmt = stmt.where(OrgRSrc.resrc_name == resrc_name)
             
         if resrc_type is not None:
-            query = query.filter(OrgRSrc.resrc_type == resrc_type)
+            stmt = stmt.where(OrgRSrc.resrc_type == resrc_type)
             
         if resrc_path is not None:
-            query = query.filter(OrgRSrc.resrc_path == resrc_path)
+            stmt = stmt.where(OrgRSrc.resrc_path == resrc_path)
             
         if resrc_desc is not None:
-            query = query.filter(OrgRSrc.resrc_desc == resrc_desc)
+            stmt = stmt.where(OrgRSrc.resrc_desc == resrc_desc)
             
         if is_vector is not None:
-            query = query.filter(OrgRSrc.is_vector == is_vector)
+            stmt = stmt.where(OrgRSrc.is_vector == is_vector)
             
         # 모든 결과 반환
-        return query.all()
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
-
-    def create_org_resrc(self, file_path: str, type: str = '99', desc:str = '-', created_by = '', modified_by = '') -> OrgRSrc:
+    async def create_org_resrc(self, file_path: str, type: str = '99', desc:str = '-', created_by = '', modified_by = '') -> OrgRSrc:
         """
         원본 리소스 정보를 생성하고 저장합니다.
         
@@ -90,13 +95,16 @@ class OrgRSrcRepository:
             modified_by = modified_by
         )
         self.session.add(org_resrc)
-        self.session.flush() # org_resrc.id를 얻기 위해 flush를 한다. but commit 되기 전임
+        await self.session.flush() # org_resrc.id를 얻기 위해 flush를 한다. but commit 되기 전임
         
         return org_resrc
     
-    def update_org_resrc(self, org_resrc_id: int = 0, resrc_name: str = None, resrc_type: str = None, 
-                        resrc_path: str = None, resrc_desc: str = None, is_vector: bool = None,
-                        modified_by: str = '', org_resrc: OrgRSrc = None) -> OrgRSrc:
+    async def update_org_resrc(
+        self, 
+        org_resrc_id: int = 0, 
+        resrc_name: str = None, resrc_type: str = None, resrc_path: str = None, resrc_desc: str = None, 
+        is_vector: bool = None, modified_by: str = '', org_resrc: OrgRSrc = None
+    ) -> OrgRSrc:
         """
         원본 리소스 정보를 업데이트합니다.
         
@@ -114,7 +122,9 @@ class OrgRSrcRepository:
             업데이트된 OrgRSrc 객체
         """
         if org_resrc is None:
-            org_resrc = self.session.query(OrgRSrc).filter(OrgRSrc.id == org_resrc_id).first()
+            stmt = select(OrgRSrc).where(OrgRSrc.id == org_resrc_id)
+            result = await self.session.execute(stmt)
+            org_resrc = result.scalar_one_or_none()
             if not org_resrc:
                 raise ValueError(f"ID {org_resrc_id}에 해당하는 원본 리소스를 찾을 수 없습니다.")
             
@@ -133,19 +143,18 @@ class OrgRSrcRepository:
         org_resrc.modified_by = modified_by
         
         self.session.add(org_resrc)
-        self.session.flush()
+        await self.session.flush()
         
         return org_resrc
     
-    
-    def commit(self):
+    async def commit(self):
         """
         세션의 변경사항을 데이터베이스에 커밋합니다.
         """
         try:
-            self.session.commit()
+            await self.session.commit()
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             raise e
 
 class ChunkedDataRepository:
@@ -158,7 +167,7 @@ class ChunkedDataRepository:
         """
         self.session = session
         
-    def get_chunked_data_by_faiss_info_id(self, faiss_info_id: int) -> list[ChunkedData]:
+    async def get_chunked_data_by_faiss_info_id(self, faiss_info_id: int) -> list[ChunkedData]:
         """
         FAISS 정보 ID로 ChunkedData 목록을 조회합니다.
         
@@ -168,36 +177,49 @@ class ChunkedDataRepository:
         Returns:
             list[ChunkedData]: ChunkedData 목록
         """
-        return self.session.query(ChunkedData).filter(ChunkedData.faiss_info_id == faiss_info_id).all()
+        stmt = select(ChunkedData).where(ChunkedData.faiss_info_id == faiss_info_id)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
     
-    def get_chunked_data_by_org_resrc_id(self, org_resrc_id: int) -> list[ChunkedData]:
+    async def get_chunked_data_by_org_resrc_id(self, org_resrc_id: int) -> list[ChunkedData]:
         """
         원본 리소스 ID로 ChunkedData 목록을 조회합니다.
         """
-        return self.session.query(ChunkedData).filter(ChunkedData.org_resrc_id == org_resrc_id).all()
+        stmt = select(ChunkedData).where(ChunkedData.org_resrc_id == org_resrc_id)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
-    def get_chunked_data_by_content(self, data_type:str, content: str) -> list[ChunkedData]:
+    async def get_chunked_data_by_content(self, data_type:str, content: str) -> list[ChunkedData]:
         """
         content를 포함하는 ChunkedData 목록을 조회합니다.
         """
-        query = self.session.query(ChunkedData).filter(ChunkedData.content.like(f'%{content}%'))
+        stmt = select(ChunkedData).where(ChunkedData.content.like(f'%{content}%'))
         if data_type:
-            query = query.filter(ChunkedData.data_type == data_type)
+            stmt = stmt.where(ChunkedData.data_type == data_type)
             
-        return query.all()
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
-    def get_chunked_data_by_id(self, id: str) -> ChunkedData:
+    async def get_chunked_data_by_id(self, id: str) -> ChunkedData:
         """
         content를 포함하는 ChunkedData 목록을 조회합니다.
         """
-        query = self.session.query(ChunkedData).filter(ChunkedData.id == id)
-            
-        return query.first()
+        stmt = select(ChunkedData).where(ChunkedData.id == id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
-
-    def create_chunked_data(self, seq: int, org_resrc_id: int, data_name: str
-                            , data_type: str, content: str, context_chunk: str
-                            , document_metadata: dict, created_by = '', modified_by = '') -> ChunkedData:
+    async def create_chunked_data(
+        self, 
+        seq: int, 
+        org_resrc_id: int, 
+        data_name: str, 
+        data_type: str, 
+        content: str, 
+        context_chunk: str, 
+        document_metadata: dict, 
+        created_by = '', 
+        modified_by = ''
+    ) -> ChunkedData:
         chunked_data = ChunkedData(
             seq = seq,
             org_resrc_id = org_resrc_id,
@@ -212,15 +234,15 @@ class ChunkedDataRepository:
             modified_by = modified_by
         )
         self.session.add(chunked_data)
-        self.session.flush()
+        await self.session.flush()
         
         return chunked_data
 
-    def update_chunked_data(self, chunked_data_id: int = None, chunked_data: ChunkedData = None, seq: int = None
-                            , org_resrc_id: int = None, data_name: str = None, data_type: str = None
-                            , content: str = None, context_chunk: str = None, document_metadata: dict = None
-                            , faiss_info_id: int = None, vector_index: int = None
-                            , modified_by: str = '') -> ChunkedData:
+    async def update_chunked_data(self, chunked_data_id: int = None, chunked_data: ChunkedData = None, seq: int = None
+                                  , org_resrc_id: int = None, data_name: str = None, data_type: str = None
+                                  , content: str = None, context_chunk: str = None, document_metadata: dict = None
+                                  , faiss_info_id: int = None, vector_index: int = None
+                                  , modified_by: str = '') -> ChunkedData:
         """
         ChunkedData를 업데이트합니다.
         
@@ -244,7 +266,9 @@ class ChunkedDataRepository:
         if chunked_data is None:
             if chunked_data_id is None:
                 raise ValueError("chunked_data 또는 chunked_data_id 중 하나는 필수입니다.")
-            chunked_data = self.session.query(ChunkedData).filter(ChunkedData.id == chunked_data_id).first()
+            stmt = select(ChunkedData).where(ChunkedData.id == chunked_data_id)
+            result = await self.session.execute(stmt)
+            chunked_data = result.scalar_one_or_none()
             if not chunked_data:
                 raise ValueError(f"ID가 {chunked_data_id}인 ChunkedData를 찾을 수 없습니다.")
             
@@ -271,35 +295,44 @@ class ChunkedDataRepository:
         chunked_data.modified_by = modified_by
         
         self.session.add(chunked_data)
-        self.session.flush()
+        await self.session.flush()
         
         return chunked_data
 
-    def commit(self):
+    async def commit(self):
         """
         세션의 변경사항을 데이터베이스에 커밋합니다.
         """
         try:
-            self.session.commit()
+            await self.session.commit()
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             raise e
 
 
 class RSrcTableRepository:
-    def __init__(self, session):
+    def __init__(self, session: AsyncSession):
         self.session = session
+        
+    # @classmethod
+    # async def create(cls, session: AsyncSession) -> 'RSrcTableRepository':
+    #     instance = cls()
+    #     return instance
 
-    def get_data_by_table_name(self, table_name: str) -> list[RSrcTable]:
-        return self.session.query(RSrcTable).filter(RSrcTable.table_name == table_name).all()
+    async def get_data_by_table_name(self, table_name: str) -> list[RSrcTable]:
+        stmt = select(RSrcTable).where(RSrcTable.table_name == table_name)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
     
 class RSrcTableColumnRepository:
-    def __init__(self, session):
+    def __init__(self, session: AsyncSession):
         self.session = session
     
-    def get_data_by_table_id(self, rsrc_table_id: int) -> list[RSrcTable]:
-        return self.session.query(RSrcTableColumn).filter(RSrcTableColumn.rsrc_table_id == rsrc_table_id).all()
+    async def get_data_by_table_id(self, rsrc_table_id: int) -> list[RSrcTable]:
+        stmt = select(RSrcTableColumn).where(RSrcTableColumn.rsrc_table_id == rsrc_table_id)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
     
 
 
@@ -307,69 +340,92 @@ class UserInfoRepository:
     def __init__(self, session):
         self.session = session
 
-    def get_user_by_id(self, user_id: str) -> UserInfo:
-        return self.session.query(UserInfo).filter(UserInfo.user_id == user_id).first()
+    async def get_user_by_id(self, user_id: str) -> UserInfo:
+        stmt = select(UserInfo).where(UserInfo.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
-    def get_user_by_email(self, email: str) -> UserInfo:
-        return self.session.query(UserInfo).filter(UserInfo.email == email).first()
+    async def get_user_by_email(self, email: str) -> UserInfo:
+        stmt = select(UserInfo).where(UserInfo.email == email)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
-    def get_all_users(self) -> List[UserInfo]:
-        return self.session.query(UserInfo).all()
+    async def get_all_users(self) -> List[UserInfo]:
+        stmt = select(UserInfo)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
-    def create_user(self, user_info: UserInfo) -> UserInfo:
+    async def create_user(self, user_info: UserInfo) -> UserInfo:
         self.session.add(user_info)
-        self.session.commit()
+        await self.session.commit()
         return user_info
 
-    def update_user(self, user_id: str, user_data: dict) -> UserInfo:
-        user = self.session.query(UserInfo).filter(UserInfo.user_id == user_id).first()
+    async def update_user(self, user_id: str, user_data: dict) -> UserInfo:
+        stmt = select(UserInfo).where(UserInfo.user_id == user_id)
+        result = await self.session.execute(stmt)
+        user = result.scalar_one_or_none()
         if user:
             for key, value in user_data.items():
                 setattr(user, key, value)
-            self.session.commit()
+            await self.session.commit()
         return user
 
-    def delete_user(self, user_id: str):
-        user = self.session.query(UserInfo).filter(UserInfo.user_id == user_id).first()
+    async def delete_user(self, user_id: str):
+        stmt = select(UserInfo).where(UserInfo.user_id == user_id)
+        result = await self.session.execute(stmt)
+        user = result.scalar_one_or_none()
         if user:
-            self.session.delete(user)
-            self.session.commit()
+            await self.session.delete(user)
+            await self.session.commit()
 
 class ChatHistoryRepository:
     def __init__(self, session):
         self.session = session
 
-    # def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
-    #     return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id).all()
-    def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
-        return self.session.query(ChatHistory).join(UserInfo).filter(UserInfo.user_id == user_id, ChatHistory.type_code == type_code).order_by(desc(ChatHistory.created_at)).all()
+    # async def get_chat_history_by_user_id(self, user_id: str) -> List[ChatHistory]:
+    #     stmt = select(ChatHistory).join(UserInfo).where(UserInfo.user_id == user_id)
+    #     result = await self.session.execute(stmt)
+    #     return result.scalars().all()
 
-    def get_chat_history_by_title(self, title: str) -> List[ChatHistory]:
-        return self.session.query(ChatHistory).filter(ChatHistory.title == title).order_by(desc(ChatHistory.created_at)).all()
+    async def get_chat_history_by_user_id_and_type_code(self, user_id: str, type_code: str) -> List[ChatHistory]:
+        stmt = select(ChatHistory).join(UserInfo).where(UserInfo.user_id == user_id, ChatHistory.type_code == type_code).order_by(desc(ChatHistory.created_at))
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
-    def create_chat_history(self, chat_data: dict) -> ChatHistory:
+    async def get_chat_history_by_title(self, title: str) -> List[ChatHistory]:
+        stmt = select(ChatHistory).where(ChatHistory.title == title).order_by(desc(ChatHistory.created_at))
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def create_chat_history(self, chat_data: dict) -> ChatHistory:
         new_chat = ChatHistory(**chat_data)
         self.session.add(new_chat)
-        self.session.commit()
+        await self.session.commit()
         return new_chat
 
-    def update_chat_history(self, chat_id: int, chat_data: dict) -> ChatHistory:
-        chat = self.session.query(ChatHistory).filter(ChatHistory.id == chat_id).first()
+    async def update_chat_history(self, chat_id: int, chat_data: dict) -> ChatHistory:
+        stmt = select(ChatHistory).where(ChatHistory.id == chat_id)
+        result = await self.session.execute(stmt)
+        chat = result.scalar_one_or_none()
         if chat:
             for key, value in chat_data.items():
                 setattr(chat, key, value)
-            self.session.commit()
+            await self.session.commit()
         return chat
 
-    def delete_chat_history(self, chat_id: int, user_info_id: int):
-        chat = self.session.query(ChatHistory).filter(ChatHistory.id == chat_id, ChatHistory.user_info_id == user_info_id ).first()
+    async def delete_chat_history(self, chat_id: int, user_info_id: int):
+        stmt = select(ChatHistory).where(ChatHistory.id == chat_id, ChatHistory.user_info_id == user_info_id)
+        result = await self.session.execute(stmt)
+        chat = result.scalar_one_or_none()
         if chat:
-            self.session.delete(chat)
-            self.session.commit()
+            await self.session.delete(chat)
+            await self.session.commit()
 
-    def delete_all_chat_history(self, user_info_id: int):
-        chats = self.session.query(ChatHistory).filter(ChatHistory.user_info_id == user_info_id).all()
+    async def delete_all_chat_history(self, user_info_id: int):
+        stmt = select(ChatHistory).where(ChatHistory.user_info_id == user_info_id)
+        result = await self.session.execute(stmt)
+        chats = result.scalars().all()
         if chats:
             for chat in chats:
-                self.session.delete(chat)
-            self.session.commit()
+                await self.session.delete(chat)
+            await self.session.commit()

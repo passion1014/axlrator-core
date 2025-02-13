@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 import luigi
 
 from app.process.content_chunker import file_chunk_and_save
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.vectordb.bm25_search import create_elasticsearch_bm25_index
 
 
@@ -39,7 +39,7 @@ class ParseFile(luigi.Task):
     file_path = luigi.Parameter()
     output_dir = luigi.Parameter()  # 중간 디렉토리 경로 전달
     
-    session = SessionLocal()
+    session = get_async_session()
 
     def output(self):
         output_file = f'{self.output_dir}/parsed_{os.path.basename(self.file_path)}.txtt'

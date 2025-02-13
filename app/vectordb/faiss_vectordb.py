@@ -1,7 +1,9 @@
+import asyncio
 import os
 from typing import Dict, Optional, Union
 import faiss
 # import json      # 메타데이터를 JSON으로 처리하기 위한 라이브러리
+from fastapi import Depends
 from langchain_community.vectorstores import FAISS
 import numpy as np
 from sqlalchemy.orm import Session
@@ -9,22 +11,22 @@ from sqlalchemy import select, update, delete
 from langchain_core.documents import Document
 
 from app.db_model.data_repository import ChunkedDataRepository
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.db_model.database_models import FaissInfo, ChunkedData
 from app.utils import get_embedding_model
-
+from sqlalchemy.ext.asyncio import AsyncSession
 
 class PostgresDocstore:
-    def __init__(self, db_session: Session, index_name: str):
+    def __init__(self, index_name: str, session):
         """SQLAlchemy 세션을 주입받음"""
-        self.session = db_session
+        self.session = session
         self.index_name = index_name
         self.index_file_path = f'data/vector/{self.index_name}.index' # ex) cg_text_to_sql, cg_code_assist
         
-    def get_faiss_info(self) -> FaissInfo:
+    async def get_faiss_info(self) -> FaissInfo:
         """인덱스 이름으로 FAISS 정보를 조회합니다."""
         stmt = select(FaissInfo).where(FaissInfo.index_name == self.index_name)
-        result = self.session.execute(stmt).scalar_one_or_none()
+        result = (await self.session.execute(stmt)).scalar_one_or_none()
         
         if result:
             return result
@@ -32,7 +34,6 @@ class PostgresDocstore:
         
     def insert_faiss_info(self, index_desc: str = '') -> FaissInfo:
         """FAISS 인덱스 정보 저장"""
-        
         faiss_info = FaissInfo(
             index_name=self.index_name,
             index_desc=index_desc,
@@ -46,6 +47,7 @@ class PostgresDocstore:
 
     def insert_document(self, document_id, index, content, metadata=None) -> None:
         """OrgRSrcData 테이블에 문서 추가"""
+
         new_document = ChunkedData(
             org_resrc_id=document_id,
             content=content, 
@@ -56,32 +58,36 @@ class PostgresDocstore:
         self.session.commit()
                 
 
-    def get_document(self, document_id) -> Optional[Dict[str, any]]:
+    async def get_document(self, document_id) -> Optional[Dict[str, any]]:
         """OrgRSrcData 테이블에서 문서 조회"""
         stmt = select(ChunkedData).where(ChunkedData.id == document_id)
-        result = self.session.execute(stmt).scalar_one_or_none()
+        result = (await self.session.execute(stmt)).scalar_one_or_none()
+        
         if result:
-            return {"content": result.content, "metadata": result.document_metadata}
+            return result
         return None
+        # if result:
+        #     return {"content": result.content, "metadata": result.document_metadata}
+        # return None
     
-    def get_chunked_data_by_faiss_info_id(self, faiss_info_id: int) -> list[ChunkedData]:
+    async def get_chunked_data_by_faiss_info_id(self, faiss_info_id: int) -> list[ChunkedData]:
         """vector_index 조회"""
+        stmt = select(ChunkedData).where(ChunkedData.faiss_info_id == faiss_info_id)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
-        return self.session.query(ChunkedData).filter(ChunkedData.faiss_info_id == faiss_info_id).all()
 
-    def get_document_by_index(self, vector_index) -> Optional[Dict[str, any]]:
+    async def get_document_by_index(self, vector_index) -> Optional[Dict[str, any]]:
         """vector_index 조회"""
         # Numpy int64 값을 Python의 int로 변환
         vector_index = int(vector_index) 
-        
-        # stmt = select(ChunkedData).where((ChunkedData.vector_index == vector_index) & (ChunkedData.faiss_info_id == faiss_info_id))
-        # result = self.session.execute(stmt).scalar_one_or_none()
+
         stmt = (
             select(ChunkedData)
             .join(FaissInfo, ChunkedData.faiss_info_id == FaissInfo.id)
             .where((ChunkedData.vector_index == vector_index) & (FaissInfo.index_name == self.index_name))
         )
-        chunked_data = self.session.execute(stmt).scalar_one_or_none()
+        chunked_data = (await self.session.execute(stmt)).scalar_one_or_none()
         
         if chunked_data:
             result = chunked_data.__dict__
@@ -101,7 +107,6 @@ class PostgresDocstore:
         -> 클래스가 faiss의 docstore에 parameter로 사용될 경우 반드시 구현해야 함
         '''
         doc = self.get_document(document_id=search)
-        
         document = Document(
             page_content=doc.get("content"),
             metadata=doc.get("metadata"),
@@ -110,58 +115,53 @@ class PostgresDocstore:
         return document
 
 
-
 class FaissVectorDB:
-    # 클래스 수준의 캐시
     _loaded_indices = {}
 
-    def __init__(self, db_session: Session, index_name: str):
-        self.session = db_session
+    def __init__(self, index_name: str, session: AsyncSession):
+        # 기본 속성 초기화 (비동기 작업이 필요없는 것들)
         self.index_name = index_name
         self.index_file_path = f'data/vector/{self.index_name}.index'
-
-        # 임베딩 모델 가져오기
+        self.session = session
         self.embeddings = get_embedding_model()
         self.embedding_dimension = self.embeddings.embed_query("임베딩 벡터 차원")
+        self.psql_docstore = PostgresDocstore(index_name=self.index_name, session=self.session)
+        self.vector_store = None
+        self.index = None
 
-        # PostgresDocstore 설정
-        self.psql_docstore = PostgresDocstore(db_session, index_name=self.index_name)
-
+    @classmethod
+    async def create(cls, index_name: str, session: AsyncSession) -> 'FaissVectorDB':
+        # __init__ 호출
+        instance = cls(index_name, session)
+        
         # 이미 로드된 인덱스가 있다면 메모리에서 가져옴
-        if index_name in FaissVectorDB._loaded_indices:
-            self.vector_store = FaissVectorDB._loaded_indices[index_name]
-            print(f"### {self.index_name} 인덱스를 메모리에서 로드했습니다.")
-        else:
-            # 새로운 FAISS 인덱스 생성
-            # index 셋팅
-            # •	IndexFlatL2: 정확한 유클리드 거리 계산을 수행하지만, 대규모 데이터에서 속도 저하 가능.
-            # •	IndexFlatIP: 내적 기반 유사도 계산, 코사인 유사도와 유사한 결과 제공.
-            # •	IndexLSH: 근사 검색을 위한 해싱 기반 방법으로 대규모 데이터에 적합.
-            # •	IndexIVFFlat/IndexIVFPQ: 클러스터링을 통해 검색 속도 향상, 대규모 데이터에 적합.
-            # •	IndexHNSW: 그래프 탐색 기반의 근사 검색, 높은 정확도와 빠른 속도 제공.
-            # •	IndexPQ: 벡터를 양자화하여 메모리 절약을 추구, 대규모 데이터에 유리.
-            self.index = faiss.IndexFlatL2(len(self.embedding_dimension))
-            self.vector_store = FAISS(
-                embedding_function=self.embeddings,
-                index=self.index,
-                docstore=self.psql_docstore,
-                index_to_docstore_id={},
-            )
+        if index_name in cls._loaded_indices:
+            instance.vector_store = cls._loaded_indices[index_name]
+            print(f"### {instance.index_name} 인덱스를 메모리에서 로드했습니다.")
+            return instance
 
-            # 없으면 인덱스 생성
-            if not os.path.exists(self.index_file_path):
-                faiss.write_index(self.vector_store.index, self.index_file_path)
-                print(f"### {self.index_name} 인덱스를 신규로 생성합니다.")
+        # 새로운 FAISS 인덱스 생성
+        instance.index = faiss.IndexFlatL2(len(instance.embedding_dimension))
+        instance.vector_store = FAISS(
+            embedding_function=instance.embeddings,
+            index=instance.index,
+            docstore=instance.psql_docstore,
+            index_to_docstore_id={},
+        )
 
-            # 인덱스 파일에서 로드
-            self.read_index()
+        # 없으면 인덱스 생성
+        if not os.path.exists(instance.index_file_path):
+            faiss.write_index(instance.vector_store.index, instance.index_file_path)
+            print(f"### {instance.index_name} 인덱스를 신규로 생성합니다.")
 
-            # 캐시에 저장
-            FaissVectorDB._loaded_indices[index_name] = self.vector_store
-            print(f"### {self.index_name} 인덱스를 디스크에서 로드하고 캐시에 저장했습니다.")
-    
+        # 인덱스 파일에서 로드 (비동기 작업)
+        await instance.read_index()
 
+        # 캐시에 저장
+        cls._loaded_indices[index_name] = instance.vector_store
+        print(f"### {instance.index_name} 인덱스를 디스크에서 로드하고 캐시에 저장했습니다.")
 
+        return instance
 
     def as_retriever(self, search_kwargs):
         return self.vector_store.as_retriever(search_kwargs=search_kwargs)
@@ -243,7 +243,7 @@ class FaissVectorDB:
             return []
 
 
-    def search_similar_documents(self, query, k=10):
+    async def search_similar_documents(self, query, k=10):
         # 쿼리를 임베딩으로 변환
         query_embedding = self.embeddings.embed_query(query)
         
@@ -263,11 +263,13 @@ class FaissVectorDB:
         # print(f"### index_to_docstore_id mapping: {self.vector_store.index_to_docstore_id}")
         
         # PostgreSQL에서 문서 가져오기
-        results = [
-            self.psql_docstore.get_document_by_index(idx)
-            for idx in indices[0] # 현재는 1개의 쿼리만을 사용하기 때문에 하드코딩, 다중 쿼리를 사용할 경우 수정되어야 함
-            if idx != -1  # 유효하지 않은 인덱스 (-1) 무시
-        ]
+        results = await asyncio.gather(
+            *[
+                self.psql_docstore.get_document_by_index(idx)
+                for idx in indices[0]
+                if idx != -1
+            ]
+        )
         
         return results
     
@@ -277,16 +279,16 @@ class FaissVectorDB:
         faiss.write_index(self.vector_store.index, self.index_file_path)
         
 
-    def read_index(self):
+    async def read_index(self):
         # PostgresDocstore에서 FAISS 정보 가져오기
-        faiss_info = self.psql_docstore.get_faiss_info()
+        faiss_info = await self.psql_docstore.get_faiss_info()
 
         if faiss_info is not None:
             # FAISS 인덱스 파일 로드
             self.vector_store.index = faiss.read_index(faiss_info.index_file_path)
 
             # 데이터베이스에서 index_to_docstore_id 매핑 정보 로드
-            mappings = self.psql_docstore.get_chunked_data_by_faiss_info_id(faiss_info.id)
+            mappings = await self.psql_docstore.get_chunked_data_by_faiss_info_id(faiss_info.id)
             self.vector_store.index_to_docstore_id = {mapping.vector_index: mapping.id for mapping in mappings}
 
             print(f"### {self.index_name} 인덱스와 매핑 정보를 디스크에서 로드했습니다.")
@@ -311,17 +313,12 @@ class FaissVectorDB:
 
     def restore_index_to_docstore_id(self):
         # 모든 ChunkedData 레코드를 조회하여 인덱스와 docstore_id를 매핑
-        results = self.session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
+        with get_async_session() as session:
+            results = session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
+        
         # index_to_docstore_id 매핑 재구성
         self.vector_store.index_to_docstore_id = {vector_index: org_resrc_id for vector_index, org_resrc_id in results}
         print("### index_to_docstore_id 매핑이 복구되었습니다.")
-
-    # def restore_index_to_docstore_id(self):
-    #     # 모든 ChunkedData 레코드 조회
-    #     results = self.session.query(ChunkedData.vector_index, ChunkedData.org_resrc_id).all()
-        
-    #     # 매핑 정보 재구성
-    #     self.vector_store.index_to_docstore_id = {vector_index: org_resrc_id for vector_index, org_resrc_id in results}
 
     # 예제) 유사한 문서 검색
     # similar_docs = search_similar_documents(vector_store, query="test document")
@@ -331,14 +328,39 @@ class FaissVectorDB:
     # 예제) 문서 추가
     # add_document_to_store(vector_store, document_id=1, content="This is a test document.", metadata={"source": "test"})
 
-
     @classmethod
     def clear_cache(cls):
         """클래스 캐시를 초기화합니다 (테스트나 필요시 호출)."""
         cls._loaded_indices.clear()
         print("### FAISS 인덱스 캐시가 초기화되었습니다.")
 
+# 전역 변수로 vector_db 저장소 생성
+_vector_dbs: Dict[str, FaissVectorDB] = {}
 
+async def initialize_vector_dbs(session: AsyncSession):
+    """초기에 필요한 모든 FaissVectorDB 인스턴스들을 생성"""
+    global _vector_dbs
+    
+    # 필요한 모든 인덱스 이름들
+    index_names = ["cg_code_assist"]  # 필요한 인덱스 이름들 나열
+    
+    for index_name in index_names:
+        if index_name not in _vector_dbs:
+            vector_db = await FaissVectorDB.create(index_name=index_name, session=session)
+            _vector_dbs[index_name] = vector_db
+
+async def get_vector_db(
+    index_name: str,
+    session: AsyncSession = Depends(get_async_session)
+) -> FaissVectorDB:
+    """벡터 DB 인스턴스를 가져오는 의존성 함수"""
+    if index_name not in _vector_dbs:
+        vector_db = await FaissVectorDB.create(index_name=index_name, session=session)
+        _vector_dbs[index_name] = vector_db
+    return _vector_dbs[index_name]
+
+def vectordb_clear():
+    _vector_dbs.clear()
 
 # 캐시를 초기화하여 새로 로드 가능
 # FaissVectorDB.clear_cache()  

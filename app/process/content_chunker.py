@@ -4,7 +4,7 @@ import os
 import re
 
 from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.db_model.database_models import OrgRSrc
 from app.process.contextual_process import generate_code_context
 from app.process.java_parser import parse_java_file, should_skip_by_line_count
@@ -298,7 +298,7 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
     """
     
     if session is None:
-        session = SessionLocal()
+        session = get_async_session()
         
     proc_chunk_list = []
     try:

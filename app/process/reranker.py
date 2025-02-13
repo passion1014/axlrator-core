@@ -12,7 +12,6 @@ from pydantic import BaseModel
 from langchain.schema import Document
 
 
-from app.db_model.database import SessionLocal
 from app.utils import get_rerank_model, get_server_type
 from app.vectordb.faiss_vectordb import FaissVectorDB
 

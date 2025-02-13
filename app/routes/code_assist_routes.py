@@ -1,14 +1,14 @@
 import os
-from typing import List, Optional
+from typing import List, Optional, Union
 import uuid
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from app.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain 
 from app.common.chat_history_manager import checkpoint_to_code_chat_info
 from app.config import setup_logging
 from app.dataclasses.code_assist_data import CodeAssistInfo, CodeChatInfo
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.db_model.data_repository import ChatHistoryRepository, RSrcTableRepository
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import HumanMessage
@@ -17,75 +17,83 @@ from psycopg_pool import AsyncConnectionPool
 from psycopg_pool import ConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.postgres import PostgresSaver
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = setup_logging()
 router = APIRouter()
-code_assist = CodeAssistChain(index_name="cg_code_assist")
-
-
-@router.post("/api/predicate")
-async def predicate(request: Request):
-    try:
-        body = await request.json()
-        message = CodeAssistInfo.model_validate(body)
-
-        # 결과 반환
-        return {"response": ''}
-    
-    except Exception as e:
-        return JSONResponse(
-            content={"error": f"An error occurred: {str(e)}"},
-            status_code=500
-        )
-
 
 @router.post("/api/code_contextual")
-async def sample_endpoint(request: Request):
-    # try:
-        body = await request.json()
-        message = CodeAssistInfo.model_validate(body)
-
-        async def stream_response() :
-            async for chunk in code_assist.chain_codeassist().astream(message, stream_mode="custom"):
-                yield chunk.content
-
-        return StreamingResponse(stream_response(), media_type="text/event-stream")
-    
-    # except Exception as e:
-    #     return JSONResponse(
-    #         content={"error": f"An error occurred: {str(e)}"},
-    #         status_code=500
-    #     )
-
-@router.post("/api/code")
-async def call_api_code(request: Request):
+async def sample_endpoint(
+    request: Request, 
+    session = Depends(get_async_session)
+):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
     
-    async def stream_response() :
-        async for chunk in code_assist_chain(type="02").astream(message, stream_mode="custom"):
-            yield chunk.content
+    # CodeAssistChain class 선언
+    code_assist = CodeAssistChain(index_name="cg_code_assist", session=session)
 
-    return StreamingResponse(stream_response(), media_type="text/event-stream")
+    # 스트리밍 여부를 결정하는 플래그 (body에 "stream": true/false 추가)
+    stream_mode = body.get("stream", False)
+    if stream_mode:
+        async def stream_response() :
+            async for chunk in code_assist.chain_codeassist().astream(message, stream_mode="custom"):
+                yield chunk.content
+        return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+    else:
+        # 스트리밍이 아닐 경우 일반 응답 반환
+        result = await code_assist.chain_codeassist().run(message)
+        return JSONResponse(content={"result": result})
+
+
+@router.post("/api/code")
+async def call_api_code(
+    request: Request, 
+    session: AsyncSession = Depends(get_async_session)
+) -> Response:
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
+    
+    chain = await code_assist_chain(type="02", session=session)
+    
+    # 스트리밍 여부를 결정하는 플래그 (body에 "stream": true/false 추가)
+    stream_mode = body.get("stream", True)
+    if stream_mode:
+        async def stream_response() :
+            async for chunk in chain.astream(message, stream_mode="custom"):
+                yield chunk.content
+        return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+    else:
+        # 스트리밍이 아닐 경우, 비동기 제너레이터의 결과를 리스트로 변환 후 반환
+        result_generator = chain.astream(message, stream_mode="custom")
+        result_text = "".join([chunk.content async for chunk in result_generator])
+        return JSONResponse(content={"result": result_text})
 
 
 @router.post("/api/autocode")
-async def autocode_endpoint(request: Request):
+async def autocode_endpoint(
+    request: Request, 
+    session: AsyncSession = Depends(get_async_session)
+):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
     
     call_type = "01" # 코드 생성
     
     # 단순히 테이블명 하나만 들어올 경우 MapDataUtil을 만든다.
-    rsrc_table_repository = RSrcTableRepository(session=SessionLocal())
-    table_data = rsrc_table_repository.get_data_by_table_name(table_name=message.question)
+    rsrc_table_repository = RSrcTableRepository(session=session)
+    table_data = await rsrc_table_repository.get_data_by_table_name(table_name=message.question)
     
     if table_data:
         call_type="04" # MapDataUtil 생성
         message.sql_request = message.question
 
+    chain = await code_assist_chain(type=call_type, session=session)
+
     async def stream_response() :
-        async for chunk in code_assist_chain(type=call_type).astream(message, stream_mode="custom"):
+        async for chunk in chain.astream(message, stream_mode="custom"):
             yield chunk.content
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
@@ -94,36 +102,51 @@ async def autocode_endpoint(request: Request):
 
 # 주석 생성 요청 엔드포인트
 @router.post("/api/makecomment")
-async def makecomment_endpoint(request: Request):
+async def makecomment_endpoint(
+    request: Request,
+    session = Depends(get_async_session)
+):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    
+    chain = await code_assist_chain(type="03", session=session)
 
     async def stream_response() :
-        async for chunk in code_assist_chain(type="03").astream(message, stream_mode="custom"):
+        async for chunk in chain.astream(message, stream_mode="custom"):
             yield chunk.content
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
 # MapDataUtil 생성 요청 엔드포인트
 @router.post("/api/makemapdatautil")
-async def make_mapdatautil_endpoint(request: Request):
+async def make_mapdatautil_endpoint(
+    request: Request,
+    session = Depends(get_async_session)
+):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    
+    chain = await code_assist_chain(type="04", session=session)
 
     async def stream_response() :
-        async for chunk in code_assist_chain(type="04").astream(message, stream_mode="custom"):
+        async for chunk in chain.astream(message, stream_mode="custom"):
             yield chunk.content
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
 # SQL 생성 요청 엔드포인트
 @router.post("/api/makesql")
-async def make_sql_endpoint(request: Request):
+async def make_sql_endpoint(
+    request: Request,
+    session = Depends(get_async_session)
+):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    
+    chain = await code_assist_chain(type="05", session=session)
 
     async def stream_response() :
-        async for chunk in code_assist_chain(type="05").astream(message, stream_mode="custom"):
+        async for chunk in chain.astream(message, stream_mode="custom"):
             yield chunk.content
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
@@ -135,7 +158,10 @@ async def get_thread_id(request: Request):
 
 # SQL 생성 요청 엔드포인트
 @router.post("/api/chat")
-async def chat(request: Request):
+async def chat(
+    request: Request,
+    session = Depends(get_async_session)
+):
     # request 값 확인
     body = await request.json()
     message = CodeChatInfo.model_validate(body)
@@ -148,9 +174,15 @@ async def chat(request: Request):
     # config셋팅
     config = {"configurable": {"thread_id": thread_id}}
 
+
+    database_url = os.getenv("DATABASE_URL")
+    if database_url.startswith("postgresql+asyncpg://"):
+        database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
+
     pool = AsyncConnectionPool(
-        conninfo=os.getenv("DATABASE_URL"),
-        max_size=20,
+        conninfo=database_url,
+        max_size=50,
+        timeout=60,
         kwargs={
             "autocommit": True,
             "prepare_threshold": 0,
@@ -162,7 +194,7 @@ async def chat(request: Request):
     code_chat_info = checkpoint_to_code_chat_info(thead_id=thread_id, checkpoint=checkpoint)
 
     # 채팅을 위한 에이전트
-    agent = CodeChatAgent(index_name="cg_code_assist")
+    agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session)
         
     graph, _ = agent.get_chain(thread_id=thread_id, checkpointer=checkpointer)
     input_message = HumanMessage(content=question)
@@ -176,17 +208,16 @@ async def chat(request: Request):
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
-class ChatHistoryService:
-    def __init__(self):
-        self.session = SessionLocal()
-        self.chat_history_repository = ChatHistoryRepository(self.session)
+# class ChatHistoryService:
+#     def __init__(self):
+#         self.session = get_async_session_generator()
+#         self.chat_history_repository = ChatHistoryRepository(self.session)
 
-class CodeAssistService:
-    def __init__(self):
-        self.session = SessionLocal()
-        self.chat_history_repository = ChatHistoryRepository(self.session)
-    
-    # 인텐트 분류
-    def get_question_category():
-        
-        pass
+# class CodeAssistService:
+#     def __init__(self):
+#         self.session = get_async_session_generator()
+#         self.chat_history_repository = ChatHistoryRepository(self.session)
+
+#     # 인텐트 분류
+#     def get_question_category():
+#         pass
