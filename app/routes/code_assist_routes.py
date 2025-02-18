@@ -1,23 +1,23 @@
 import os
-from typing import List, Optional, Union
 import uuid
-from fastapi import APIRouter, Depends, Request, Response
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from app.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain 
+
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain
+from app.chain_graph.code_chat_agent import CodeChatAgent
 from app.common.chat_history_manager import checkpoint_to_code_chat_info
 from app.config import setup_logging
 from app.dataclasses.code_assist_data import CodeAssistInfo, CodeChatInfo
 from app.db_model.database import get_async_session
-from app.db_model.data_repository import ChatHistoryRepository, RSrcTableRepository
-from fastapi.responses import JSONResponse, StreamingResponse
+from app.db_model.data_repository import RSrcTableRepository
+
 from langchain_core.messages import HumanMessage
-from app.chain_graph.code_chat_agent import CodeChatAgent
-from psycopg_pool import AsyncConnectionPool
-from psycopg_pool import ConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from langgraph.checkpoint.postgres import PostgresSaver
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from psycopg_pool import AsyncConnectionPool
 
 logger = setup_logging()
 router = APIRouter()
@@ -75,10 +75,39 @@ async def call_api_code(
 @router.post("/api/autocode")
 async def autocode_endpoint(
     request: Request, 
+    # file: UploadFile = File,
     session: AsyncSession = Depends(get_async_session)
 ):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    # _file = file
+
+    form_data = await request.form()
+
+    # 파일 데이터 가져오기
+    uploaded_file = form_data.get("file")
+    if uploaded_file:
+        # 파일 이름 가져오기
+        file_name = uploaded_file.filename
+        
+        # 파일 내용 읽기
+        file_content = await uploaded_file.read()
+        
+        # 파일 내용 처리
+        # ...
+
+    # 다른 폼 데이터 가져오기
+    question = form_data.get("question")
+    context = form_data.get("context")
+    # ...
+
+    message = CodeAssistInfo(
+        question=question,
+        context=context,
+        # ...
+    )
+
+    
     
     call_type = "01" # 코드 생성
     

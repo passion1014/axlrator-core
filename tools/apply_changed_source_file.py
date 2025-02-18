@@ -55,6 +55,10 @@ def copy_with_backup(src, dst, backup):
                 shutil.copy2(str(src_file), str(dst_file))
                 print(f"Copied: {src_file} -> {dst_file}")
 
+'''
+- src_folder 는 변경 할 최신 소스가 들어있는 위치
+- dst_folder 는 적용 시킬 원본 파일 위치
+'''
 if __name__ == "__main__":
     src_folder = input("변경파일폴더: ")
     dst_folder = input("대상폴더(빈값이면 'D:/project/rag_server') : ")

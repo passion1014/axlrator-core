@@ -80,8 +80,8 @@ async def search_faiss_vector(request: Request, session: AsyncSession = Depends(
 
 # FAISS 저장을 위한 엔드포인트
 @router.post("/api/create")
-async def create_faiss_info(request: Request, db: Session = Depends(get_async_session)):
-    try:
+async def create_faiss_info(request: Request, session: AsyncSession = Depends(get_async_session)):
+    # try:
         # 요청 데이터 파싱
         data = await request.json()
         
@@ -93,10 +93,10 @@ async def create_faiss_info(request: Request, db: Session = Depends(get_async_se
             index_desc = f"{index_name}를 위한 FAISS정보"
 
         # 받은 파라미터로 초기화
-        faiss_vector_db = FaissVectorDB(db_session=db, index_name=index_name)
+        faiss_vector_db = await get_vector_db(session=session, index_name=index_name)
 
         # 기존재하는지 체크
-        faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
+        faiss_info = await faiss_vector_db.psql_docstore.get_faiss_info()
         if faiss_info is not None:
             return {
                 "success": True,
@@ -126,9 +126,9 @@ async def create_faiss_info(request: Request, db: Session = Depends(get_async_se
             }
         }
         
-    except Exception as e:
-        db.rollback()
-        return {
-            "success": False,
-            "message": f"FAISS 정보 저장 중 오류가 발생했습니다: {str(e)}"
-        }
+    # except Exception as e:
+    #     session.rollback()
+    #     return {
+    #         "success": False,
+    #         "message": f"FAISS 정보 저장 중 오류가 발생했습니다: {str(e)}"
+    #     }
