@@ -28,14 +28,33 @@ from app.config import STATIC_DIR
 
 from app.chain_graph.code_assist_chain import CodeAssistChain
 
-from app.routes.view_routes import router as view_routes
-from app.routes.upload_routes import router as upload_routes
-from app.routes.faiss_routes import router as faiss_routes
-from app.routes.sample_routes import router as sample_routes
-from app.routes.terms_conversion_routes import router as terms_conversion_routes
-from app.routes.code_assist_routes import router as code_assist_routes
-from app.routes.user_service_routes import router as user_service_routes
+from app.routes import (
+    code_assist,
+    open_webui,
+    sample,
+    terms_conversion,
+    upload,
+    user_service,
+    vector_db,
+    view,
+)
+
+from app.routes.admin import (
+    faiss,
+)
+
+
+# from app.routes.open_webui import router as open_webui
+# from app.routes.view_routes import router as view_routes
+# from app.routes.upload_routes import router as upload_routes
+# from app.routes.faiss_routes import router as faiss_routes
+# from app.routes.sample_routes import router as sample_routes
+# from app.routes.terms_conversion_routes import router as terms_conversion_routes
+# from app.routes.code_assist_routes import router as code_assist_routes
+# from app.routes.user_service_routes import router as user_service_routes
+
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from langfuse.callback import CallbackHandler
 from app.db_model.database import get_async_session_CTX
@@ -63,7 +82,7 @@ async def lifespan(webServerApp: FastAPI):
 
 # FastAPI 앱 설정
 webServerApp = FastAPI(
-    title="Construction Guarantee Server",
+    title="Alfred Server",
     version="1.0",
     description="AI Server for Construction Guarantee Company",
     lifespan=lifespan
@@ -74,6 +93,13 @@ webServerApp.add_middleware(
     secret_key="cgcgcg",
     session_cookie="session_cookie",
     max_age=24 * 60 * 60  # 24시간
+)
+webServerApp.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 또는 특정 도메인만 허용할 수도 있음
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용 (OPTIONS 포함)
+    allow_headers=["*"],  # 모든 요청 헤더 허용
 )
 
 # 정적 파일 경로 및 Jinja2 템플릿 설정
@@ -90,15 +116,26 @@ class CustomBaseModel(BaseModel):
 # ---------------------------------------
 
 # 웹 페이지
-webServerApp.include_router(view_routes, prefix="/view") # 화면용 라우터
+webServerApp.include_router(view.router, prefix="/view") # 화면용 라우터
+webServerApp.include_router(open_webui.router, prefix="/aifred-oi") # 기본 라우터
 
-webServerApp.include_router(user_service_routes, prefix="/user") # 사용자 처리 라우터
-webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
-webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
-webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
-webServerApp.include_router(code_assist_routes, prefix="/codeassist") # 코드생성 위한 라우터
-webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
+webServerApp.include_router(user_service.router, prefix="/user") # 사용자 처리 라우터
+webServerApp.include_router(upload.router, prefix="/upload") # 업로드 라우터
+webServerApp.include_router(vector_db.router, prefix="/faiss") # faiss 라우터
+webServerApp.include_router(terms_conversion.router, prefix="/termsconversion") # 용어변환을 위한 라우터
+webServerApp.include_router(code_assist.router, prefix="/codeassist") # 코드생성 위한 라우터
+webServerApp.include_router(sample.router, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
 
+print('''
+      ...       ....        ........... .........      ..........  ........
+     'MMM0      KMMx        oMMM000000d xMMMMMMMMMXl  oMMMNNNNNNN  WMMMMMMMMXo
+    .NMWNMd     KMMx        oMMM        xMMM.   .XMM; oMMM         WMMo...,dMMx
+    KMMc'MM:    KMMx        oMMM:;;;;;  xMMM....,XMW. oMMM:::::,   WMMc     WM0
+   kMM0  xMW.   KMMx        oMMMdddddo  xMMMMMMMMMX,  oMMMooooo:   WMMc     WM0
+  cMMMkooxMMX   KMMx        oMMM        xMMM    ;MMM. oMMM         WMMc    .MMO
+ 'MMW;,,,,,XMO  KMMO''''''. oMMM        xMMM     XMM; oMMM,,,,,,,  WMMX000XMMX.
+ xOO;      'OO, xOOOOOOOOOc :OOO        cOOO     OOO' ;OOOOOOOOOk  OOOOOOOko,
+''')
 
 # 체인 등록
 # from langserve import add_routes
@@ -133,5 +170,3 @@ if __name__ == "__main__":
                 ssl_certfile=args.cert_file,  # 인증서 파일 추가
                 ssl_keyfile=args.key_file  # 키 파일 추가
                 )
-
-

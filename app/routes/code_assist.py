@@ -185,7 +185,6 @@ async def get_thread_id(request: Request):
     return str(uuid.uuid4())
 
 
-# SQL 생성 요청 엔드포인트
 @router.post("/api/chat")
 async def chat(
     request: Request,
