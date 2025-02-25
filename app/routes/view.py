@@ -29,7 +29,6 @@ async def view_login(request: Request):
 async def view_code(request: Request, session: AsyncSession = Depends(get_async_session)):
     url_path = request.url.path
 
-
     user_info = request.session.get('user_info', None)
     if not user_info:
 

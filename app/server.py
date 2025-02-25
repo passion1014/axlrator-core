@@ -10,6 +10,7 @@ parser.add_argument("--env", type=str, default=".env", help="Path to .env file")
 parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
 parser.add_argument("--port", type=int, default=8000, help="서버 포트")
 parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
+parser.add_argument("--reload", action="store_true")  
 parser.add_argument("--cert-file", type=str, default=None)
 parser.add_argument("--key-file", type=str, default=None)
 args = parser.parse_args()
@@ -28,6 +29,7 @@ from app.config import STATIC_DIR
 
 from app.chain_graph.code_assist_chain import CodeAssistChain
 
+# client service
 from app.routes import (
     code_assist,
     open_webui,
@@ -39,19 +41,10 @@ from app.routes import (
     view,
 )
 
+# admin service 
 from app.routes.admin import (
     faiss,
 )
-
-
-# from app.routes.open_webui import router as open_webui
-# from app.routes.view_routes import router as view_routes
-# from app.routes.upload_routes import router as upload_routes
-# from app.routes.faiss_routes import router as faiss_routes
-# from app.routes.sample_routes import router as sample_routes
-# from app.routes.terms_conversion_routes import router as terms_conversion_routes
-# from app.routes.code_assist_routes import router as code_assist_routes
-# from app.routes.user_service_routes import router as user_service_routes
 
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,20 +74,20 @@ async def lifespan(webServerApp: FastAPI):
 
 
 # FastAPI 앱 설정
-webServerApp = FastAPI(
+app = FastAPI(
     title="Alfred Server",
     version="1.0",
     description="AI Server for Construction Guarantee Company",
     lifespan=lifespan
 )
 
-webServerApp.add_middleware(
+app.add_middleware(
     SessionMiddleware,
     secret_key="cgcgcg",
     session_cookie="session_cookie",
     max_age=24 * 60 * 60  # 24시간
 )
-webServerApp.add_middleware(
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 또는 특정 도메인만 허용할 수도 있음
     allow_credentials=True,
@@ -103,7 +96,7 @@ webServerApp.add_middleware(
 )
 
 # 정적 파일 경로 및 Jinja2 템플릿 설정
-webServerApp.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # 임의 타입 허용을 위한 Pydantic 설정 추가
 class CustomBaseModel(BaseModel):
@@ -116,15 +109,19 @@ class CustomBaseModel(BaseModel):
 # ---------------------------------------
 
 # 웹 페이지
-webServerApp.include_router(view.router, prefix="/view") # 화면용 라우터
-webServerApp.include_router(open_webui.router, prefix="/aifred-oi") # 기본 라우터
+app.include_router(view.router, prefix="/view") # 화면용 라우터
+app.include_router(open_webui.router, prefix="/aifred-oi") # 기본 라우터
 
-webServerApp.include_router(user_service.router, prefix="/user") # 사용자 처리 라우터
-webServerApp.include_router(upload.router, prefix="/upload") # 업로드 라우터
-webServerApp.include_router(vector_db.router, prefix="/faiss") # faiss 라우터
-webServerApp.include_router(terms_conversion.router, prefix="/termsconversion") # 용어변환을 위한 라우터
-webServerApp.include_router(code_assist.router, prefix="/codeassist") # 코드생성 위한 라우터
-webServerApp.include_router(sample.router, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
+# 관리자
+app.include_router(faiss.router, prefix="/admin/vector")
+
+# 사용자
+app.include_router(user_service.router, prefix="/user")
+app.include_router(upload.router, prefix="/upload")
+app.include_router(vector_db.router, prefix="/faiss") # TODO admin.faiss로 옮겨야 함
+app.include_router(terms_conversion.router, prefix="/termsconversion")
+app.include_router(code_assist.router, prefix="/codeassist")
+app.include_router(sample.router, prefix="/sample") # TODO 해당 파일과 라우트들은 삭제 예정
 
 print('''
       ...       ....        ........... .........      ..........  ........
@@ -133,8 +130,8 @@ print('''
     KMMc'MM:    KMMx        oMMM:;;;;;  xMMM....,XMW. oMMM:::::,   WMMc     WM0
    kMM0  xMW.   KMMx        oMMMdddddo  xMMMMMMMMMX,  oMMMooooo:   WMMc     WM0
   cMMMkooxMMX   KMMx        oMMM        xMMM    ;MMM. oMMM         WMMc    .MMO
- 'MMW;,,,,,XMO  KMMO''''''. oMMM        xMMM     XMM; oMMM,,,,,,,  WMMX000XMMX.
- xOO;      'OO, xOOOOOOOOOc :OOO        cOOO     OOO' ;OOOOOOOOOk  OOOOOOOko,
+ "MMW;,,,,,XMO  KMMO"""""". oMMM        xMMM     XMM; oMMM,,,,,,,  WMMX000XMMX.
+ xOO;      'OO, xOOOOOOOOOc :OOO        cOOO     OOO" ;OOOOOOOOOk  OOOOOOOko,
 ''')
 
 # 체인 등록
@@ -163,10 +160,10 @@ print('''
 # ---------------------------------------
 if __name__ == "__main__":
     print(f"Starting server on {args.host}:{args.port} (debug={args.debug})")
-    uvicorn.run(webServerApp, 
+    uvicorn.run(app, 
                 host=args.host, 
                 port=args.port, 
                 reload=args.debug,
                 ssl_certfile=args.cert_file,  # 인증서 파일 추가
-                ssl_keyfile=args.key_file  # 키 파일 추가
+                ssl_keyfile=args.key_file,  # 키 파일 추가
                 )

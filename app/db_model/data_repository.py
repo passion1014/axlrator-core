@@ -13,16 +13,27 @@ class FaissInfoRepository:
     async def get_faiss_info_by_id(self, faiss_info_id: int) -> 'FaissInfo':
         """
         ID로 FAISS 정보를 조회합니다.
-        
-        Args:
-            faiss_info_id: 조회할 FAISS 정보 ID
-            
-        Returns:
-            조회된 FaissInfo 객체. 없으면 None 반환
         """
         stmt = select(FaissInfo).where(FaissInfo.id == faiss_info_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+
+    async def get_faiss_infos(self, index_id: int = None, index_name: str = None) -> List['FaissInfo']:
+        """
+        ID 또는 이름으로 FAISS 정보를 조회합니다.
+        """
+        stmt = select(FaissInfo)
+        
+        if index_id is not None:
+            stmt = stmt.where(FaissInfo.id == index_id)
+        
+        if index_name is not None:
+            stmt = stmt.where(FaissInfo.index_name.like(f"%{index_name}%"))
+        
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
 
 class OrgRSrcRepository:
     def __init__(self, session):
