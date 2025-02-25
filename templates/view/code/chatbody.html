@@ -3,6 +3,11 @@
   code {
     position: relative;
   }
+
+  #input-container.fixed-bottom {
+    height: auto;
+    padding-bottom: 20px; /* 아래 마진 추가 */
+  }
 </style>
 <script>
   $(document).ready(function () {
@@ -10,6 +15,13 @@
     $("#btnSend").on("click", function () {
       const question = $("#textMsg").val();
       if (!question) return false;
+
+      $("#input-container").addClass("fixed-bottom").css({
+        transition: "all 0.6s ease",
+        "padding-top": "10px",
+      });
+
+      return;
 
       $("#textMsg").val("");
       disableSendButton(true);
@@ -271,19 +283,42 @@
         <i class="bi bi-chevron-double-down"></i>
       </button>
 
-      <!--질문영역 -->
-      <div class="chat-msg-wrap">
+      <!--질문영역 백업업-->
+      <!-- <div class="chat-msg-wrap"  style="display: none;">
         <textarea placeholder="질문입력" class="form-control" id="textMsg"></textarea>
-        <!-- <div class="chat-file">
+        <div class="chat-file">
           <input type="file" class="form-control" />
           <span class="icon-file"><i class="bi bi-paperclip"></i></span>
-        </div> -->
+        </div>
         <div class="chat-btns">
           <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring">
-            <i class="bi bi-send"></i>
+            <i class="bi bi-arrow-up"></i>
+          </button>
+        </div>
+      </div> -->
+      <div id="input-container" class="input-container">
+        <div class="input-group input-box">
+          <textarea placeholder="질문입력..." class="form-control" id="textMsg"></textarea>
+        </div>
+        <div class="chat-btns">
+          <button id="btnSend" class="btn btn-primary btn-send-msg focus-ring">
+            <i class="bi bi-arrow-up"></i>
           </button>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<style></style>
+
+<script>
+  // $(document).ready(function () {
+  //   $("#btnSend").on("click", function () {
+  //     $("#input-container").addClass("fixed-bottom").css({
+  //       transition: "all 0.6s ease",
+  //       "padding-top": "10px",
+  //     });
+  //   });
+  // });
+</script>
