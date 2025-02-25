@@ -40,7 +40,7 @@ async def upload_file(files: list[UploadFile] = File(...), selectedId: str = For
 
     # faiss_info 조회
     selected_id = json.loads(selectedId) # 선택된 인덱스 ID 파싱
-    faiss_info = faissinfo_repository.get_faiss_info_by_id(faiss_info_id=selected_id)
+    faiss_info = faissinfo_repository.get_faiss_by_id(faiss_info_id=selected_id)
     
     # 파일 저장 로직
     for file in files:

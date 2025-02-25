@@ -43,7 +43,7 @@ from app.routes import (
 
 # admin service 
 from app.routes.admin import (
-    faiss,
+    vector,
 )
 
 from starlette.middleware.sessions import SessionMiddleware
@@ -113,7 +113,7 @@ app.include_router(view.router, prefix="/view") # 화면용 라우터
 app.include_router(open_webui.router, prefix="/aifred-oi") # 기본 라우터
 
 # 관리자
-app.include_router(faiss.router, prefix="/admin/vector")
+app.include_router(vector.router, prefix="/admin/vector")
 
 # 사용자
 app.include_router(user_service.router, prefix="/user")

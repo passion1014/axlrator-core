@@ -158,6 +158,23 @@ class ChunkedData(Base):
     org_resrc = relationship("OrgRSrc", back_populates="chunked_data")
     faiss_info = relationship("FaissInfo", back_populates="chunked_data")
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'seq': self.seq,
+            'org_resrc_id': self.org_resrc_id,
+            'data_name': self.data_name,
+            'data_type': self.data_type,
+            'content': self.content,
+            'context_chunk': self.context_chunk,
+            'document_metadata': self.document_metadata,
+            'faiss_info_id': self.faiss_info_id,
+            'vector_index': self.vector_index,
+            'modified_at': str(self.modified_at),
+            'created_at': str(self.created_at),
+            'modified_by': self.modified_by,
+            'created_by': self.created_by
+        }
 
 
 class FaissInfo(Base):
@@ -178,6 +195,18 @@ class FaissInfo(Base):
 
     # ChunkedData와의 관계 설정
     chunked_data = relationship("ChunkedData", back_populates="faiss_info")
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'index_name': self.index_name,
+            'index_desc': self.index_desc,
+            'index_file_path': self.index_file_path,
+            'modified_at': str(self.modified_at),
+            'created_at': str(self.created_at),
+            'modified_by': self.modified_by,
+            'created_by': self.created_by
+        }
 
 class RSrcTable(Base):
     '''

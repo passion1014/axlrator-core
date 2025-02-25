@@ -3,6 +3,7 @@ import os
 from typing import List
 
 from sqlalchemy import desc, select, update, delete
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db_model.database_models import ChatHistory, ChunkedData, FaissInfo, OrgRSrc, RSrcTable, RSrcTableColumn, UserInfo
 
@@ -10,7 +11,7 @@ class FaissInfoRepository:
     def __init__(self, session):
         self.session = session
     
-    async def get_faiss_info_by_id(self, faiss_info_id: int) -> 'FaissInfo':
+    async def get_faiss_by_id(self, faiss_info_id: int) -> 'FaissInfo':
         """
         ID로 FAISS 정보를 조회합니다.
         """
@@ -19,7 +20,7 @@ class FaissInfoRepository:
         return result.scalar_one_or_none()
 
 
-    async def get_faiss_infos(self, index_id: int = None, index_name: str = None) -> List['FaissInfo']:
+    async def get_faisses(self, index_id: int = None, index_name: str = None) -> List['FaissInfo']:
         """
         ID 또는 이름으로 FAISS 정보를 조회합니다.
         """
@@ -33,6 +34,37 @@ class FaissInfoRepository:
         
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+
+    async def get_faiss_datas(self, index_name: str, from_date: datetime, to_date: datetime, data_name: str, data_type: str) -> List:
+        """
+        FAISS 정보와 관련된 ChunkedData를 조회합니다.
+        """
+        stmt = select(FaissInfo, ChunkedData).join(ChunkedData, FaissInfo.id == ChunkedData.faiss_info_id)
+        
+        if index_name is not None:
+            stmt = stmt.where(FaissInfo.index_name.like(f"%{index_name}%"))
+        
+        if from_date is not None and to_date is not None:
+            stmt = stmt.where(ChunkedData.created_at.between(from_date, to_date))
+        
+        if data_name is not None:
+            stmt = stmt.where(ChunkedData.data_name.like(f"{data_name}%"))
+        
+        if data_type is not None:
+            stmt = stmt.where(ChunkedData.data_type == data_type)
+        
+        result = await self.session.execute(stmt)
+        
+        faiss_data_list = []
+        for faiss_info, chunked_data in result.all():
+            faiss_data_list.append({
+                'faiss_info': faiss_info.to_dict(),
+                'chunked_data': chunked_data.to_dict()
+            })
+        
+        return faiss_data_list
+
 
 
 class OrgRSrcRepository:
@@ -249,11 +281,12 @@ class ChunkedDataRepository:
         
         return chunked_data
 
-    async def update_chunked_data(self, chunked_data_id: int = None, chunked_data: ChunkedData = None, seq: int = None
-                                  , org_resrc_id: int = None, data_name: str = None, data_type: str = None
-                                  , content: str = None, context_chunk: str = None, document_metadata: dict = None
-                                  , faiss_info_id: int = None, vector_index: int = None
-                                  , modified_by: str = '') -> ChunkedData:
+    async def update_chunked_data(
+        self, chunked_data_id: int = None, chunked_data: ChunkedData = None, seq: int = None, 
+        org_resrc_id: int = None, data_name: str = None, data_type: str = None, 
+        content: str = None, context_chunk: str = None, document_metadata: dict = None, 
+        faiss_info_id: int = None, vector_index: int = None, modified_by: str = ''
+    ) -> ChunkedData:
         """
         ChunkedData를 업데이트합니다.
         
