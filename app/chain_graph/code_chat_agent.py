@@ -1,25 +1,22 @@
-from typing import Annotated, Literal, Sequence, TypedDict
+from typing import Annotated, Sequence, TypedDict
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 import uuid
 
-from langchain_anthropic import ChatAnthropic
 from langchain_core.tools import tool
 
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import MessagesState, StateGraph, START, END
-from langgraph.prebuilt import ToolNode
+from langgraph.graph import StateGraph, END
 
-from app.db_model.database import SessionLocal
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
-from app.vectordb.faiss_vectordb import FaissVectorDB
+from app.vectordb.faiss_vectordb import get_vector_db
 from langfuse.callback import CallbackHandler
 
 import json
 from langchain_core.messages import ToolMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
+from sqlalchemy.ext.asyncio import AsyncSession
 
 class CodeChatState(TypedDict):
     """The state of the agent."""
@@ -32,10 +29,19 @@ class CodeChatState(TypedDict):
 class CodeChatAgent:
     def __init__(self, index_name:str="cg_code_assist"):
         self.index_name = index_name
-        self.db_session = SessionLocal()
-        self.faissVectorDB = FaissVectorDB(db_session=self.db_session, index_name=index_name)
-        self.es_bm25 = ElasticsearchBM25(index_name=index_name)
-        self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+        
+    @classmethod
+    async def create(cls, index_name: str, session: AsyncSession) -> 'CodeChatAgent':
+        # __init__ 호출
+        instance = cls(index_name)
+        
+        instance.db_session = session
+        instance.faissVectorDB = await get_vector_db(index_name=index_name, session=session)
+        instance.es_bm25 = ElasticsearchBM25(index_name=index_name)
+        instance.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+        
+        return instance
+
 
 
     @tool
@@ -99,16 +105,16 @@ class CodeChatAgent:
         tools = [self.get_weather]
         # self.model = self.model.bind_tools(tools)
         
-        workflow = StateGraph(CodeChatState)
-        workflow.add_node("agent", self.call_model)
-        workflow.add_node("tools", self.tool_node)
+        graph = StateGraph(CodeChatState)
+        graph.add_node("agent", self.call_model)
+        graph.add_node("tools", self.tool_node)
 
         # Set the entrypoint as `agent`
         # This means that this node is the first one called
-        workflow.set_entry_point("agent")
+        graph.set_entry_point("agent")
 
         # We now add a conditional edge
-        workflow.add_conditional_edges(
+        graph.add_conditional_edges(
             # First, we define the start node. We use `agent`.
             # This means these are the edges taken after the `agent` node is called.
             "agent",
@@ -130,23 +136,24 @@ class CodeChatAgent:
 
         # We now add a normal edge from `tools` to `agent`.
         # This means that after `tools` is called, `agent` node is called next.
-        workflow.add_edge("tools", "agent")
+        graph.add_edge("tools", "agent")
 
-        graph = workflow.compile(checkpointer=checkpointer)
-        return graph, thread_id
+        chain = graph.compile(checkpointer=checkpointer)
+        return chain, thread_id
 
 
 if __name__ == "__main__":
-    from langchain_core.messages import HumanMessage
+    pass
+    # from langchain_core.messages import HumanMessage
     
-    graph = CodeChatAgent(index_name="cg_code_assist")
+    # graph = await CodeChatAgent.create(index_name="cg_code_assist")
 
-    config = {"configurable": {"thread_id": "2"}}
-    input_message = HumanMessage(content="안녕! 내 이름은 홍길동이야")
-    for event in graph.stream({"messages": [input_message]}, config, stream_mode="values"):
-        event["messages"][-1].pretty_print()
+    # config = {"configurable": {"thread_id": "2"}}
+    # input_message = HumanMessage(content="안녕! 내 이름은 홍길동이야")
+    # for event in graph.stream({"messages": [input_message]}, config, stream_mode="values"):
+    #     event["messages"][-1].pretty_print()
 
 
-    input_message = HumanMessage(content="내 이름이 뭐야?")
-    for event in graph.stream({"messages": [input_message]}, config, stream_mode="values"):
-        event["messages"][-1].pretty_print()
+    # input_message = HumanMessage(content="내 이름이 뭐야?")
+    # for event in graph.stream({"messages": [input_message]}, config, stream_mode="values"):
+    #     event["messages"][-1].pretty_print()

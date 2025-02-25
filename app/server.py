@@ -1,9 +1,25 @@
+import argparse
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-load_dotenv(dotenv_path=".env.testcase", override=True) # .env, .env.testcase
+
+# ---------------------------------------
+# 파라미터 처리
+# ---------------------------------------
+parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
+parser.add_argument("--env", type=str, default=".env", help="Path to .env file") # 값이 없을 경우 .env 기본 설정
+parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
+parser.add_argument("--port", type=int, default=8000, help="서버 포트")
+parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
+parser.add_argument("--cert-file", type=str, default=None)
+parser.add_argument("--key-file", type=str, default=None)
+args = parser.parse_args()
+
+# .env 파일 로드
+load_dotenv(dotenv_path=args.env, override=True)
+
 
 import argparse
 from pydantic import BaseModel
-from app.chain_graph.rag_chain import create_rag_chain
 # from app.chain_graph.code_assist_chain import code_assist_chain 
 from app.utils import get_llm_model
 from fastapi.staticfiles import StaticFiles
@@ -12,16 +28,37 @@ from app.config import STATIC_DIR
 
 from app.chain_graph.code_assist_chain import CodeAssistChain
 
-from app.routes.view_routes import router as view_routes
-from app.routes.upload_routes import router as upload_routes
-from app.routes.faiss_routes import router as faiss_routes
-from app.routes.sample_routes import router as sample_routes
-from app.routes.terms_conversion_routes import router as terms_conversion_routes
-from app.routes.code_assist_routes import router as code_assist_routes
-from app.routes.user_service_routes import router as user_service_routes
-from starlette.middleware.sessions import SessionMiddleware
+from app.routes import (
+    code_assist,
+    open_webui,
+    sample,
+    terms_conversion,
+    upload,
+    user_service,
+    vector_db,
+    view,
+)
 
+from app.routes.admin import (
+    faiss,
+)
+
+
+# from app.routes.open_webui import router as open_webui
+# from app.routes.view_routes import router as view_routes
+# from app.routes.upload_routes import router as upload_routes
+# from app.routes.faiss_routes import router as faiss_routes
+# from app.routes.sample_routes import router as sample_routes
+# from app.routes.terms_conversion_routes import router as terms_conversion_routes
+# from app.routes.code_assist_routes import router as code_assist_routes
+# from app.routes.user_service_routes import router as user_service_routes
+
+from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 from langfuse.callback import CallbackHandler
+from app.db_model.database import get_async_session_CTX
+from app.vectordb.faiss_vectordb import FaissVectorDB, initialize_vector_dbs, vectordb_clear
 import uvicorn
 
 import warnings
@@ -31,24 +68,24 @@ import logging
 logging.basicConfig(level=logging.INFO) # 로그설정
 
 
-
-# ---------------------------------------
-# 파라미터 처리
-# ---------------------------------------
-parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
-parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
-parser.add_argument("--port", type=int, default=8000, help="서버 포트")
-parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
-parser.add_argument("--cert-file", type=str, default=None)
-parser.add_argument("--key-file", type=str, default=None)
-args = parser.parse_args()
+@asynccontextmanager
+async def lifespan(webServerApp: FastAPI):
+    """애플리케이션 시작/종료 시 실행될 코드"""
+    session_ctx = get_async_session_CTX()
+    async with session_ctx as session:
+        await initialize_vector_dbs(session)
+        try:
+            yield
+        finally:
+            vectordb_clear()
 
 
 # FastAPI 앱 설정
 webServerApp = FastAPI(
-    title="Construction Guarantee Server",
+    title="Alfred Server",
     version="1.0",
     description="AI Server for Construction Guarantee Company",
+    lifespan=lifespan
 )
 
 webServerApp.add_middleware(
@@ -56,6 +93,13 @@ webServerApp.add_middleware(
     secret_key="cgcgcg",
     session_cookie="session_cookie",
     max_age=24 * 60 * 60  # 24시간
+)
+webServerApp.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 또는 특정 도메인만 허용할 수도 있음
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용 (OPTIONS 포함)
+    allow_headers=["*"],  # 모든 요청 헤더 허용
 )
 
 # 정적 파일 경로 및 Jinja2 템플릿 설정
@@ -70,28 +114,34 @@ class CustomBaseModel(BaseModel):
 # ---------------------------------------
 # 라우터 등록
 # ---------------------------------------
-code_assist_chain = CodeAssistChain(index_name="cg_code_assist")
 
 # 웹 페이지
-webServerApp.include_router(view_routes, prefix="/view") # 화면용 라우터
+webServerApp.include_router(view.router, prefix="/view") # 화면용 라우터
+webServerApp.include_router(open_webui.router, prefix="/aifred-oi") # 기본 라우터
 
+webServerApp.include_router(user_service.router, prefix="/user") # 사용자 처리 라우터
+webServerApp.include_router(upload.router, prefix="/upload") # 업로드 라우터
+webServerApp.include_router(vector_db.router, prefix="/faiss") # faiss 라우터
+webServerApp.include_router(terms_conversion.router, prefix="/termsconversion") # 용어변환을 위한 라우터
+webServerApp.include_router(code_assist.router, prefix="/codeassist") # 코드생성 위한 라우터
+webServerApp.include_router(sample.router, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
 
-webServerApp.include_router(user_service_routes, prefix="/user") # 사용자 처리 라우터
-
-webServerApp.include_router(upload_routes, prefix="/upload") # 업로드 라우터
-webServerApp.include_router(faiss_routes, prefix="/faiss") # faiss 라우터
-webServerApp.include_router(terms_conversion_routes, prefix="/termsconversion") # 용어변환을 위한 라우터
-webServerApp.include_router(code_assist_routes, prefix="/codeassist") # 코드생성 위한 라우터
-webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일과 라우트들은 삭제 예정
-
-# 아래는 삭제 - 플러그인용으로 따로 만들지 않고 도메인에 따라 관리
-# webServerApp.include_router(eclipse_router, prefix="/plugin") # eclipse plugin 라우터 등록
+print('''
+      ...       ....        ........... .........      ..........  ........
+     'MMM0      KMMx        oMMM000000d xMMMMMMMMMXl  oMMMNNNNNNN  WMMMMMMMMXo
+    .NMWNMd     KMMx        oMMM        xMMM.   .XMM; oMMM         WMMo...,dMMx
+    KMMc'MM:    KMMx        oMMM:;;;;;  xMMM....,XMW. oMMM:::::,   WMMc     WM0
+   kMM0  xMW.   KMMx        oMMMdddddo  xMMMMMMMMMX,  oMMMooooo:   WMMc     WM0
+  cMMMkooxMMX   KMMx        oMMM        xMMM    ;MMM. oMMM         WMMc    .MMO
+ 'MMW;,,,,,XMO  KMMO''''''. oMMM        xMMM     XMM; oMMM,,,,,,,  WMMX000XMMX.
+ xOO;      'OO, xOOOOOOOOOc :OOO        cOOO     OOO' ;OOOOOOOOOk  OOOOOOOko,
+''')
 
 # 체인 등록
 # from langserve import add_routes
+# code_assist_chain = CodeAssistChain(index_name="cg_code_assist")
 # add_routes(webServerApp, get_llm_model().with_config(callbacks=[CallbackHandler()]), path="/llm", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_text_to_sql_chain(), path="/sql", enable_feedback_endpoint=True)
-# add_routes(webServerApp, create_rag_chain(), path="/rag", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain(type="01"), path="/autocode", enable_feedback_endpoint=True)
 # add_routes(webServerApp, code_assist_chain(type="02"), path="/codeassist", enable_feedback_endpoint=True)
 # add_routes(webServerApp, create_anthropic_chain(), path="/anthropic", enable_feedback_endpoint=True)
@@ -99,7 +149,6 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 
 
 # Stream 처리를 위한 서비스 등록
-
 
 # ---------------------------------------
 # SQLAlchemy 데이터베이스 설정 및 초기화
@@ -110,6 +159,7 @@ webServerApp.include_router(sample_routes, prefix="/sample") # <-- 해당 파일
 
 # ---------------------------------------
 # 애플리케이션 실행
+# 로컬 : python -m app.server --env .env.test --port 8001 --debug debug
 # ---------------------------------------
 if __name__ == "__main__":
     print(f"Starting server on {args.host}:{args.port} (debug={args.debug})")
@@ -118,7 +168,5 @@ if __name__ == "__main__":
                 port=args.port, 
                 reload=args.debug,
                 ssl_certfile=args.cert_file,  # 인증서 파일 추가
-                ssl_keyfile=args.key_file  # 키 파일 추가                
+                ssl_keyfile=args.key_file  # 키 파일 추가
                 )
-
-

@@ -1,28 +1,30 @@
-from langchain_core.prompts import PromptTemplate
+from fastapi import Depends
 from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
+from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_session, get_async_session
 from app.process.reranker import AlfredReranker
-from app.prompts.code_prompt import AUTO_CODE_TASK_PROMPT, CHAT_PROMPT, CODE_ASSIST_TASK_PROMPT, MAKE_CODE_COMMENT_PROMPT, MAKE_MAPDATAUTIL_PROMPT, TEXT_SQL_PROMPT
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
-from app.vectordb.faiss_vectordb import FaissVectorDB
+from app.vectordb.faiss_vectordb import get_vector_db
 from langfuse.callback import CallbackHandler
 from langgraph.types import StreamWriter
+from langfuse import Langfuse
 
 import logging
 
 class CodeAssistChain:
-    def __init__(self, index_name:str="cg_code_assist"):
+    def __init__(self, session, index_name:str="cg_code_assist"):
         self.index_name = index_name
-        self.db_session = SessionLocal()
-        self.faissVectorDB = FaissVectorDB(db_session=self.db_session, index_name=index_name)
+        self.db_session = session
+        self.faissVectorDB = get_vector_db(index_name=index_name, session=session)
         self.es_bm25 = ElasticsearchBM25(index_name=index_name)
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+        self.langfuse = Langfuse()
 
-    def contextual_reranker(self, state: CodeAssistState, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
+    def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
         # VectorDB / BM25 조회
@@ -35,11 +37,10 @@ class CodeAssistChain:
         # VectorDB의 doc_id, original_index값 추출
         ranked_chunk_ids = [
             (
-                result['metadata'].get('doc_id', None), 
-                result['metadata'].get('original_index', None)
+                result['org_resrc_id'], 
+                result['seq']
             )
             for result in semantic_results
-            if 'metadata' in result and isinstance(result['metadata'], dict)
         ]
 
         # BM25조회 결과의 doc_id, original_index값 추출
@@ -79,11 +80,10 @@ class CodeAssistChain:
         # docid와 content/value를 매핑한 딕셔너리 생성
         semantic_docid_to_content = {
             (
-                result['metadata'].get('doc_id', None),
-                result['metadata'].get('original_index', None)
-            ): result.get('content', '')
+                result['org_resrc_id'], 
+                result['seq']
+            ): result['content']
             for result in semantic_results
-            if 'metadata' in result and isinstance(result['metadata'], dict)
         }
         bm25_docid_to_value = {
             (
@@ -122,11 +122,11 @@ class CodeAssistChain:
         state['context'] = "\n".join(doc['content'] for doc in docs)
         return state
 
-
     def get_table_desc(self, state: AgentState) -> AgentState:
         context = state['question']
         table_json = {}
         table_names = context.split(',')
+        
         rsrc_table_repo = RSrcTableRepository(session=self.db_session)
         rsrc_table_column_repo = RSrcTableColumnRepository(session=self.db_session)
 
@@ -157,17 +157,14 @@ class CodeAssistChain:
             configurable={"thread_id": thread_id},  # 스레드 ID 설정
         )
 
-        prompt = CHAT_PROMPT.format(
-            QUESTION=state['question']
-        )
+        langfuse_prompt = self.langfuse.get_prompt("CHAT_PROMPT", version=1)
+        prompt = langfuse_prompt.compile(QUESTION=state['question'])
 
         # 호출
         chunks = []
         async for chunk in self.model.astream(prompt, config=config):
             writer(chunk)
             chunks.append(chunk)
-            
-            print(str(chunk))
         state['response'] = "".join(str(chunks))
         return state
 
@@ -179,147 +176,157 @@ class CodeAssistChain:
     #   task_type 04 -> generate_DSC_mapdatautil (*DSC=Domain-Specific-Coding)
     #   task_type 05 -> generate_text2sql
     #   task_type ?? -> generate_talk
-    def generate_response(self, state: AgentState, task_type: str) -> AgentState:
-        if task_type == "01":
-            prompt = AUTO_CODE_TASK_PROMPT.format(SOURCE_CODE=state['question'])
-        elif task_type == "02":
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
-                TASK=state['question'],
-                CURRENT_CODE=state['current_code']
-            )
-        elif task_type == "03":
-            prompt = MAKE_CODE_COMMENT_PROMPT.format(SOURCE_CODE=state['question'])
-        elif task_type == "04":
-            prompt = MAKE_MAPDATAUTIL_PROMPT.format(TABLE_DESC=state['context'])
-        elif task_type == "05":
-            prompt = TEXT_SQL_PROMPT.format(TABLE_DESC=state['context'], SQL_REQUEST=state['sql_request'])
-        else:
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
-                TASK=state['question'],
-                CURRENT_CODE=state['current_code']
-            )
-
-        response = self.model.invoke(prompt)
-        state['response'] = response
+    # TODO : async, sync 둘다 가능하도록 변경 필요
+    async def generate_response_astream(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
+        prompt = state['prompt']
+        
+        # Stream 방식
+        chunks = []
+        async for chunk in self.model.astream(prompt):
+            writer(chunk)
+            chunks.append(chunk)
+        state['response'] = "".join(str(chunks))
         return state
     
-    def get_chain(self, task_type: str):
-        if task_type in ["chat"]:
-            memory = HybridSaver()
-            
-            workflow = StateGraph(CodeAssistChatState)
-            workflow.add_node("generate_talk", self.generate_talk)
-            workflow.set_entry_point("generate_talk")
-            workflow.add_edge("generate_talk", END)
-            chain = workflow.compile(checkpointer=memory).with_config(callbacks=[CallbackHandler()])
-            
-            # workflow.get_state(config)
-            
-            return chain
+    def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
+        langfuse_prompt = self.langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+
+        state['prompt'] = langfuse_prompt.compile(
+            REFERENCE_CODE="",
+            TASK=state['question'],
+            CURRENT_CODE=state['current_code']
+        )
+
+    def chain_codeassist(self) -> CodeAssistState:
+        graph = StateGraph(CodeAssistState)
+        graph.add_node("contextual_reranker", self.contextual_reranker) # 컨텍스트 정보 조회
+        graph.add_node("choose_prompt_for_task", self.choose_prompt_for_task) # 프롬프트 선택
+        graph.add_node("generate_response_astream", self.generate_response_astream) # 모델호출
+        
+        graph.set_entry_point("contextual_reranker")
+        graph.add_edge("contextual_reranker", "choose_prompt_for_task")
+        graph.add_edge("choose_prompt_for_task", "generate_response_astream")
+        graph.add_edge("generate_response_astream", END)
+
+        chain = graph.compile() # CompiledStateGraph
+        chain.with_config(callbacks=[CallbackHandler()])
+        
+        return chain
+    
+    def chain_make_comment(self) -> CodeAssistState:
         pass
+        # elif ("03" == type) : # 주석생성하기
+        #     langfuse_prompt = langfuse.get_prompt("MAKE_CODE_COMMENT_PROMPT", version=1)
+        #     prompt = langfuse_prompt.compile(
+        #         SOURCE_CODE=state['question']
+        #     )
 
 
 # ------------------------------------------------
 # 아래는 이전 버전 - 삭제필요
 # ------------------------------------------------
 # 임시로 사용하는 함수 - 추후에는 사용하지 않음
-def code_assist_chain(type:str):
+async def code_assist_chain(type:str, session):
+    faissVectorDB = await get_vector_db(index_name="cg_code_assist", session=session)
+    langfuse = Langfuse()
     
-    session = SessionLocal()
-    faissVectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
-
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
 
-    def get_context(state: AgentState) -> AgentState:
+    async def get_context(state: AgentState) -> AgentState:
         # 질문의 추가 맥락 생성
         # enriched_query = contextual_enrichment(state['question'])  # 맥락을 추가로 풍부화
         enriched_query = state['question']
-        print(f"### enriched_query = {enriched_query}")
         
         # 맥락 기반 검색
-        docs = faissVectorDB.search_similar_documents(query=enriched_query, k=2)
-        print(f"### search_result = {docs}")
+        docs = await faissVectorDB.search_similar_documents(query=enriched_query, k=2)
         
         # 문서 결합
         state['context'] = combine_documents_with_relevance(docs)  # 단순 병합 대신 관련성을 고려하여 결합
         return state
 
-    def get_table_desc(state: AgentState) -> AgentState:
-        context = state['question']
+    async def get_table_desc(state: AgentState) -> AgentState:
+        context = state['sql_request']
+        
+        if is_table_name(context):
+            rsrc_table_repository = RSrcTableRepository(session=session)
+            rsrc_table_column_repository = RSrcTableColumnRepository(session=session)
 
-        rsrc_table_repository = RSrcTableRepository(session=session)
-        rsrc_table_column_repository = RSrcTableColumnRepository(session=session)
-
-        table_json = {}
-        table_names = context.split(',')
-        for table_name in table_names:
-            if table_name.strip():  # 빈 문자열이 아닌 경우에만 처리
-                table_data = rsrc_table_repository.get_data_by_table_name(table_name=table_name.strip())
-                for table in table_data:
-                    columns = rsrc_table_column_repository.get_data_by_table_id(rsrc_table_id=table.id)
+            table_json = {}
+            table_names = context.split(',')
+            for table_name in table_names:
+                if table_name.strip():  # 빈 문자열이 아닌 경우에만 처리
+                    table_data = await rsrc_table_repository.get_data_by_table_name(table_name=table_name.strip())
                     
-                    column_jsons = []
-                    for column in columns:
-                        column_jsons.append({
-                            'name': column.column_name,
-                            # 'column_korean_name': column.column_korean_name,
-                            'type': column.column_type,
-                            'desc': column.column_desc.strip()
-                        })
-                    
-                    table_json[table_name.strip()] = {
-                        'table_name': table_name.strip(),
-                        'columns': column_jsons
-                    }
-                    
-        # 문서 결합
-        state['context'] = table_json
+                    for table in table_data:
+                        columns = await rsrc_table_column_repository.get_data_by_table_id(rsrc_table_id=table.id)
+                        
+                        column_jsons = []
+                        for column in columns:
+                            column_jsons.append({
+                                'name': column.column_name,
+                                # 'column_korean_name': column.column_korean_name,
+                                'type': column.column_type,
+                                'desc': column.column_desc.strip()
+                            })
+                        
+                        table_json[table_name.strip()] = {
+                            'table_name': table_name.strip(),
+                            'columns': column_jsons
+                        }
+                        
+            # 문서 결합
+            state['context'] = table_json
+            state['current_code'] = ""
+        else:
+            state['context'] = ""
+            state['current_code'] = context
+            
         return state
 
 
     async def generate_response(state: AgentState, writer: StreamWriter) -> AgentState:
         
         if ("01" == type) : # autocode
-            prompt = AUTO_CODE_TASK_PROMPT.format(
-                SOURCE_CODE=state['question']
-            )
+            langfuse_prompt = langfuse.get_prompt("AUTO_CODE_TASK_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(SOURCE_CODE=state['question'])
+
         elif ("02" == type) :
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
+            langfuse_prompt = langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
+                REFERENCE_CODE="", # state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
             
         elif ("03" == type) : # 주석생성하기
-            prompt = MAKE_CODE_COMMENT_PROMPT.format(
+            langfuse_prompt = langfuse.get_prompt("MAKE_CODE_COMMENT_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
                 SOURCE_CODE=state['question']
             )
 
         elif ("04" == type) : # 테이블명으로 MapDataUtil 생성하기
-            prompt = MAKE_MAPDATAUTIL_PROMPT.format(
+            langfuse_prompt = langfuse.get_prompt("MAKE_MAPDATAUTIL_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
                 TABLE_DESC=state['context']
             )
 
         elif ("05" == type) : # SQL 생성하기
-            prompt = TEXT_SQL_PROMPT.format(
+            langfuse_prompt = langfuse.get_prompt("TEXT_SQL_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
                 TABLE_DESC=state['context'],
-                SQL_REQUEST=state['sql_request']
+                SQL_REFERENCE=state['current_code'],
+                SQL_REQUEST=state['question']
             )
 
         else:
-            prompt = CODE_ASSIST_TASK_PROMPT.format(
-                REFERENCE_CODE=state['context'],
+            langfuse_prompt = langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+            prompt = langfuse_prompt.compile(
+                REFERENCE_CODE="", # state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
-            pass
 
-        # response = model.invoke(prompt)
-        # state['response'] = response
-        
         # Stream 방식
         chunks = []
         async for chunk in model.astream(prompt):
@@ -327,6 +334,7 @@ def code_assist_chain(type:str):
             chunks.append(chunk)
         state['response'] = "".join(str(chunks))
         return state
+    
 
     workflow = StateGraph(AgentState)
 
@@ -368,6 +376,7 @@ def code_assist_chain(type:str):
     elif ("05" == type) : # SQL 생성하기
         workflow.add_node("get_table_desc", get_table_desc)
         workflow.add_node("generate_response", generate_response)
+        # workflow.add_node("generate_response", generate_response)
         
         workflow.set_entry_point("get_table_desc")
         workflow.add_edge("get_table_desc", "generate_response")
@@ -391,7 +400,5 @@ def code_assist_chain(type:str):
 
 # Helper function: combine_documents_with_relevance
 def combine_documents_with_relevance(docs):
-    # combined_context = "\n".join([doc['content'] for doc in sorted(docs, key=lambda x: x['score'], reverse=True)])
     combined_context = "\n".join([doc['content'] for doc in docs])
     return combined_context
-

@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.config import TEMPLATE_DIR, setup_logging
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.db_model.data_repository import ChatHistoryRepository, UserInfoRepository
 from app.db_model.database_models import ChatHistory, UserInfo
+from app.routes.user_service import UserService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = setup_logging()
 router = APIRouter()
@@ -24,9 +26,7 @@ async def view_login(request: Request):
 #     - RAG 요청
 # view/code/**
 @router.get("/code/{subpath:path}", response_class=HTMLResponse)
-async def view_code(request: Request):
-    print(f"Requested URL path: {request.url.path}")
-
+async def view_code(request: Request, session: AsyncSession = Depends(get_async_session)):
     url_path = request.url.path
 
 
@@ -37,7 +37,7 @@ async def view_code(request: Request):
             pass
         elif "/chatplain" in url_path:
             # 사용자 정보 user_info테이블에 없으면 저장
-            user_info = insert_ip_to_database(request.client.host) 
+            user_info = await insert_ip_to_database(request.client.host, session=session) 
 
             # 사용자 정보를 세션에 저장
             request.session["user_info"] = {
@@ -64,19 +64,18 @@ async def view_code(request: Request):
         return templates.TemplateResponse("error.html", {"request": request, "message": "요청하신 페이지를 찾을 수 없습니다.", "user_info":user_info }, status_code=404)
 
 
-def insert_ip_to_database(ip: str):
-    user_service = UserService()
-    user_info = user_service.get_user_by_id(ip)
+async def insert_ip_to_database(ip: str, session:AsyncSession):
+    user_service = UserService(session=session)
+    user_info = await user_service.get_user_by_id(ip)
 
-    if not user_info:        
+    if not user_info:
         # 없으면 사용자 정보 저장
         user_info = UserInfo(
             user_id = ip, 
             password = ip, 
             email=f"{ip}@temp.com"
         )
-        user_info = user_service.create_user(user_info)
-     
+        user_info = await user_service.create_user(user_info)
     return user_info
 
 # 관리자
@@ -89,8 +88,6 @@ def insert_ip_to_database(ip: str):
 # view/admin/**
 @router.get("/admin/{subpath:path}", response_class=HTMLResponse)
 async def view_admin(request: Request):
-    print(f"Requested URL path: {request.url.path}")
-    
     # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 
@@ -114,8 +111,6 @@ async def view_admin(request: Request):
 # view/workflow/**
 @router.get("/workflow/{subpath:path}", response_class=HTMLResponse)
 async def view_workflow(request: Request):
-    print(f"Requested URL path: {request.url.path}")
-    
     # 세션에서 사용자 정보 가져오기
     user_info = request.session.get('user_info', None)
 
@@ -125,54 +120,3 @@ async def view_workflow(request: Request):
         return templates.TemplateResponse("view/workflow/task-target-list.html", {"request": request, "message": "작업대상조회", "user_info":user_info })
     else :
         return templates.TemplateResponse("error.html", {"request": request, "message": "요청하신 페이지를 찾을 수 없습니다."}, status_code=404)
-
-
-# 임시코드        
-class UserService:
-    def __init__(self):
-        self.session = SessionLocal()
-        self.user_info_repository = UserInfoRepository(self.session)
-
-    def get_user_by_id(self, user_id: str):
-        """
-        주어진 사용자 ID로 사용자를 조회합니다.
-        
-        Args:
-            user_id: 조회할 사용자 ID
-            
-        Returns:
-            조회된 사용자 정보. 없으면 None 반환
-        """        
-        if (user_id == 'admin'): # admin은 임시로 일단 로그인
-            return UserInfo(user_id='admin', password='admin', email='admin@temp.com', user_name='관리자', is_active=True)
-        return self.user_info_repository.get_user_by_id(user_id)
-
-    def get_user_by_email(self, email: str):
-        """
-        주어진 이메일로 사용자를 조회합니다.
-        """
-        return self.user_info_repository.get_user_by_email(email)
-
-    def get_all_users(self):
-        """
-        모든 사용자를 조회합니다.
-        """
-        return self.user_info_repository.get_all_users()
-
-    def create_user(self, user_data: dict):
-        """
-        새로운 사용자를 생성합니다.
-        """
-        return self.user_info_repository.create_user(user_data)
-
-    def update_user(self, user_id: str, user_data: dict):
-        """
-        주어진 사용자 ID로 사용자를 업데이트합니다.
-        """
-        return self.user_info_repository.update_user(user_id, user_data)
-
-    def delete_user(self, user_id: str):
-        """
-        주어진 사용자 ID로 사용자를 삭제합니다.
-        """
-        self.user_info_repository.delete_user(user_id)

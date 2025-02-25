@@ -5,7 +5,8 @@ import xml.etree.ElementTree as ET
 import luigi
 
 from app.process.content_chunker import file_chunk_and_save
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
+from app.vectordb.bm25_search import create_elasticsearch_bm25_index
 
 
 class FindFiles(luigi.Task):
@@ -38,7 +39,7 @@ class ParseFile(luigi.Task):
     file_path = luigi.Parameter()
     output_dir = luigi.Parameter()  # 중간 디렉토리 경로 전달
     
-    session = SessionLocal()
+    session = get_async_session()
 
     def output(self):
         output_file = f'{self.output_dir}/parsed_{os.path.basename(self.file_path)}.txtt'
@@ -50,6 +51,9 @@ class ParseFile(luigi.Task):
             # chunk_list에는 JavaChunkMeta 또는 SQLChunkMeta 객체들이 담김
             # chunk_list의 각 객체는 코드 조각과 메타데이터(함수명, 테이블명 등)를 포함
             org_resrc, chunk_list = file_chunk_and_save(self.file_path, session=self.session)
+
+            # elasticsearch 저장
+            create_elasticsearch_bm25_index(index_name='cg_code_assist', org_resrc=org_resrc, chunk_list=chunk_list)
             
             # 파일로 작성
             with self.output().open('w') as f:

@@ -2,7 +2,7 @@ from app.db_model.data_repository import OrgRSrcRepository
 from app.process.vectorize_process import process_vectorize
 import luigi
 from datetime import datetime
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.vectordb.faiss_vectordb import FaissVectorDB  # 청크 ID를 생성하기 위해 사용
 
 # 임베딩 함수: 예시로 랜덤 벡터 생성
@@ -28,7 +28,7 @@ class EmbedData(luigi.Task):
     def run(self):
         print(f"####### index_name={self.index_name}")
         
-        session = SessionLocal()
+        session = get_async_session()
         faiss_vector_db = FaissVectorDB(db_session=session, index_name=self.index_name)
         orgrsrc_repository = OrgRSrcRepository(session=session)
 

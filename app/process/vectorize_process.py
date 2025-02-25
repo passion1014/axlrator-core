@@ -1,9 +1,10 @@
 
 from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
-from app.vectordb.faiss_vectordb import FaissVectorDB
+from app.db_model.database import get_async_session
+from app.vectordb.faiss_vectordb import get_vector_db
+from sqlalchemy.ext.asyncio import AsyncSession
 
-
-def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
+async def process_vectorize(index_name: str, session: AsyncSession, org_resrc, faiss_info=None):
     """
     데이터를 벡터화하여 처리합니다.
     
@@ -27,9 +28,9 @@ def process_vectorize(index_name: str, session, org_resrc, faiss_info=None):
     # session이 없을 경우 생성
     if session is None:
         from app.db_model.database import SessionLocal
-        session = SessionLocal()
+        session = get_async_session()
 
-    faiss_vector_db = FaissVectorDB(db_session=session, index_name=index_name)
+    faiss_vector_db = await get_vector_db(index_name=index_name, session=session)
     orgrsrc_repository = OrgRSrcRepository(session=session)
     chunked_data_Repository = ChunkedDataRepository(session=session)
     

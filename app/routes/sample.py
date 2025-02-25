@@ -1,14 +1,13 @@
 # app/routes/upload_routes.py
 import logging
-from fastapi import APIRouter, Request, WebSocket
+from fastapi import APIRouter, Depends, Request, WebSocket
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from openai import BaseModel
 from app.chain_graph.code_assist_chain import code_assist_chain
-from app.chain_graph.rag_chain import create_rag_chain
 from app.chain_graph.sample_chain import sample_chain
 from app.config import TEMPLATE_DIR, setup_logging
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.process.reranker import AlfredReranker
 from app.utils import get_llm_model
 from app.vectordb.faiss_vectordb import FaissVectorDB
@@ -37,8 +36,6 @@ async def ui_chat(request: Request):
 # code assist 요청 엔드포인트
 @router.post("/api/test-rerank")
 async def sample_endpoint(request: SampleRequest):
-    print("-------------------------------")
-    
     # 예시 쿼리와 타겟 리스트
     query = "example query"
     target_list = [
@@ -47,7 +44,7 @@ async def sample_endpoint(request: SampleRequest):
     ]
 
     # 예시 벡터 DB 초기화
-    session = SessionLocal()
+    session = get_async_session()
     vectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
 
     # flash_rank_rerank 함수 호출
@@ -57,8 +54,6 @@ async def sample_endpoint(request: SampleRequest):
     # 결과 출력
     for result in results:
         print(f"Chunk: {result['chunk']}, Score: {result['score']}")
-
-    
     pass
     
 
@@ -75,10 +70,13 @@ async def sample_endpoint(request: SampleRequest):
 
 # WebSocket 사용: 클라이언트에서 요청을 받고 워크플로우 실행
 @router.websocket("/api/chat_ainvoke")
-async def chat_websocket_ainvoke(websocket: WebSocket):
+async def chat_websocket_ainvoke(
+    websocket: WebSocket, 
+    session = Depends(get_async_session)
+):
     await websocket.accept()
     try:
-        chain = code_assist_chain(type="01")
+        chain = code_assist_chain(type="01", session=session)
 
         while True:
             # 클라이언트로부터 질문 받기

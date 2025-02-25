@@ -62,13 +62,14 @@ class CompoundWordSplitter:
 
     @classmethod
     def transform_result(cls, result):
-        transformed = []
+        transformed = {}
         for item in result:
             korean_part = ";".join(item['korean'])
             english_part = "_".join(item['english'])
             camel_case = ''.join([word.capitalize() for word in item['english']])
             camel_case = camel_case[0].lower() + camel_case[1:]  # camelCase 변환
-            transformed.append(f"{korean_part} = {english_part}({camel_case})")
+            # transformed.append(f"{korean_part} = {english_part}({camel_case})")
+            transformed[korean_part] = {"SNAKE": english_part, "CAMEL": camel_case}
         return transformed
 
     @classmethod
@@ -105,9 +106,17 @@ class CompoundWordSplitter:
                 continue
             
             k = "".join(item['korean'])
-            e = "_".join(item['english'])
+            e_snake = "_".join(item['english'])
+            e_camel = cls.snake_to_camel(e_snake)
 
             if k not in result: # 중복제거
-                result[k] = e
+                result[k] = {"SNAKE" : e_snake, "CAMEL" : e_camel}
             
         return result
+
+    @classmethod
+    def snake_to_camel(cls, snake_str: str) -> str:
+        snake_str = snake_str.lower()
+        words = snake_str.split('_')
+        return words[0] + ''.join(word.capitalize() for word in words[1:])
+    

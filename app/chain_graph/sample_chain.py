@@ -1,19 +1,19 @@
 # 테스트용
 from app.chain_graph.agent_state import AgentState
-from app.prompts.term_conversion_prompt import TERM_CONVERSION_PROMPT1
 from app.utils import get_llm_model
-
-
 from langfuse.callback import CallbackHandler
 from langgraph.graph import END, StateGraph
-
+from langfuse import Langfuse
 
 def sample_chain():
     # 모델 선언
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+    langfuse = Langfuse()
 
     def generate_response(state: AgentState) -> AgentState:
-        prompt = TERM_CONVERSION_PROMPT1.format(korean_term=state['question'], related_info=state['context'])
+        langfuse_prompt = langfuse.get_prompt("TERM_CONVERSION_PROMPT1", version=1)
+        prompt = langfuse_prompt.compile(korean_term=state['question'], related_info=state['context'])
+
         response = model.invoke(prompt)
         state['response'] = str(response)
         return state

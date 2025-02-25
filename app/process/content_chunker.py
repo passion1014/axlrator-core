@@ -4,9 +4,8 @@ import os
 import re
 
 from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
-from app.db_model.database import SessionLocal
+from app.db_model.database import get_async_session
 from app.db_model.database_models import OrgRSrc
-from app.formatter.code_formatter import parse_augmented_chunk
 from app.process.contextual_process import generate_code_context
 from app.process.java_parser import parse_java_file, should_skip_by_line_count
 
@@ -125,8 +124,8 @@ def read_file(file_path):
 
 def save_chunks(chunks, extension, last_modified):
     """chunk를 데이터베이스에 저장"""
-    for idx, chunk in enumerate(chunks, 1):
-        print("=============================================")
+    # for idx, chunk in enumerate(chunks, 1):
+    #     print("=============================================")
         
 def get_file_extension(file_path):
     """Return the file extension of the given file path."""
@@ -299,15 +298,13 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
     """
     
     if session is None:
-        session = SessionLocal()
+        session = get_async_session()
         
     proc_chunk_list = []
     try:
         # 원본 파일 정보 저장
         orgRSrcRepository = OrgRSrcRepository(session=session)
         org_resrc = orgRSrcRepository.create_org_resrc(file_path=file_path, type="01", desc="JAVA")
-        
-        print(f" ### org_resrc = {str(org_resrc)}")
 
         # 파일 chunking
         file_chunk_list = chunk_file(file_path)
@@ -316,8 +313,6 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
         for idx, chunk in enumerate(file_chunk_list, start=1):
             if chunk is None:
                 continue
-            
-            print(f"청크 타입: {type(chunk)}")
             
             if isinstance(chunk, JavaChunkMeta):
                 data_name = chunk.function_name # 함수명

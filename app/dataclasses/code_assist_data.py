@@ -3,10 +3,10 @@ from pydantic import BaseModel
 
 
 class CodeAssistInfo(BaseModel):
-    indexname: str
-    question: str
-    current_code: str
-    sql_request: str
+    indexname: str = ""
+    question: str = ""
+    current_code: str = ""
+    sql_request: Optional[str] = ""
 
 class ChatInfo(BaseModel):
     seq: int

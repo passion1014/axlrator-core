@@ -1,5 +1,6 @@
 import os
 from elasticsearch import Elasticsearch
+from app.db_model.database import get_async_session
 from app.vectordb.bm25_search import ElasticsearchBM25, retrieve_advanced
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
@@ -81,7 +82,7 @@ class MockFaissVectorDB(FaissVectorDB):
 # 테스트 실행
 def test_elasticsearch_bm25_and_faiss():
     from app.db_model.database import SessionLocal
-    session = SessionLocal()
+    session = get_async_session()
 
     # FAISS DB 및 Elasticsearch 초기화
     # db = MockFaissVectorDB(test_documents)

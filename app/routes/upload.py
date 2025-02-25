@@ -1,21 +1,17 @@
 # app/routes/upload_routes.py
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request, Form
 from pathlib import Path
-
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from requests import Session
 from app.config import TEMPLATE_DIR, setup_logging
 from app.db_model import database_models
 from app.db_model.data_repository import FaissInfoRepository
-from app.db_model.database import SessionLocal, get_db
+from app.db_model.database import get_async_session
 from app.process.content_chunker import file_chunk_and_save
-from fastapi import Form
-import json
-
 from app.process.vectorize_process import process_vectorize
-from app.vectordb.bm25_search import ElasticsearchBM25, create_elasticsearch_bm25_index
-from app.vectordb.faiss_vectordb import FaissVectorDB
+from app.vectordb.bm25_search import create_elasticsearch_bm25_index
+import json
 
 
 logger = setup_logging()
@@ -35,9 +31,7 @@ async def ui_faiss_list(request: Request):
 
 
 @router.post("/api/uploadFile")
-async def upload_file(files: list[UploadFile] = File(...), selectedId: str = Form(...)):
-    session = SessionLocal()
-    
+async def upload_file(files: list[UploadFile] = File(...), selectedId: str = Form(...), session: Session = Depends(get_async_session)):
     upload_dir = Path("data/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
     saved_files = []
@@ -58,15 +52,12 @@ async def upload_file(files: list[UploadFile] = File(...), selectedId: str = For
             
             # 파일 청킹 및 RDB 저장
             org_resrc, chunk_list = file_chunk_and_save(str(file_location), session=session)
-            print(f'### 처리된 파일 = {str(file_location)}')
 
             # elasticsearch 저장
             create_elasticsearch_bm25_index(index_name=faiss_info.index_name, org_resrc=org_resrc, chunk_list=chunk_list)
-            print('### elasticsearch 저장')
 
             # 벡터처리 및 벡터DB에 저장
             process_vectorize(index_name=faiss_info.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
-            print('### 벡터처리 및 벡터DB에 저장')
             
         # except Exception as e:
         #     logger.error(f"Error saving file {file.filename}: {str(e)}")
@@ -77,7 +68,7 @@ async def upload_file(files: list[UploadFile] = File(...), selectedId: str = For
 
 # FAISS Info 데이터를 가져오는 엔드포인트
 @router.get("/api/faiss_info")
-async def get_faiss_info(db: Session = Depends(get_db)):
+async def get_faiss_info(db: Session = Depends(get_async_session)):
     faiss_info_list = db.query(database_models.FaissInfo).all()
     return [{"id": info.id
             , "index_name": info.index_name

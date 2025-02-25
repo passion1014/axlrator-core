@@ -31,9 +31,23 @@
         sql_request: "",
       };
 
+      const formData = new FormData();
+      formData.append("indexname", "");
+      formData.append("current_code", "");
+      formData.append("category", "");
+      formData.append("question", question);
+      formData.append("context", "");
+      formData.append("sql_request", "");
+
+      // 파일 첨부 데이터 추가
+      const fileInput = $("#fileInput")[0];
+      if (fileInput.files.length > 0) {
+        formData.append("file", fileInput.files[0]);
+      }
+
       common.postStreamRequest(
         "/codeassist/api/autocode",
-        param,
+        formData,
         function (e) {
           const chunk = e.currentTarget.response;
           // 마크다운 데이터를 HTML로 변환
@@ -48,14 +62,14 @@
           );
 
           //이력생성
-          const param = {
+          const formData = {
             title: $("#iptQuestion").val(),
             type_code: "1",
             data: JSON.stringify([
               { question: $("#iptQuestion").val(), context: $("#iptContext").val(), answer: $("#iptAnswer").html() },
             ]),
           };
-          common.postRequest("/user/api/history", param, function (data) {
+          common.postRequest("/user/api/history", formData, function (data) {
             //highlight적용
             $("#iptAnswer pre code").each(function (i, block) {
               hljs.highlightElement(block);
@@ -103,9 +117,9 @@
             <!-- <pre id="iptAnswer"></pre> -->
             <div id="iptAnswer" class="markdown-body"></div>
           </div>
-          <div class="col-12 mt-3">
+          <div class="col-12 mt-3" style="">
             <label for="#" class="form-label">파일첨부</label>
-            <input type="file" class="form-control" />
+            <input type="file" class="form-control" id="fileInput" />
           </div>
           <div class="col-12 mt-3">
             <label for="#" class="form-label">질문 입력</label>

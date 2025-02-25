@@ -1,6 +1,6 @@
+import re
 from typing import List, Tuple
 from langchain_core.prompts import format_document
-from app.prompts.prompts import DEFAULT_DOCUMENT_PROMPT
 import os
 
 def get_embedding_model():
@@ -60,10 +60,38 @@ def get_llm_model():
     
     return model
 
-def combine_documents(docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"):
-    doc_strings = [format_document(doc, document_prompt) for doc in docs]
-    return document_separator.join(doc_strings)
+def get_rerank_model():
+    '''
+    Rerank 모델 가져오기
+    '''
+    rerank_model_name = os.getenv("RERANK_MODEL_NAME")
+    model = None
 
+    if rerank_model_name in ['BAAI/bge-reranker-v2-m3']:
+        if get_server_type() == "P":
+            model_kwargs = {}
+        else:
+            # model_kwargs = {'device': 'cpu', 'trust_remote_code': True, "batch_size": 2,}
+            model_kwargs = {'device': 'cpu',}
+
+        from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+        model = HuggingFaceCrossEncoder(model_name=rerank_model_name, model_kwargs=model_kwargs)
+    else:
+        raise ValueError("지원되지 않는 Rerank 모델입니다.")
+    
+    return model
+
+def get_server_type():
+    """
+    서버 타입을 .env 파일에서 읽어옵니다.
+    """
+    environment = os.getenv("ENVIRONMENT")
+    if environment == "production":
+        return "P"
+    elif environment == "development":
+        return "D"
+    else:
+        raise ValueError("알 수 없는 서버 타입입니다.")
 
 def merge_chat_history(chat_history: List[Tuple]) -> str:
     buffer = ""
@@ -80,3 +108,8 @@ def ensure_dict(x):
         return x.__dict__
     else:
         return {"input": x}
+
+def remove_markdown_code_block(text: str) -> str:
+    # 이 함수는 주어진 텍스트에서 마크다운 코드 블록을 제거합니다.
+    # 마크다운 코드 블록은 ```로 시작하고 끝나는 부분을 의미합니다.
+    return re.sub(r"^```[\w]*\n|\n```$", "", text)
