@@ -10,8 +10,8 @@ from langchain_community.document_compressors.flashrank_rerank import FlashrankR
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from langchain.schema import Document
-
-
+import torch
+from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification
 from app.utils import get_rerank_model, get_server_type
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
@@ -55,9 +55,26 @@ class AlfredReranker:
         5. 데이터셋 특성 고려
     
     '''
+    _instance = None  # 싱글턴 인스턴스 저장 변수
     
-    def __init__(self):
-        self.api_key = os.getenv("COHERE_API_KEY")
+    def __new__(cls, model_name: str = "BAAI/bge-reranker-v2-m3", device: str = None):
+        if cls._instance is None:
+            cls._instance = super(AlfredReranker, cls).__new__(cls)
+            cls._instance._init_model(model_name, device)
+        return cls._instance  # 항상 같은 인스턴스 반환
+
+    def _init_model(self, model_name: str, device: str):
+        self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self.device)
+
+    
+    # def __init__(self, model_name: str = "BAAI/bge-reranker-v2-m3", device: str = None):
+    #     self.api_key = os.getenv("COHERE_API_KEY")
+    #     self.rerank_model = os.getenv("RERANK_MODEL_NAME")
+    #     self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+    #     self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+    #     self.model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self.device)
 
 
     def cross_encoder_faissdb(self, query: str, vectorDB: FaissVectorDB, k: int) -> List[Dict[str, Any]]:
@@ -111,24 +128,33 @@ class AlfredReranker:
         반환값:
             List[Dict[str, Any]]: 상위 k개의 재정렬된 문서 목록.
         '''
+        if not documents:
+            return []
+
+        # Prepare inputs
+        pairs = [(query, doc["content"]) for doc in documents]
+        inputs = self.tokenizer(
+            pairs,
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
+            max_length=512
+        ).to(self.device)
+
+        # Compute scores
+        with torch.no_grad():
+            scores = self.model(**inputs).logits.squeeze(-1)  # Extract scores
+
+        # Attach scores and sort
+        for i, doc in enumerate(documents):
+            doc["score"] = scores[i].item()
         
-        # Initialize the cross-encoder model
-        model = get_rerank_model()
-
-        # Convert input documents to LangChain's Document format
-        langchain_docs = [Document(page_content=doc["content"]) for doc in documents]
-
-        # Initialize the compressor
-        compressor = CrossEncoderReranker(model=model, top_n=k)
-
-        # Perform reranking
-        reranked_docs = compressor.compress_documents(query=query, documents=langchain_docs)
-
-        # Convert back to the original dictionary format for output
-        output_docs = [{"page_content": doc.page_content} for doc in reranked_docs]
-
-        return output_docs
+        sorted_docs = sorted(documents, key=lambda x: x["score"], reverse=True)
         
+        return sorted_docs[:k]
+
+
+
 
     # def cohere_rerank(self, query: str, target_list: List[Dict], vectorDB: FaissVectorDB, k: int) -> List[Dict[str, Any]]: 
     #     '''
@@ -201,3 +227,8 @@ class AlfredReranker:
     #     # 압축된 문서 검색
     #     compressed_docs = compression_retriever.invoke(query)
     #     return compressed_docs
+
+alfred_reranker = AlfredReranker()  # 싱글턴
+
+def get_reranker():
+    return alfred_reranker

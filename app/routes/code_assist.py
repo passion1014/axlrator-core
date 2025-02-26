@@ -22,8 +22,8 @@ from psycopg_pool import AsyncConnectionPool
 logger = setup_logging()
 router = APIRouter()
 
-@router.post("/api/code_contextual")
-async def sample_endpoint(
+@router.post("/api/code-contextual")
+async def conde_contextual(
     request: Request, 
     session = Depends(get_async_session)
 ):

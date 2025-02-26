@@ -4,7 +4,7 @@ from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAss
 from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.db_model.database import get_session, get_async_session
-from app.process.reranker import AlfredReranker
+from app.process.reranker import AlfredReranker, get_reranker
 from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
@@ -19,16 +19,16 @@ class CodeAssistChain:
     def __init__(self, session, index_name:str="cg_code_assist"):
         self.index_name = index_name
         self.db_session = session
-        self.faissVectorDB = get_vector_db(index_name=index_name, session=session)
         self.es_bm25 = ElasticsearchBM25(index_name=index_name)
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
         self.langfuse = Langfuse()
 
-    def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
+    async def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
         # VectorDB / BM25 조회
-        semantic_results = self.faissVectorDB.search_similar_documents(query=question, k=50) # faiss 조회
+        faissVectorDB = await get_vector_db(index_name=self.index_name, session=self.db_session)
+        semantic_results = await faissVectorDB.search_similar_documents(query=question, k=50) # faiss 조회
         bm25_results = self.es_bm25.search(query=question, k=50) # elasticsearch 조회
         
         logging.info("## Step1. Semantic Results: %s", semantic_results)
@@ -109,16 +109,18 @@ class CodeAssistChain:
         
         # 리랭킹
         valid_documents = [doc for doc in sorted_documents if doc['content']]
-        reranker = AlfredReranker()
+        reranker = get_reranker()
         reranker.cross_encoder(query=question, documents=valid_documents)
 
         state['context'] = valid_documents
 
         return state
 
-    def search_similar_context(self, state: AgentState) -> AgentState:
+    async def search_similar_context(self, state: AgentState) -> AgentState:
         enriched_query = state['question']
-        docs = self.faissVectorDB.search_similar_documents(query=enriched_query, k=2)
+        
+        faissVectorDB = await get_vector_db(index_name=self.index_name, session=self.db_session)
+        docs = await faissVectorDB.search_similar_documents(query=enriched_query, k=2)
         state['context'] = "\n".join(doc['content'] for doc in docs)
         return state
 
@@ -189,13 +191,19 @@ class CodeAssistChain:
         return state
     
     def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
+        # valid_documents[0]['content']
+        reference_code = combine_documents_with_relevance(state['context'])
+        
         langfuse_prompt = self.langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
-
-        state['prompt'] = langfuse_prompt.compile(
-            REFERENCE_CODE="",
+        prompt = langfuse_prompt.compile(
+            REFERENCE_CODE=reference_code,
             TASK=state['question'],
             CURRENT_CODE=state['current_code']
         )
+        
+        state['prompt'] = prompt
+        
+        return state
 
     def chain_codeassist(self) -> CodeAssistState:
         graph = StateGraph(CodeAssistState)
@@ -400,5 +408,13 @@ async def code_assist_chain(type:str, session):
 
 # Helper function: combine_documents_with_relevance
 def combine_documents_with_relevance(docs):
-    combined_context = "\n".join([doc['content'] for doc in docs])
-    return combined_context
+    # combined_context = "\n".join([doc['content'] for doc in docs])
+    if not docs:
+        return ""
+
+    combined_context = []
+    for doc in docs[:3]:  # 앞에서 3개의 항목만 사용
+        if doc['content'] not in combined_context:  # 중복 제거
+            combined_context.append(doc['content'])
+
+    return "\n".join(combined_context)

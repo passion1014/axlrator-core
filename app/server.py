@@ -1,6 +1,10 @@
 import argparse
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+import warnings
+import logging
+
+from app.process.reranker import AlfredReranker
 
 # ---------------------------------------
 # 파라미터 처리
@@ -26,8 +30,6 @@ from app.utils import get_llm_model
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from app.config import STATIC_DIR
-
-from app.chain_graph.code_assist_chain import CodeAssistChain
 
 # client service
 from app.routes import (
@@ -61,9 +63,11 @@ import logging
 logging.basicConfig(level=logging.INFO) # 로그설정
 
 
+
 @asynccontextmanager
 async def lifespan(webServerApp: FastAPI):
     """애플리케이션 시작/종료 시 실행될 코드"""
+    global reranker
     session_ctx = get_async_session_CTX()
     async with session_ctx as session:
         await initialize_vector_dbs(session)

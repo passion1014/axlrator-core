@@ -10,7 +10,6 @@ from typing import List, Optional
 
 from app.chain_graph.code_assist_chain import code_assist_chain
 from app.chain_graph.code_chat_agent import CodeChatAgent
-from app.common.chat_history_manager import checkpoint_to_code_chat_info
 from app.dataclasses.code_assist_data import CodeAssistInfo
 from app.db_model.database import get_async_session
 from psycopg_pool import AsyncConnectionPool
