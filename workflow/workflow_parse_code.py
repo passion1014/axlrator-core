@@ -113,5 +113,3 @@ if __name__ == "__main__":
     dir = "/Users/passion1014/project/langchain/rag_server/data/input/sample2"
     luigi.build([ProcessAllFiles(project_dir=dir)], local_scheduler=True)
 
-# python workflow_parse_code.py ProcessAllFiles --project-dir /your/project/path --index-name your_index_name --local-scheduler
-# python -m workflow.workflow_parse_code

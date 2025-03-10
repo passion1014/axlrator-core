@@ -77,7 +77,6 @@ class CodeChatAgent:
         config: RunnableConfig,
         writer: StreamWriter
     ):
-        # this is similar to customizing the create_react_agent with state_modifier, but is a lot more flexible
         system_prompt = SystemMessage(
             "You are a helpful AI assistant, please respond to the users query to the best of your ability!"
         )
@@ -109,33 +108,17 @@ class CodeChatAgent:
         graph.add_node("agent", self.call_model)
         graph.add_node("tools", self.tool_node)
 
-        # Set the entrypoint as `agent`
-        # This means that this node is the first one called
         graph.set_entry_point("agent")
 
         # We now add a conditional edge
         graph.add_conditional_edges(
-            # First, we define the start node. We use `agent`.
-            # This means these are the edges taken after the `agent` node is called.
             "agent",
-            # Next, we pass in the function that will determine which node is called next.
             self.should_continue,
-            # Finally we pass in a mapping.
-            # The keys are strings, and the values are other nodes.
-            # END is a special node marking that the graph should finish.
-            # What will happen is we will call `should_continue`, and then the output of that
-            # will be matched against the keys in this mapping.
-            # Based on which one it matches, that node will then be called.
             {
-                # If `tools`, then we call the tool node.
                 "continue": "tools",
-                # Otherwise we finish.
                 "end": END,
             },
         )
-
-        # We now add a normal edge from `tools` to `agent`.
-        # This means that after `tools` is called, `agent` node is called next.
         graph.add_edge("tools", "agent")
 
         chain = graph.compile(checkpointer=checkpointer)

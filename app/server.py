@@ -4,8 +4,6 @@ from dotenv import load_dotenv
 import warnings
 import logging
 
-from app.process.reranker import AlfredReranker
-
 # ---------------------------------------
 # 파라미터 처리
 # ---------------------------------------
@@ -19,6 +17,8 @@ parser.add_argument("--cert-file", type=str, default=None)
 parser.add_argument("--key-file", type=str, default=None)
 args = parser.parse_args()
 
+print(f"args = {args}")
+
 # .env 파일 로드
 load_dotenv(dotenv_path=args.env, override=True)
 
@@ -30,6 +30,7 @@ from app.utils import get_llm_model
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from app.config import STATIC_DIR
+from app.process.reranker import AlfredReranker
 
 # client service
 from app.routes import (

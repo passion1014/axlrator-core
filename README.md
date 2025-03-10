@@ -1,38 +1,20 @@
-# RAG Server Guide
+# AIFRED Server Guide
 
-# 1. Tech Stack
-
-**LangChain**
-
-**Langfuse**
-
-**FastAPI, Jinja2Template**
-
-**SQLAlchemy**
-
-**Luigi**
-
-**Elasticsearch/Kibana**
-<br/>
-
-# 2. 실행방법
-
-일반 서비스 실행
+## 설치방법
 
 ```bash
-python -m app.server
+# server 가상환경 생성 및 활성화
+python -m venv server 
+source server/bin/activate
+
+ # 필요 라이브러리 설치
+pip install -r requirements.txt
+
+# 일반 서비스 실행
+python -m app.server 
 ```
 
-<br/>
-
-# 3. 설정방법
-
-## 3.1 필요한 파이썬 라이브러리 설치
-
-참고 파일 : requirements.txt
-<br/>
-
-## 3.2 Langfuse 설치
+## Langfuse 설치
 
 참고 : [Langfuse 공식](https://langfuse.com/docs/deployment/local)
 
@@ -45,10 +27,13 @@ cd langfuse
 docker compose up -d
 ```
 
+### Prompt Template Migration
+- 작성 필요
+
+
 <br/>
 
-## 3.3 RDB 설정
-
+## 3.3 PostgreSQL 설정
 Langfuse를 사용하기 위해서는 기본적으로 postgresql이 필요하며 설치를 해야한다.
 여기서 Langfuse와 함께 설치된 postgresql을 사용하는 것을 기준으로 가이드 한다.
 <br/>
@@ -259,8 +244,8 @@ docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server --network l
 ## 6.5 도커 터미널에서 실행
 
 ```bash
-python3.12 -m venv venv
-source venv/bin/activate
+python3.12 -m venv aifred # python3.12 -m venv venv
+source aifred/bin/activate # source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -443,3 +428,8 @@ pip install --upgrade langchain-community
 pip install --upgrade langchain
 pip install --upgrade langgraph
 pip install --upgrade pydantic
+
+
+---
+/backend/.start.sh
+
