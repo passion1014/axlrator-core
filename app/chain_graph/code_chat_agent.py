@@ -36,7 +36,7 @@ class CodeChatAgent:
         instance = cls(index_name)
         
         instance.db_session = session
-        instance.faissVectorDB = await get_vector_db(index_name=index_name, session=session)
+        instance.faissVectorDB = await get_vector_db(collection_name=index_name, session=session)
         instance.es_bm25 = ElasticsearchBM25(index_name=index_name)
         instance.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
         

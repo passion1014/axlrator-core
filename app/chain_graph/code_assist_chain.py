@@ -27,7 +27,7 @@ class CodeAssistChain:
         question = state['question']
 
         # VectorDB / BM25 조회
-        faissVectorDB = await get_vector_db(index_name=self.index_name, session=self.db_session)
+        faissVectorDB = await get_vector_db(collection_name=self.index_name, session=self.db_session)
         semantic_results = await faissVectorDB.search_similar_documents(query=question, k=50) # faiss 조회
         bm25_results = self.es_bm25.search(query=question, k=50) # elasticsearch 조회
         
@@ -119,7 +119,7 @@ class CodeAssistChain:
     async def search_similar_context(self, state: AgentState) -> AgentState:
         enriched_query = state['question']
         
-        faissVectorDB = await get_vector_db(index_name=self.index_name, session=self.db_session)
+        faissVectorDB = await get_vector_db(collection_name=self.index_name, session=self.db_session)
         docs = await faissVectorDB.search_similar_documents(query=enriched_query, k=2)
         state['context'] = "\n".join(doc['content'] for doc in docs)
         return state
@@ -235,7 +235,7 @@ class CodeAssistChain:
 # ------------------------------------------------
 # 임시로 사용하는 함수 - 추후에는 사용하지 않음
 async def code_assist_chain(type:str, session):
-    faissVectorDB = await get_vector_db(index_name="cg_code_assist", session=session)
+    faissVectorDB = await get_vector_db(collection_name="cg_code_assist", session=session)
     langfuse = Langfuse()
     
     # 모델 선언

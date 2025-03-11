@@ -57,7 +57,7 @@ async def upload_file(files: list[UploadFile] = File(...), selectedId: str = For
             create_elasticsearch_bm25_index(index_name=faiss_info.index_name, org_resrc=org_resrc, chunk_list=chunk_list)
 
             # 벡터처리 및 벡터DB에 저장
-            process_vectorize(index_name=faiss_info.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
+            process_vectorize(collection_name=faiss_info.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
             
         # except Exception as e:
         #     logger.error(f"Error saving file {file.filename}: {str(e)}")

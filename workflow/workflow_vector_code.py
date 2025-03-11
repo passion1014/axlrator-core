@@ -50,7 +50,7 @@ class EmbedData(luigi.Task):
         for org_resrc in org_resrc_list:
 
             # 벡터화
-            process_vectorize(index_name=self.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
+            process_vectorize(collection_name=self.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
 
 
         session.close()

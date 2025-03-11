@@ -80,7 +80,7 @@ async def search_vector_datas(
         ### 아래 내용은 조회할때 마다 초기화해서는 안되는 부분이다. 서버 로딩시 초기화할지 확인 필요 ###
         
         # FAISS 벡터 DB 초기화
-        faiss_vector_db = await get_vector_db(session=session, index_name=index_name)
+        faiss_vector_db = await get_vector_db(session=session, collection_name=index_name)
         # faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
         
         # 유사도 검색 실행

@@ -350,14 +350,14 @@ async def initialize_vector_dbs(session: AsyncSession):
             _vector_dbs[index_name] = vector_db
 
 async def get_vector_db(
-    index_name: str,
+    collection_name: str,
     session: AsyncSession = Depends(get_async_session)
 ) -> FaissVectorDB:
     """벡터 DB 인스턴스를 가져오는 의존성 함수"""
-    if index_name not in _vector_dbs:
-        vector_db = await FaissVectorDB.create(index_name=index_name, session=session)
-        _vector_dbs[index_name] = vector_db
-    return _vector_dbs[index_name]
+    if collection_name not in _vector_dbs:
+        vector_db = await FaissVectorDB.create(index_name=collection_name, session=session)
+        _vector_dbs[collection_name] = vector_db
+    return _vector_dbs[collection_name]
 
 def vectordb_clear():
     _vector_dbs.clear()
