@@ -4,7 +4,7 @@ import os
 import re
 
 from app.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
-from app.db_model.database import get_async_session
+from app.db_model.database import get_async_session, get_session
 from app.db_model.database_models import OrgRSrc
 from app.process.contextual_process import generate_code_context
 from app.process.java_parser import parse_java_file, should_skip_by_line_count
@@ -284,7 +284,7 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     return chunks
 
 
-def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
+async def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
     """
     파일을 청크로 분할하고 DB에 저장합니다.
     
@@ -297,65 +297,63 @@ def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
         청크 리스트
     """
     
-    if session is None:
-        session = get_async_session()
         
     proc_chunk_list = []
-    try:
-        # 원본 파일 정보 저장
-        orgRSrcRepository = OrgRSrcRepository(session=session)
-        org_resrc = orgRSrcRepository.create_org_resrc(file_path=file_path, type="01", desc="JAVA")
+    # try:
+    # 원본 파일 정보 저장
+    orgRSrcRepository = OrgRSrcRepository(session=session)
+    org_resrc = await orgRSrcRepository.create_org_resrc(file_path=file_path, type="01", desc="JAVA")
 
-        # 파일 chunking
-        file_chunk_list = chunk_file(file_path)
+    # 파일 chunking
+    file_chunk_list = chunk_file(file_path)
+    
+    # chunking 데이터 저장
+    for idx, chunk in enumerate(file_chunk_list, start=1):
+        if chunk is None:
+            continue
         
-        # chunking 데이터 저장
-        for idx, chunk in enumerate(file_chunk_list, start=1):
-            if chunk is None:
-                continue
+        if isinstance(chunk, JavaChunkMeta):
+            data_name = chunk.function_name # 함수명
+            data_type = 'code'  # 데이터 유형 (예: code)
+            context_chunk = chunk.summary  # 컨텍스트 청크
+            document_metadata = chunk.summary   # 문서의 메타데이터
             
-            if isinstance(chunk, JavaChunkMeta):
-                data_name = chunk.function_name # 함수명
-                data_type = 'code'  # 데이터 유형 (예: code)
-                context_chunk = chunk.summary  # 컨텍스트 청크
-                document_metadata = chunk.summary   # 문서의 메타데이터
-                
-            elif isinstance(chunk, SQLChunkMeta):
-                data_name = chunk.table_name + f"({chunk.table_korean_name})" # 함수명
-                data_type = 'DDL'  # 데이터 유형 (예: code)
-                context_chunk = chunk.summary  # 컨텍스트 청크
-                document_metadata = chunk.summary   # 문서의 메타데이터
+        elif isinstance(chunk, SQLChunkMeta):
+            data_name = chunk.table_name + f"({chunk.table_korean_name})" # 함수명
+            data_type = 'DDL'  # 데이터 유형 (예: code)
+            context_chunk = chunk.summary  # 컨텍스트 청크
+            document_metadata = chunk.summary   # 문서의 메타데이터
 
-            elif isinstance(chunk, TermsDataChunkMeta):
-                data_name = chunk.code # 함수명
-                data_type = 'terms'  # 데이터 유형 (예: javascript)
-                context_chunk = chunk.summary  # 컨텍스트 청크
-                document_metadata = chunk.summary   # 문서의 메타데이터
+        elif isinstance(chunk, TermsDataChunkMeta):
+            data_name = chunk.code # 함수명
+            data_type = 'terms'  # 데이터 유형 (예: javascript)
+            context_chunk = chunk.summary  # 컨텍스트 청크
+            document_metadata = chunk.summary   # 문서의 메타데이터
 
-            else: # 알 수 없는 유형의 데이터
-                data_name = 'unknown'
-                data_type = 'unknown'
-                context_chunk = 'unknown'
-                document_metadata = 'unknown'
+        else: # 알 수 없는 유형의 데이터
+            data_name = 'unknown'
+            data_type = 'unknown'
+            context_chunk = 'unknown'
+            document_metadata = 'unknown'
 
-            chunkedDataRepository = ChunkedDataRepository(session=session)
-            chunked_data = chunkedDataRepository.create_chunked_data(idx + 1
-                                                                    , org_resrc.id
-                                                                    , data_name
-                                                                    , data_type
-                                                                    , chunk.chunk_content
-                                                                    , context_chunk
-                                                                    , document_metadata)
-            
-            # chunk 객체에 seq와 org_resrc_id 값 추가
-            proc_chunk_list.append(chunked_data)
-            
-        # 세션 커밋
-        session.commit()
+        chunkedDataRepository = ChunkedDataRepository(session=session)
+        chunked_data = await chunkedDataRepository.create_chunked_data(idx + 1
+                                                                , org_resrc.id
+                                                                , data_name
+                                                                , data_type
+                                                                , chunk.chunk_content
+                                                                , context_chunk
+                                                                , document_metadata)
         
-    except Exception as e:
-        session.rollback()
-        print(f"### Error processing file {file_path}: {e}")
+        # chunk 객체에 seq와 org_resrc_id 값 추가
+        proc_chunk_list.append(chunked_data)
+        
+    # 세션 커밋
+    await session.commit()
+        
+    # except Exception as e:
+    #     session.rollback()
+    #     print(f"### Error processing file {file_path}: {e}")
     
     return org_resrc, proc_chunk_list
 

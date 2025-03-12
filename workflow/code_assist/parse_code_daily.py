@@ -5,10 +5,6 @@ import os
 import re
 import xml.etree.ElementTree as ET
 
-# 외부 모듈 import
-from app.process.content_chunker import file_chunk_and_save
-from app.db_model.database import get_async_session
-from app.vectordb.bm25_search import create_elasticsearch_bm25_index
 
 # DAG 기본 설정
 default_args = {

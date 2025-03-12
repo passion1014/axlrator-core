@@ -1,7 +1,7 @@
 import os
 from elasticsearch import Elasticsearch
 from app.db_model.database import get_async_session
-from app.vectordb.bm25_search import ElasticsearchBM25, retrieve_advanced
+from app.vectordb.bm25_search import ElasticsearchBM25
 from app.vectordb.faiss_vectordb import FaissVectorDB
 
 # # 테스트 데이터 준비

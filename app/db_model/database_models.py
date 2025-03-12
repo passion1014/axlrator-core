@@ -146,7 +146,7 @@ class ChunkedData(Base):
     document_metadata = Column(JSON, comment="문서의 메타데이터")  # 문서의 메타데이터
     
     # 벡터 인덱스 정보\
-    faiss_info_id = Column(Integer, ForeignKey("faiss_info.id"), comment="FaissInfo FK")  # FAISS_INFO 외래키
+    # faiss_info_id = Column(Integer, ForeignKey("faiss_info.id"), comment="FaissInfo FK")  # FAISS_INFO 외래키
     vector_index = Column(BigInteger, index=True, comment="벡터 인덱스값")
 
     modified_at = Column(TIMESTAMP, index=True, comment="최종수정시간")
@@ -156,7 +156,7 @@ class ChunkedData(Base):
 
     # 관계 설정
     org_resrc = relationship("OrgRSrc", back_populates="chunked_data")
-    faiss_info = relationship("FaissInfo", back_populates="chunked_data")
+    # faiss_info = relationship("FaissInfo", back_populates="chunked_data")
 
     def to_dict(self):
         return {
@@ -168,7 +168,7 @@ class ChunkedData(Base):
             'content': self.content,
             'context_chunk': self.context_chunk,
             'document_metadata': self.document_metadata,
-            'faiss_info_id': self.faiss_info_id,
+            # 'faiss_info_id': self.faiss_info_id,
             'vector_index': self.vector_index,
             'modified_at': str(self.modified_at),
             'created_at': str(self.created_at),
@@ -194,7 +194,7 @@ class FaissInfo(Base):
     created_by = Column(String(50), index=True, comment="생성자")
 
     # ChunkedData와의 관계 설정
-    chunked_data = relationship("ChunkedData", back_populates="faiss_info")
+    # chunked_data = relationship("ChunkedData", back_populates="faiss_info")
     
     def to_dict(self):
         return {

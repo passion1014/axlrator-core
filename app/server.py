@@ -54,7 +54,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from langfuse.callback import CallbackHandler
 from app.db_model.database import get_async_session_CTX
-from app.vectordb.faiss_vectordb import FaissVectorDB, initialize_vector_dbs, vectordb_clear
 import uvicorn
 
 import warnings
@@ -69,13 +68,15 @@ logging.basicConfig(level=logging.INFO) # 로그설정
 async def lifespan(webServerApp: FastAPI):
     """애플리케이션 시작/종료 시 실행될 코드"""
     global reranker
-    session_ctx = get_async_session_CTX()
-    async with session_ctx as session:
-        await initialize_vector_dbs(session)
-        try:
-            yield
-        finally:
-            vectordb_clear()
+    
+    # session_ctx = get_async_session_CTX()
+    # async with session_ctx as session:
+    #     await initialize_vector_dbs(session)
+    #     try:
+    #         yield
+    #     finally:
+    #         vectordb_clear()
+    yield
 
 
 # FastAPI 앱 설정

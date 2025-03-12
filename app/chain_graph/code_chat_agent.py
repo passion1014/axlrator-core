@@ -9,7 +9,6 @@ from langgraph.graph import StateGraph, END
 
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
-from app.vectordb.faiss_vectordb import get_vector_db
 from langfuse.callback import CallbackHandler
 
 import json
@@ -36,7 +35,7 @@ class CodeChatAgent:
         instance = cls(index_name)
         
         instance.db_session = session
-        instance.faissVectorDB = await get_vector_db(collection_name=index_name, session=session)
+        # instance.faissVectorDB = await get_vector_db(collection_name=index_name, session=session)
         instance.es_bm25 = ElasticsearchBM25(index_name=index_name)
         instance.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
         

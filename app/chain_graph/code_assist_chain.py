@@ -1,19 +1,19 @@
-from fastapi import Depends
 from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
 from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
-from app.db_model.database import get_session, get_async_session
-from app.process.reranker import AlfredReranker, get_reranker
+from app.process.reranker import get_reranker
 from langgraph.graph import StateGraph, END
 from app.utils import get_llm_model
 from app.vectordb.bm25_search import ElasticsearchBM25
-from app.vectordb.faiss_vectordb import get_vector_db
 from langfuse.callback import CallbackHandler
 from langgraph.types import StreamWriter
 from langfuse import Langfuse
 
 import logging
+
+from app.vectordb.vector_store import get_vector_store
+
 
 class CodeAssistChain:
     def __init__(self, session, index_name:str="cg_code_assist"):
@@ -27,8 +27,9 @@ class CodeAssistChain:
         question = state['question']
 
         # VectorDB / BM25 조회
-        faissVectorDB = await get_vector_db(collection_name=self.index_name, session=self.db_session)
-        semantic_results = await faissVectorDB.search_similar_documents(query=question, k=50) # faiss 조회
+        vector_store = get_vector_store(collection_name=self.index_name)
+        semantic_results = vector_store.similarity_search_with_score(query=question, k=50) 
+        
         bm25_results = self.es_bm25.search(query=question, k=50) # elasticsearch 조회
         
         logging.info("## Step1. Semantic Results: %s", semantic_results)
@@ -119,8 +120,9 @@ class CodeAssistChain:
     async def search_similar_context(self, state: AgentState) -> AgentState:
         enriched_query = state['question']
         
-        faissVectorDB = await get_vector_db(collection_name=self.index_name, session=self.db_session)
-        docs = await faissVectorDB.search_similar_documents(query=enriched_query, k=2)
+        vector_store = get_vector_store(collection_name=self.index_name)
+        docs = vector_store.similarity_search_with_score(query=enriched_query, k=2) 
+        
         state['context'] = "\n".join(doc['content'] for doc in docs)
         return state
 
@@ -235,7 +237,6 @@ class CodeAssistChain:
 # ------------------------------------------------
 # 임시로 사용하는 함수 - 추후에는 사용하지 않음
 async def code_assist_chain(type:str, session):
-    faissVectorDB = await get_vector_db(collection_name="cg_code_assist", session=session)
     langfuse = Langfuse()
     
     # 모델 선언
@@ -247,7 +248,8 @@ async def code_assist_chain(type:str, session):
         enriched_query = state['question']
         
         # 맥락 기반 검색
-        docs = await faissVectorDB.search_similar_documents(query=enriched_query, k=2)
+        vector_store = get_vector_store(collection_name="cg_code_assist")
+        docs = vector_store.similarity_search_with_score(query=enriched_query, k=2) 
         
         # 문서 결합
         state['context'] = combine_documents_with_relevance(docs)  # 단순 병합 대신 관련성을 고려하여 결합

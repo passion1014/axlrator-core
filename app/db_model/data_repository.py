@@ -116,7 +116,7 @@ class OrgRSrcRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def create_org_resrc(self, file_path: str, type: str = '99', desc:str = '-', created_by = '', modified_by = '') -> OrgRSrc:
+    async def acreate_org_resrc(self, file_path: str, type: str = '99', desc:str = '-', created_by = '', modified_by = '') -> OrgRSrc:
         """
         원본 리소스 정보를 생성하고 저장합니다.
         
@@ -141,7 +141,36 @@ class OrgRSrcRepository:
         await self.session.flush() # org_resrc.id를 얻기 위해 flush를 한다. but commit 되기 전임
         
         return org_resrc
-    
+
+
+    async def create_org_resrc(self, file_path: str, type: str = '99', desc: str = '-', created_by='', modified_by='') -> OrgRSrc:
+        """
+        원본 리소스 정보를 생성하고 저장합니다.
+
+        Args:
+            file_path: 파일 경로
+
+        Returns:
+            생성된 OrgRSrc 객체
+        """
+        # 원본 파일 정보 저장
+        org_resrc = OrgRSrc(
+            resrc_name=os.path.basename(file_path),  # 파일명
+            resrc_type=type,
+            resrc_path=file_path,
+            resrc_desc=desc,
+            created_at=datetime.now(),
+            created_by=created_by,
+            modified_at=datetime.now(),
+            modified_by=modified_by
+        )
+
+        self.session.add(org_resrc)
+        await self.session.flush()  # org_resrc.id를 얻기 위해 flush 수행
+
+        return org_resrc
+
+
     async def update_org_resrc(
         self, 
         org_resrc_id: int = 0, 

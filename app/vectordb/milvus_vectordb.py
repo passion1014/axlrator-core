@@ -1,4 +1,9 @@
-# milvus_vector_db
+
+# ---------------------------------
+# 미사용
+# ---------------------------------
+
+
 from pymilvus import connections, Collection, DataType, FieldSchema, CollectionSchema, utility
 import numpy as np
 from typing import List, Dict, Any, Optional

@@ -51,13 +51,13 @@ async def upload_file(files: list[UploadFile] = File(...), selectedId: str = For
             saved_files.append(str(file_location))
             
             # 파일 청킹 및 RDB 저장
-            org_resrc, chunk_list = file_chunk_and_save(str(file_location), session=session)
+            org_resrc, chunk_list = await file_chunk_and_save(str(file_location), session=session)
 
             # elasticsearch 저장
             create_elasticsearch_bm25_index(index_name=faiss_info.index_name, org_resrc=org_resrc, chunk_list=chunk_list)
 
             # 벡터처리 및 벡터DB에 저장
-            process_vectorize(collection_name=faiss_info.index_name, session=session, org_resrc=org_resrc, faiss_info=faiss_info)
+            await process_vectorize(collection_name=faiss_info.index_name, session=session, org_resrc=org_resrc)
             
         # except Exception as e:
         #     logger.error(f"Error saving file {file.filename}: {str(e)}")

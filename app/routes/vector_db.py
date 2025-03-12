@@ -6,8 +6,9 @@ from sqlalchemy import select
 from app.config import TEMPLATE_DIR, setup_logging
 from app.db_model import database_models
 from app.db_model.database import get_async_session
-from app.vectordb.faiss_vectordb import FaissVectorDB, get_vector_db
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.vectordb.vector_store import create_collection, get_vector_store
 
 
 logger = setup_logging()
@@ -53,15 +54,9 @@ async def search_faiss_vector(request: Request, session: AsyncSession = Depends(
                 "message": "index_name과 search_text는 필수 파라미터입니다."
             }
 
-        ### 아래 내용은 조회할때 마다 초기화해서는 안되는 부분이다. 서버 로딩시 초기화할지 확인 필요 ###
-        
-        # FAISS 벡터 DB 초기화
-        faiss_vector_db = await get_vector_db(session=session, collection_name=index_name)
-        faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
-        
-        # 유사도 검색 실행
-        search_results = await faiss_vector_db.search_similar_documents(query=search_text, k=2)
-        
+        vector_store = get_vector_store(collection_name=index_name)
+        search_results = vector_store.similarity_search_with_score(query=search_text, k=2) 
+
         # 결과 반환
         return {
             "success": True,
@@ -93,36 +88,38 @@ async def create_faiss_info(request: Request, session: AsyncSession = Depends(ge
             index_desc = f"{index_name}를 위한 FAISS정보"
 
         # 받은 파라미터로 초기화
-        faiss_vector_db = await get_vector_db(session=session, collection_name=index_name)
+        # faiss_vector_db = await get_vector_db(session=session, collection_name=index_name)
+        
+        vector_store = create_collection(collection_name=index_name)
+        fields = vector_store.vector_fields
+        
 
-        # 기존재하는지 체크
-        faiss_info = await faiss_vector_db.psql_docstore.get_faiss_info()
-        if faiss_info is not None:
-            return {
-                "success": True,
-                "message": "이미 FAISS 정보가 존재합니다.",
-                "data": {
-                    "id": faiss_info.id,
-                    "index_name": faiss_info.index_name,
-                    "index_desc": faiss_info.index_desc,
-                    "index_file_path": faiss_info.index_file_path
-                }
-            }
+        # # 기존재하는지 체크
+        # faiss_info = await faiss_vector_db.psql_docstore.get_faiss_info()
+        # if faiss_info is not None:
+        #     return {
+        #         "success": True,
+        #         "message": "이미 FAISS 정보가 존재합니다.",
+        #         "data": {
+        #             "id": faiss_info.id,
+        #             "index_name": faiss_info.index_name,
+        #             "index_desc": faiss_info.index_desc,
+        #             "index_file_path": faiss_info.index_file_path
+        #         }
+        #     }
             
-        # FAISS 데이터 insert
-        faiss_info = faiss_vector_db.psql_docstore.insert_faiss_info(index_desc=index_desc)
+        # # FAISS 데이터 insert
+        # faiss_info = faiss_vector_db.psql_docstore.insert_faiss_info(index_desc=index_desc)
 
-        # FAISS .index 파일 생성
-        faiss_vector_db.write_index()
 
         return {
             "success": True,
             "message": "FAISS 정보가 성공적으로 저장되었습니다.",
             "data": {
-                "id": faiss_info.id,
-                "index_name": faiss_info.index_name,
-                "index_desc": faiss_info.index_desc,
-                "index_file_path": faiss_info.index_file_path
+                # "id": faiss_info.id,
+                "index_name": index_name,
+                "index_desc": index_desc,
+                # "index_file_path": faiss_info.index_file_path
             }
         }
         

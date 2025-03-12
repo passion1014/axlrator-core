@@ -10,7 +10,7 @@ from app.config import TEMPLATE_DIR, setup_logging
 from app.db_model.database import get_async_session
 from app.process.reranker import AlfredReranker
 from app.utils import get_llm_model
-from app.vectordb.faiss_vectordb import FaissVectorDB
+
 
 logger = setup_logging()
 router = APIRouter()
@@ -45,11 +45,11 @@ async def sample_endpoint(request: SampleRequest):
 
     # 예시 벡터 DB 초기화
     session = get_async_session()
-    vectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
+    # vectorDB = FaissVectorDB(db_session=session, index_name="cg_code_assist")
 
     # flash_rank_rerank 함수 호출
     reranker = AlfredReranker()
-    results = reranker.cross_encoder_rerank(query, target_list, vectorDB, k=5)
+    results = reranker.cross_encoder(query=query, documents=target_list, k=5)
 
     # 결과 출력
     for result in results:

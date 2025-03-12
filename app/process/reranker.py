@@ -1,11 +1,10 @@
-
-
 import os
 from typing import Any, Dict, List
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 # from langchain.retrievers.document_compressors import FlashrankRerank
+from langchain_core.vectorstores import VectorStore
 from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
@@ -13,7 +12,6 @@ from langchain.schema import Document
 import torch
 from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification
 from app.utils import get_rerank_model, get_server_type
-from app.vectordb.faiss_vectordb import FaissVectorDB
 
 
 class AlfredReranker:
@@ -77,7 +75,7 @@ class AlfredReranker:
     #     self.model = AutoModelForSequenceClassification.from_pretrained(model_name).to(self.device)
 
 
-    def cross_encoder_faissdb(self, query: str, vectorDB: FaissVectorDB, k: int) -> List[Dict[str, Any]]:
+    def cross_encoder_faissdb(self, query: str, vector_store: VectorStore, k: int) -> List[Dict[str, Any]]:
         '''
         # Cross Encoder Reranker
         
@@ -100,7 +98,7 @@ class AlfredReranker:
 
         # 문서 압축 검색기 초기화
         compression_retriever = ContextualCompressionRetriever(
-            base_compressor=compressor, base_retriever=vectorDB.as_retriever(search_kwargs={"k": 10})
+            base_compressor=compressor, base_retriever=vector_store.as_retriever(search_kwargs={"k": 10})
         )
 
         # 압축된 문서 검색

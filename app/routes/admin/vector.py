@@ -1,21 +1,14 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from requests import Session
-from sqlalchemy import select
 from app.common.exception_handler import handle_exceptions
 from app.config import TEMPLATE_DIR, setup_logging
-from app.db_model import database_models
 from app.db_model.data_repository import FaissInfoRepository
 from app.db_model.database import get_async_session
-from app.vectordb.faiss_vectordb import FaissVectorDB, get_vector_db
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.vectordb.vector_store import get_vector_store
 
 logger = setup_logging()
 router = APIRouter()
-
 
 @router.get("/v1/get-vectors")
 @handle_exceptions
@@ -80,11 +73,8 @@ async def search_vector_datas(
         ### 아래 내용은 조회할때 마다 초기화해서는 안되는 부분이다. 서버 로딩시 초기화할지 확인 필요 ###
         
         # FAISS 벡터 DB 초기화
-        faiss_vector_db = await get_vector_db(session=session, collection_name=index_name)
-        # faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()
-        
-        # 유사도 검색 실행
-        search_results = await faiss_vector_db.search_similar_documents(query=search_text, k=top_k)
+        vector_store = get_vector_store(collection_name=index_name)
+        search_results = vector_store.similarity_search_with_score(query=search_text, k=top_k) 
         
         # 결과 반환
         return {

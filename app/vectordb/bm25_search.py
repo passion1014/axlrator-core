@@ -4,8 +4,8 @@ from typing import List, Dict, Any
 from tqdm import tqdm
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+from app.vectordb.vector_store import get_vector_store
 
-from app.vectordb.faiss_vectordb import FaissVectorDB
 
 # BM25 검색을 위한 Elasticsearch 래퍼 클래스
 class ElasticsearchBM25:
@@ -83,7 +83,6 @@ class ElasticsearchBM25:
         ]
     
 # Elasticsearch BM25 인덱스 생성 함수
-# def create_elasticsearch_bm25_index(db: ContextualVectorDB):
 def create_elasticsearch_bm25_index(index_name: str, org_resrc, chunk_list: List):
     documents = [
         {
@@ -104,15 +103,14 @@ def create_elasticsearch_bm25_index(index_name: str, org_resrc, chunk_list: List
 
 
 # 고급 검색 함수 - 시맨틱 검색과 BM25 검색 결과를 결합
-# def retrieve_advanced(query: str, db: ContextualVectorDB, es_bm25: ElasticsearchBM25, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2):
-def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2):
+def retrieve_advanced(query: str, collection_name: str, es_bm25: ElasticsearchBM25, k: int, semantic_weight: float = 0.8, bm25_weight: float = 0.2):
     num_chunks_to_recall = 150
 
     # 시맨틱 검색 수행
-    semantic_results = db.search_similar_documents(query, k=num_chunks_to_recall) 
-    # ranked_chunk_ids = [(result['metadata']['doc_id'], result['metadata']['original_index']) 
-    #                     for result in semantic_results 
-    #                     if result is not None and 'metadata' in result]
+    vector_store = get_vector_store(collection_name=collection_name)
+    semantic_results = vector_store.similarity_search_with_score(query=query, k=num_chunks_to_recall) 
+    
+
     ranked_chunk_ids = [
         (result['metadata'].get('doc_id', 'unknown_doc_id'), result['metadata'].get('original_index', -1))
         for result in semantic_results
@@ -152,9 +150,16 @@ def retrieve_advanced(query: str, db: FaissVectorDB, es_bm25: ElasticsearchBM25,
     semantic_count = 0
     bm25_count = 0
     for chunk_id in sorted_chunk_ids[:k]:
-        # db.metadata 부분 수정 필요
-        # chunk_metadata = next(chunk for chunk in db.metadata if chunk['doc_id'] == chunk_id[0] and chunk['original_index'] == chunk_id[1])
-        chunk_metadata = next(chunk for chunk in db.metadata if chunk['doc_id'] == chunk_id[0])
+        # 벡터 DB에서 메타데이터 조회
+        chunk_metadata = vector_store.get_metadata(chunk_id[0])
+
+        # 만약 벡터 DB에서 찾지 못하면 BM25 결과에서 찾음
+        if not chunk_metadata:
+            chunk_metadata = next(
+                (result for result in bm25_results if result['doc_id'] == chunk_id[0]), 
+                {"doc_id": chunk_id[0], "original_index": chunk_id[1], "content": "No metadata found"}
+            )
+        
         is_from_semantic = chunk_id in ranked_chunk_ids
         is_from_bm25 = chunk_id in ranked_bm25_chunk_ids
         final_results.append({
@@ -182,16 +187,15 @@ def load_jsonl(file_path: str) -> List[Dict[str, Any]]:
     
 
 # 고급 데이터베이스 평가 함수
-# def evaluate_db_advanced(db: ContextualVectorDB, original_jsonl_path: str, k: int):
-def evaluate_db_advanced(db: FaissVectorDB, original_jsonl_path: str, k: int):
+def evaluate_db_advanced(collection_name: str, original_jsonl_path: str, k: int):
     original_data = load_jsonl(original_jsonl_path)
-    es_bm25 = create_elasticsearch_bm25_index(db)
+    es_bm25 = create_elasticsearch_bm25_index(index_name=collection_name)
     
     try:
         # 웜업 쿼리 실행
         warm_up_queries = original_data[:10]
         for query_item in warm_up_queries:
-            _ = retrieve_advanced(query_item['query'], db, es_bm25, k)
+            _ = retrieve_advanced(query_item['query'], collection_name=collection_name, es_bm25=es_bm25, k=k)
         
         total_score = 0
         total_semantic_count = 0
@@ -215,7 +219,7 @@ def evaluate_db_advanced(db: FaissVectorDB, original_jsonl_path: str, k: int):
                 # print(f"Warning: No golden contents found for query: {query}")
                 continue
             
-            retrieved_docs, semantic_count, bm25_count = retrieve_advanced(query, db, es_bm25, k)
+            retrieved_docs, semantic_count, bm25_count = retrieve_advanced(query, es_bm25, k)
             
             chunks_found = 0
             for golden_content in golden_contents:

@@ -1,8 +1,6 @@
 from app.chain_graph.agent_state import AgentState
 from app.db_model.database import SessionLocal, get_async_session
 from app.utils import get_llm_model
-from app.vectordb.faiss_vectordb import FaissVectorDB
-
 
 from langfuse.callback import CallbackHandler
 from langfuse import Langfuse
