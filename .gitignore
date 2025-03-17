@@ -12,3 +12,4 @@ data
 *.code-workspace
 copy_changed_files.sh
 test/ppt
+test/document

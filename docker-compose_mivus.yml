@@ -64,6 +64,18 @@ services:
     networks:
       - milvus  # 네트워크 추가
 
+  attu:
+    container_name: milvus-attu
+    image: zilliz/attu:latest
+    environment:
+      MILVUS_URL: standalone:19530
+    ports:
+      - "8083:3000"
+    depends_on:
+      - "standalone"
+    networks:
+      - milvus
+
 networks:
   milvus:
     name: milvus
