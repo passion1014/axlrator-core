@@ -130,14 +130,11 @@ app.include_router(code_assist.router, prefix="/codeassist")
 app.include_router(sample.router, prefix="/sample") # TODO 해당 파일과 라우트들은 삭제 예정
 
 print('''
-      ...       ....        ........... .........      ..........  ........
-     'MMM0      KMMx        oMMM000000d xMMMMMMMMMXl  oMMMNNNNNNN  WMMMMMMMMXo
-    .NMWNMd     KMMx        oMMM        xMMM.   .XMM; oMMM         WMMo...,dMMx
-    KMMc'MM:    KMMx        oMMM:;;;;;  xMMM....,XMW. oMMM:::::,   WMMc     WM0
-   kMM0  xMW.   KMMx        oMMMdddddo  xMMMMMMMMMX,  oMMMooooo:   WMMc     WM0
-  cMMMkooxMMX   KMMx        oMMM        xMMM    ;MMM. oMMM         WMMc    .MMO
- "MMW;,,,,,XMO  KMMO"""""". oMMM        xMMM     XMM; oMMM,,,,,,,  WMMX000XMMX.
- xOO;      'OO, xOOOOOOOOOc :OOO        cOOO     OOO" ;OOOOOOOOOk  OOOOOOOko,
+    ___   _  __ __               __            
+   /   | | |/ // /   _________ _/ /_____  _____
+  / /| | |   // /   / ___/ __ `/ __/ __ \/ ___/
+ / ___ |/   |/ /___/ /  / /_/ / /_/ /_/ / /    
+/_/  |_/_/|_/_____/_/   \__,_/\__/\____/_/     
 ''')
 
 # 체인 등록

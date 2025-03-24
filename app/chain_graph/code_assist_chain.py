@@ -1,5 +1,5 @@
 from langchain_core.runnables import RunnableConfig
-from app.chain_graph.agent_state import AgentState, CodeAssistChatState, CodeAssistState
+from app.chain_graph.agent_state import AgentState, CodeAssistAutoCompletion, CodeAssistChatState, CodeAssistState
 from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.process.reranker import get_reranker
@@ -230,6 +230,35 @@ class CodeAssistChain:
         #     prompt = langfuse_prompt.compile(
         #         SOURCE_CODE=state['question']
         #     )
+
+    def chain_autocompletion(self) -> CodeAssistAutoCompletion:
+        
+        def _prompt_node(state: CodeAssistAutoCompletion) -> CodeAssistAutoCompletion:
+            langfuse_prompt = self.langfuse.get_prompt("AXL_CODE_AUTOCOMPLETION", version=1)
+            state['prompt'] = langfuse_prompt.compile(
+                current_code=state['current_code']
+            )
+            
+            return state
+
+        def _generate_node(state: CodeAssistAutoCompletion) -> CodeAssistAutoCompletion:
+            prompt = state['prompt']
+            result = self.model.invoke(prompt)  # 동기 호출로 변경
+            state['response'] = result.content
+            return state            
+        
+        graph = StateGraph(CodeAssistAutoCompletion)
+        graph.add_node("prompt_node", _prompt_node) # AXL_CODE_AUTOCOMPLETION
+        graph.add_node("generate_node", _generate_node) # 모델호출
+        
+        graph.set_entry_point("prompt_node")
+        graph.add_edge("prompt_node", "generate_node")
+        graph.add_edge("generate_node", END)
+
+        chain = graph.compile()
+        chain.with_config(callbacks=[CallbackHandler()])
+        
+        return chain
 
 
 # ------------------------------------------------

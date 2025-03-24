@@ -236,6 +236,24 @@ async def chat(
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
+@router.post("/api/autocompletion")
+async def call_api_autocompletion(
+    request: Request, 
+    session: AsyncSession = Depends(get_async_session)
+) -> Response:
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
+    
+    # CodeAssistChain class 선언
+    code_assist = CodeAssistChain(index_name="cg_code_assist", session=session)
+
+    # 스트리밍이 아닐 경우 일반 응답 반환
+    result = code_assist.chain_autocompletion().invoke(message)
+    return JSONResponse(content={"result": result})
+
+
+
+
 # class ChatHistoryService:
 #     def __init__(self):
 #         self.session = get_async_session_generator()

@@ -38,6 +38,10 @@ class CodeAssistChatState(TypedDict):
     thread_id: str
     chat_history: Optional[list[Dict]] = None
 
+class CodeAssistAutoCompletion(TypedDict):
+    prompt: str
+    current_code: str
+    response: str
 
 
 __all__ = [
