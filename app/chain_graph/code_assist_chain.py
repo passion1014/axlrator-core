@@ -449,3 +449,7 @@ def combine_documents_with_relevance(docs):
             combined_context.append(doc['content'])
 
     return "\n".join(combined_context)
+
+
+
+
