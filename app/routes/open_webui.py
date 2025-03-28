@@ -148,7 +148,7 @@ async def get_models(request: Request):
         "object": "list",
         "data": [
             {
-                "id": "code_assist",
+                "id": "AXLR-Code",
                 "object": "model",
                 "created": 1686935002,
                 "owned_by": "aifred"
