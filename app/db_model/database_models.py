@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 
 # database.py에서 생성한 Base import
 from .database import Base
+# from .database_alembic import Base # alembic 실행시 이것을 사용
 
 class ModelInfo(Base):
     '''
