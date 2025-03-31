@@ -244,8 +244,8 @@ docker run -it -p 8000:8000 -p 11434:11434 -v $(pwd):/app/rag_server --network l
 ## 6.5 도커 터미널에서 실행
 
 ```bash
-python3.12 -m venv aifred # python3.12 -m venv venv
-source aifred/bin/activate # source venv/bin/activate
+python3.12 -m venv venv # python3.12 -m venv venv
+source venv/bin/activate # source venv/bin/activate
 pip install -r requirements.txt
 ```
 
