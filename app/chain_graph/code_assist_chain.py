@@ -234,7 +234,7 @@ class CodeAssistChain:
     def chain_autocompletion(self) -> CodeAssistAutoCompletion:
         
         def _prompt_node(state: CodeAssistAutoCompletion) -> CodeAssistAutoCompletion:
-            langfuse_prompt = self.langfuse.get_prompt("AXL_CODE_AUTOCOMPLETION", version=1)
+            langfuse_prompt = self.langfuse.get_prompt("AXL_CODE_AUTOCOMPLETION")
             state['prompt'] = langfuse_prompt.compile(
                 current_code=state['current_code']
             )
