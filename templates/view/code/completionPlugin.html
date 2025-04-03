@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chat CGAI</title>
+    <title>AXL CHAT</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}화면{% endblock %}</title>
@@ -25,100 +25,124 @@
     }
   </style>
   <script>
+    let postStreamRequest;
+
     $(document).ready(function () {
-      //입력버튼 클릭이벤트 핸들러
-      $("#btnInput").on("click", function () {
-        const question = $("#iptQuestion").val();
-        if (!question) return;
-
-        $("#iptAnswer").text("■");
-
-        $("#iptQuestion").attr("disabled", true);
-        $("#btnInput").attr("disabled", true);
-
-        const param = {
-          indexname: "",
-          current_code: "",
-          category: "",
-          question: question,
-          context: $("#iptContext").val(),
-          sql_request: "",
-        };
-
-        common.postStreamRequest(
-          "/codeassist/api/autocode",
-          param,
-          function (e) {
-            const chunk = e.currentTarget.response;
-            // 마크다운 데이터를 HTML로 변환
-            $("#iptAnswer").html(marked.parse(chunk + "■"));
-          },
-          function (data) {
-            console.log("success");
-            const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
-
-            $("#iptAnswer").html(
-              $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
-            );
-          },
-          function (data) {
-            console.log("error");
-            console.log(e);
-          },
-          function (data) {
-            console.log("complete");
-
-            //highlight적용
-            $(".markdown-body pre code").each(function (i, block) {
-              hljs.highlightElement(block);
-              $(this).append(
-                '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
-              );
-
-              $(this).append(
-                '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
-              );
-            });
-            $("#btnInput").prop("disabled", false);
-            $("#iptQuestion").attr("disabled", false);
-          }
-        );
-      });
-
-      // Enter 키 입력시 질문 전송
+      //Enter 키 입력시 질문 전송
       $("#iptQuestion").keydown(function (event) {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
           $("#btnInput").click();
         }
       });
+
+      $("#btnStop").on("click", function () {
+        //스트리밍 정지버튼 클릭
+        postStreamRequest.abort();
+        return;
+      });
     });
+
+    function callApi(type, data) {
+      $("#iptQuestion").val(data.prompt);
+      $("#iptContext").val(data.code);
+      $("#iptConsole").val("");
+
+      let api = null;
+      let name = null;
+
+      let param = {
+        indexname: "",
+        category: "",
+        question: "",
+        context: "",
+        sql_request: "",
+        current_code: "",
+      };
+
+      if (type == "1") {
+        // 1. 코드예측생성:
+        api = "/codeassist/api/autocode";
+        name = "[다음코드예측생성]";
+
+        param.question = data.code;
+      } else if (type == "2") {
+        api = "/codeassist/api/code";
+        name = "[코드생성]";
+
+        (param.category = null),
+          (param.context = ""),
+          (param.current_code = data.code ?? ""),
+          (param.question = data.prompt);
+      } else if (type == "3") {
+        api = "/codeassist/api/autocode";
+        name = "[MapdataUtil생성]";
+        param.question = data.prompt;
+      } else if (type == "4") {
+        api = "/codeassist/api/makecomment";
+        param.question = data.code;
+        name = "[주석생성]";
+      } else if (type == "5") {
+        api = "/codeassist/api/makesql";
+        param.question = data.prompt;
+        param.sql_request = data.code;
+        name = "[SQL생성]";
+      }
+    }
+
+    console.log("param=" + param);
+
+    $("#name").text(name);
+    $("#iptAnswer").text("■");
+
+    postStreamRequest = common.postStreamRequest(
+      api,
+      param,
+      function (e) {
+        const chunk = e.currentTarget.response;
+        // 마크다운 데이터를 HTML로 변환
+        $("#iptAnswer").html(marked.parse(chunk + "■"));
+      },
+      function (data) {
+        console.log("success");
+        const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
+
+        $("#iptAnswer").html(
+          $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
+        );
+      },
+      function (data) {
+        console.log("error");
+        console.log(e);
+      },
+      function (data) {
+        console.log("complete");
+
+        //highlight적용
+        $(".markdown-body pre code").each(function (i, block) {
+          hljs.highlightElement(block);
+          $(this).append(
+            '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
+          );
+
+          $(this).append(
+            '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
+          );
+        });
+        $("#btnInput").prop("disabled", false);
+        $("#iptQuestion").attr("disabled", false);
+      }
+    );
 
     //플러그인으로 복사
     const copyCodeToPlugin = function (e) {
       const target = $(e.currentTarget);
       const text = target.parents("code").text();
 
-      common.sendTextToPlugin(
-        1, // 1: editor창으로 붙여넣기
-        text,
-        function () {
-          //success
-          let icon = target.find("i"); // 버튼 내부 아이콘 찾기
-          if (icon.hasClass("bi-box-arrow-up")) {
-            icon.removeClass("bi-box-arrow-up").addClass("bi-check"); // 아이콘 변경
-          }
-        },
-        function (err) {
-          //fail
-          console.error("Could not copy text: ", err);
-        }
-      );
+      pasteIntoEditor ? pasteIntoEditor(text) : window.pasteIntoEditor(text);
     };
 
-    //클립보드 복사
     const copyCodeToClipboard = function (e) {
-      // e.preventDefault();
       const target = $(e.currentTarget);
       const text = target.parents("code").text();
 
@@ -139,11 +163,23 @@
       );
     };
 
-    //plugin에서 보낸 메시지의 수신 처리
-    const autoCompletion = function (data) {
-      $("#iptQuestion").val(data.prompt);
-      $("#iptContext").val(data.code);
-      $("#btnInput").click();
+    const autoCompletionFromPlugin = function (data) {
+      callApi("1", data);
+    };
+
+    const completionByRequestFromPlugin = function (data) {
+      callApi("2", data);
+    };
+
+    const makeSqlFromPlugin = function (data) {
+      callApi("5", data);
+    };
+    const makeMapdataUtilFromPlugin = function (data) {
+      callApi("3", data);
+    };
+
+    const makeCommentFromPlugin = function (data) {
+      callApi("4", data);
     };
   </script>
 
@@ -155,14 +191,16 @@
       <div>
         <div class="form-wrap">
           <div class="row">
-            <div class="col-12" style="display: none">
-              <label for="#" class="form-label">컨텍스트</label>
-              <textarea class="form-control" rows="5" id="iptContext"></textarea>
-            </div>
             <div class="col-12 mt-3">
               <span class="form-label d-inline-block">답변결과</span>
-              <!-- <pre id="iptAnswer"></pre> -->
-              <div id="iptAnswer" class="markdown-body"></div>
+              <span class="form-label d-inline-block" style="color: red" id="name"></span>
+
+              <div style="position: relative">
+                <div id="iptAnswer" class="markdown-body" style="position: relative"></div>
+                <button class="btn" id="btnStop" style="position: absolute; bottom: 0; right: 0">
+                  <i class="bi bi-stop-circle"></i>
+                </button>
+              </div>
             </div>
 
             <div class="col-12 mt-3" style="display: none">
@@ -171,6 +209,16 @@
               <div class="mt-2 text-end">
                 <button type="button" class="btn btn-primary" id="btnInput">입력</button>
               </div>
+            </div>
+
+            <div class="col-12" style="display: none">
+              <label for="#" class="form-label">컨텍스트</label>
+              <textarea class="form-control" rows="3" id="iptContext"></textarea>
+            </div>
+
+            <div class="col-12" style="display: none">
+              <label for="#" class="form-label">콘솔 로그</label>
+              <textarea class="form-control" rows="3" id="iptConsole"></textarea>
             </div>
           </div>
         </div>
