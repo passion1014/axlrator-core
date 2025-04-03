@@ -88,51 +88,51 @@
         param.sql_request = data.code;
         name = "[SQL생성]";
       }
+
+      console.log("param=" + param);
+
+      $("#name").text(name);
+      $("#iptAnswer").text("■");
+
+      postStreamRequest = common.postStreamRequest(
+        api,
+        param,
+        function (e) {
+          const chunk = e.currentTarget.response;
+          // 마크다운 데이터를 HTML로 변환
+          $("#iptAnswer").html(marked.parse(chunk + "■"));
+        },
+        function (data) {
+          console.log("success");
+          const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
+
+          $("#iptAnswer").html(
+            $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
+          );
+        },
+        function (data) {
+          console.log("error");
+          console.log(e);
+        },
+        function (data) {
+          console.log("complete");
+
+          //highlight적용
+          $(".markdown-body pre code").each(function (i, block) {
+            hljs.highlightElement(block);
+            $(this).append(
+              '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
+            );
+
+            $(this).append(
+              '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
+            );
+          });
+          $("#btnInput").prop("disabled", false);
+          $("#iptQuestion").attr("disabled", false);
+        }
+      );
     }
-
-    console.log("param=" + param);
-
-    $("#name").text(name);
-    $("#iptAnswer").text("■");
-
-    postStreamRequest = common.postStreamRequest(
-      api,
-      param,
-      function (e) {
-        const chunk = e.currentTarget.response;
-        // 마크다운 데이터를 HTML로 변환
-        $("#iptAnswer").html(marked.parse(chunk + "■"));
-      },
-      function (data) {
-        console.log("success");
-        const lastIndex = $("#iptAnswer").html().lastIndexOf("■");
-
-        $("#iptAnswer").html(
-          $("#iptAnswer").html().slice(0, lastIndex) + $("#iptAnswer").html().slice(lastIndex).replace("■", "")
-        );
-      },
-      function (data) {
-        console.log("error");
-        console.log(e);
-      },
-      function (data) {
-        console.log("complete");
-
-        //highlight적용
-        $(".markdown-body pre code").each(function (i, block) {
-          hljs.highlightElement(block);
-          $(this).append(
-            '<button class="btn codecopy" onclick="copyCodeToClipboard(event)"><i class="bi bi-copy"></i></button>'
-          );
-
-          $(this).append(
-            '<button class="btn codeplugin" onclick="copyCodeToPlugin(event)"><i class="bi bi-box-arrow-up"></i></button>'
-          );
-        });
-        $("#btnInput").prop("disabled", false);
-        $("#iptQuestion").attr("disabled", false);
-      }
-    );
 
     //플러그인으로 복사
     const copyCodeToPlugin = function (e) {
