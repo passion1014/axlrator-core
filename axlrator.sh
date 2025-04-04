@@ -29,5 +29,4 @@ else
     echo "[Frontend] Starting..."
     cd ~/aifred-openwebui/frontend
     nohup npm run preview -- --host 0.0.0.0 > ~/log/frontend_$(date +'%Y%m%d_%H%M%S').log 2>&1 &
-    npm run preview -- --host 0.0.0.0
 fi
