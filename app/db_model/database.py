@@ -1,10 +1,13 @@
 # 필요한 라이브러리 import하기
 from contextlib import asynccontextmanager
 import os
+from dotenv import load_dotenv
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy import create_engine
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
 
 database_url = os.getenv("DATABASE_URL")
 
