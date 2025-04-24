@@ -250,8 +250,7 @@ class CodeAssistChain:
         
         def _extract_code_node(state: CodeAssistAutoCompletion) -> CodeAssistAutoCompletion:
             response_text = state['response']
-            code_blocks = extract_code_blocks(response_text)
-            state['code_blocks'] = code_blocks
+            state['response'] = extract_code_blocks(response_text)
             return state
         
         
