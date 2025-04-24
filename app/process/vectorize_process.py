@@ -51,8 +51,8 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
     for data, document, uuid, vector_id in zip(chunked_data_list, documents, uuids, vector_ids):
         await chunked_data_Repository.update_chunked_data(
             chunked_data=data,
-            faiss_info_id=data.id, # TODO 수정 필요
-            vector_index=data.id, # TODO 수정 필요
+            faiss_info_id=data.id,
+            vector_index=data.id,
             document_metadata=document.metadata,
             modified_by="vector_workflow"
         )

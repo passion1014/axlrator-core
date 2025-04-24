@@ -1,5 +1,6 @@
 from langchain_core.runnables import RunnableConfig
 from app.chain_graph.agent_state import AgentState, CodeAssistAutoCompletion, CodeAssistChatState, CodeAssistState
+from app.common.code_assist_utils import extract_code_blocks
 from app.common.string_utils import is_table_name
 from app.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
 from app.process.reranker import get_reranker
@@ -245,21 +246,29 @@ class CodeAssistChain:
             prompt = state['prompt']
             result = self.model.invoke(prompt)  # 동기 호출로 변경
             state['response'] = result.content
-            return state            
+            return state
+        
+        def _extract_code_node(state: CodeAssistAutoCompletion) -> CodeAssistAutoCompletion:
+            response_text = state['response']
+            code_blocks = extract_code_blocks(response_text)
+            state['code_blocks'] = code_blocks
+            return state
+        
         
         graph = StateGraph(CodeAssistAutoCompletion)
         graph.add_node("prompt_node", _prompt_node) # AXL_CODE_AUTOCOMPLETION
         graph.add_node("generate_node", _generate_node) # 모델호출
+        graph.add_node("extract_code_node", _extract_code_node)
         
         graph.set_entry_point("prompt_node")
         graph.add_edge("prompt_node", "generate_node")
-        graph.add_edge("generate_node", END)
-
+        graph.add_edge("generate_node", "extract_code_node")
+        graph.add_edge("extract_code_node", END)
+        
         chain = graph.compile()
         chain.with_config(callbacks=[CallbackHandler()])
         
         return chain
-
 
 # ------------------------------------------------
 # 아래는 이전 버전 - 삭제필요
