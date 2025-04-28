@@ -17,8 +17,8 @@ database_url = os.getenv("DATABASE_URL")
 
 
 
-from app.db_model.database import get_async_session
-from app.db_model.database_models import RSrcTable, RSrcTableColumn
+from axlrator_core.db_model.database import get_async_session
+from axlrator_core.db_model.database_models import RSrcTable, RSrcTableColumn
 
 
 # SQLAlchemy engine 생성하기

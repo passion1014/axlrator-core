@@ -24,9 +24,9 @@ def find_files(project_dir, output_dir):
 
 @task()
 def parse_file(file_path, output_dir):
-    from app.db_model.database import get_async_session_CTX
-    from app.process.content_chunker import file_chunk_and_save
-    from app.vectordb.bm25_search import create_elasticsearch_bm25_index
+    from axlrator_core.db_model.database import get_async_session_CTX
+    from axlrator_core.process.content_chunker import file_chunk_and_save
+    from axlrator_core.vectordb.bm25_search import create_elasticsearch_bm25_index
 
     async def async_run():
         async with get_async_session_CTX() as session:

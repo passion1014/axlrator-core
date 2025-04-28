@@ -1,10 +1,10 @@
 import asyncio
-from app.db_model.data_repository import OrgRSrcRepository
-from app.process.vectorize_process import process_vectorize
-from app.vectordb.vector_store import create_collection
+from axlrator_core.db_model.data_repository import OrgRSrcRepository
+from axlrator_core.process.vectorize_process import process_vectorize
+from axlrator_core.vectordb.vector_store import create_collection
 import luigi
 from datetime import datetime
-from app.db_model.database import get_async_session, get_async_session_CTX
+from axlrator_core.db_model.database import get_async_session, get_async_session_CTX
 
 # 임베딩 함수: 예시로 랜덤 벡터 생성
 def embed_content(embeddings, content):
@@ -57,7 +57,7 @@ class EmbedData(luigi.Task):
             # OrgRSrc 테이블에서 is_vector가 True가 아닌 항목만 조회
             orgrsrc_repository = OrgRSrcRepository(session=session)
             # org_resrc_list = session.query(OrgRSrc).filter(OrgRSrc.is_vector.isnot(True)).all()
-            org_resrc_list = await orgrsrc_repository.get_org_resrc(is_vector=False, resrc_type=resrc_type)
+            org_resrc_list = await orgrsrc_repository.aget_org_resrc(is_vector=False, resrc_type=resrc_type)
             
             # 벡터화
             for org_resrc in org_resrc_list:

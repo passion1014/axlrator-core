@@ -1,4 +1,4 @@
-# AIFRED Server Guide
+# AXLRator-core Guide
 
 ## 설치방법
 

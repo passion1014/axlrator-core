@@ -14,6 +14,7 @@ app/chain_graph/term_conversion_chain.py
 app/chain_graph/text_to_sql_chain.py
 app/common/__init__.py
 app/common/chat_history_manager.py
+app/common/code_assist_utils.py
 app/common/exception_handler.py
 app/common/string_utils.py
 app/dataclasses/__init__.py

@@ -11,8 +11,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 config = context.config
 fileConfig(config.config_file_name)
 
-from app.db_model.database_alembic import Base
-from app.db_model import database_models  # 실제 모델 불러와야 자동 감지 가능
+from axlrator_core.db_model.database_alembic import Base
+from axlrator_core.db_model import database_models  # 실제 모델 불러와야 자동 감지 가능
 
 target_metadata = Base.metadata
 
