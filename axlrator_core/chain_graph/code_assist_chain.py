@@ -235,7 +235,16 @@ class CodeAssistChain:
     def chain_autocompletion(self) -> CodeAssistAutoCompletion:
         
         def _prompt_node(state: CodeAssistAutoCompletion) -> CodeAssistAutoCompletion:
-            langfuse_prompt = self.langfuse.get_prompt("AXL_CODE_AUTOCOMPLETION")
+
+            request_type = state.get('request_type', '')
+            langfuse_prompt = None
+            if (request_type == "01") : # class 주석
+                langfuse_prompt = self.langfuse.get_prompt("AXL_CODE_AUTOCOMPLETION_CLASS")
+            elif (request_type == "02") : # 메서드 주석
+                langfuse_prompt = self.langfuse.get_prompt("AXL_CODE_AUTOCOMPLETION_METHOD")
+            else : # 기타
+                langfuse_prompt = self.langfuse.get_prompt("AXL_CODE_AUTOCOMPLETION")
+
             state['prompt'] = langfuse_prompt.compile(
                 current_code=state['current_code']
             )

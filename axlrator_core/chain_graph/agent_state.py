@@ -42,6 +42,7 @@ class CodeAssistAutoCompletion(TypedDict):
     prompt: str
     current_code: str
     response: str
+    request_type: str
 
 
 __all__ = [
