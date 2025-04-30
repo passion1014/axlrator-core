@@ -1,5 +1,5 @@
 # 필요한 라이브러리 import하기
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 import os
 from dotenv import load_dotenv
 from sqlalchemy.ext.declarative import declarative_base
@@ -44,13 +44,21 @@ _SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 Base = declarative_base()
 
 @asynccontextmanager
-async def get_async_session_CTX():
+async def get_async_session_ctx():
     async with _AsyncSessionLocal() as session:
         yield session
 
 async def get_async_session() -> AsyncSession:
     async with _AsyncSessionLocal() as session:
         yield session
+
+@contextmanager
+def get_session_ctx():
+    session = _SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
 
 # @asynccontextmanager
 # async def get_async_session_generator():

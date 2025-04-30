@@ -44,22 +44,22 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
     ]
     
     # vector_store에 저장
-    # vector_ids = vector_store.add_documents(documents=documents, ids=uuids)
-    vector_ids = vector_store.add_documents(docs=documents)
-
+    vector_dict = vector_store.add_documents(docs=documents)
+    
     # chunked_data 업데이트
-    # for data, document, uuid, vector_id in zip(chunked_data_list, documents, uuids, vector_ids):
-    for data, document, uuid in zip(chunked_data_list, documents, uuids):
+    for data, document, uuid, vector_id in zip(chunked_data_list, documents, uuids, vector_dict['ids']):
         await chunked_data_Repository.update_chunked_data(
             chunked_data=data,
-            faiss_info_id=data.id,
-            vector_index=data.id,
+            faiss_info_id=vector_id,
+            vector_index=vector_id,
             document_metadata=document.metadata,
             modified_by="vector_workflow"
         )
     
     # OrgRSrc 처리 후 is_vectorize 값을 True로 업데이트
     await orgrsrc_repository.update_org_resrc(org_resrc=org_resrc, is_vector=True)
+    
+    await session.commit()
     
 
 async def process_vectorize_faiss(index_name: str, session: AsyncSession, org_resrc, faiss_info=None):

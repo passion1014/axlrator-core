@@ -24,12 +24,12 @@ def find_files(project_dir, output_dir):
 
 @task()
 def parse_file(file_path, output_dir):
-    from axlrator_core.db_model.database import get_async_session_CTX
+    from axlrator_core.db_model.database import get_async_session_ctx
     from axlrator_core.process.content_chunker import file_chunk_and_save
     from axlrator_core.vectordb.bm25_search import create_elasticsearch_bm25_index
 
     async def async_run():
-        async with get_async_session_CTX() as session:
+        async with get_async_session_ctx() as session:
             org_resrc, chunk_list = await file_chunk_and_save(file_path, session=session)
             create_elasticsearch_bm25_index(index_name='cg_code_assist', org_resrc=org_resrc, chunk_list=chunk_list)
 

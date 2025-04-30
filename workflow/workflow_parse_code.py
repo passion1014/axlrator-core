@@ -4,7 +4,7 @@ import os
 import luigi
 
 from axlrator_core.process.content_chunker import file_chunk_and_save
-from axlrator_core.db_model.database import get_async_session, get_async_session_CTX
+from axlrator_core.db_model.database import get_async_session, get_async_session_ctx
 from axlrator_core.vectordb.bm25_search import create_elasticsearch_bm25_index
 
 
@@ -47,7 +47,7 @@ class ParseFile(luigi.Task):
             raise e 
 
     async def async_run(self):
-        async with get_async_session_CTX() as session: 
+        async with get_async_session_ctx() as session: 
             # 파일을 청크로 분할하고 DB에 저장
             org_resrc, chunk_list = await file_chunk_and_save(self.file_path, session=session)
 

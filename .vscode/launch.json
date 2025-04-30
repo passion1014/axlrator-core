@@ -5,7 +5,7 @@
             "name": "서버 실행",
             "type": "debugpy",
             "request": "launch",
-            "module": "app.server",
+            "module": "axlrator_core.server",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env.testcase",
             "args": [

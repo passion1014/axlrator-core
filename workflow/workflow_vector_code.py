@@ -4,7 +4,7 @@ from axlrator_core.process.vectorize_process import process_vectorize
 from axlrator_core.vectordb.vector_store import create_collection
 import luigi
 from datetime import datetime
-from axlrator_core.db_model.database import get_async_session, get_async_session_CTX
+from axlrator_core.db_model.database import get_async_session, get_async_session_ctx
 
 # 임베딩 함수: 예시로 랜덤 벡터 생성
 def embed_content(embeddings, content):
@@ -37,7 +37,7 @@ class EmbedData(luigi.Task):
     async def async_run(self):
         print(f"####### index_name={self.index_name}")
         
-        async with get_async_session_CTX() as session: 
+        async with get_async_session_ctx() as session: 
 
             # faiss_vector_db = FaissVectorDB(db_session=session, index_name=self.index_name)
             # faiss_info = faiss_vector_db.psql_docstore.get_faiss_info()

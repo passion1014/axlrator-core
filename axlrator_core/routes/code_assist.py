@@ -236,6 +236,7 @@ async def chat(
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
 
+# 이클립스에서 사용하는 거
 @router.post("/api/autocompletion")
 async def call_api_autocompletion(
     request: Request, 

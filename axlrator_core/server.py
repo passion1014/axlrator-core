@@ -46,14 +46,15 @@ from axlrator_core.routes import (
 
 # admin service 
 from axlrator_core.routes.admin import (
-    vector,
+    faiss_vector,
+    milvus_vector,
 )
 
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from langfuse.callback import CallbackHandler
-from axlrator_core.db_model.database import get_async_session_CTX
+from axlrator_core.db_model.database import get_async_session_ctx
 import uvicorn
 
 import warnings
@@ -119,7 +120,8 @@ app.include_router(view.router, prefix="/view") # 화면용 라우터
 app.include_router(open_webui.router, prefix="/aifred-oi") # 기본 라우터
 
 # 관리자
-app.include_router(vector.router, prefix="/admin/vector")
+app.include_router(faiss_vector.router, prefix="/admin/faiss-vector")
+app.include_router(milvus_vector.router, prefix="/admin/milvus-vector")
 
 # 사용자
 app.include_router(user_service.router, prefix="/user")

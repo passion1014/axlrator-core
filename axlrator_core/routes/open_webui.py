@@ -6,9 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
+from typing import List, Optional, Union
 
-from axlrator_core.chain_graph.code_assist_chain import code_assist_chain
+from axlrator_core.chain_graph.agent_state import CodeAssistAutoCompletion
+from axlrator_core.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain
 from axlrator_core.chain_graph.code_chat_agent import CodeChatAgent
 from axlrator_core.dataclasses.code_assist_data import CodeAssistInfo
 from axlrator_core.db_model.database import get_async_session
@@ -25,14 +26,25 @@ class ChatCompletionRequest(BaseModel):
     messages: List[ChatMessage]
     temperature: Optional[float] = 0.7
     stream: Optional[bool] = True
+    
+class CompletionRequest(BaseModel):
+    model: str
+    prompt: Union[str, List[str]]  # 하나 또는 여러 개의 prompt 가능
+    suffix: Optional[str] = None
+    max_tokens: Optional[int] = 16
+    temperature: Optional[float] = 1.0
+    # top_p: Optional[float] = 1.0
+    # n: Optional[int] = 1
+    # stream: Optional[bool] = False
+    # logprobs: Optional[int] = None
+    # echo: Optional[bool] = False
+    # stop: Optional[Union[str, List[str]]] = None
+    # presence_penalty: Optional[float] = 0.0
+    # frequency_penalty: Optional[float] = 0.0
+    # best_of: Optional[int] = 1
+    # logit_bias: Optional[dict] = None
+    # user: Optional[str] = None
 
-# http://localhost:8080/api/v1/tasks/auto/completions
-@router.post("/v1/task/auto/completions", response_class=JSONResponse)
-async def task_auto_completions(
-    request: Request,
-    session: AsyncSession = Depends(get_async_session)
-):
-    print(f"### /task/auto/completions Request = {request}")
 
 
 @router.post("/v1/chat/completions", response_class=JSONResponse)
@@ -112,20 +124,37 @@ async def get_completions(
         return JSONResponse(content=response)
 
 
-        # response = {
-        #     "id": thread_id,
-        #     "object": "chat.completion",
-        #     "created": int(uuid.uuid4().time_low),
-        #     "model": model,
-        #     "choices": [
-        #         {
-        #             "index": 0,
-        #             "message": {"role": "assistant", "content": "이것은 일반 응답입니다."},
-        #             "finish_reason": "stop"
-        #         }
-        #     ]
-        # }
-        # return JSONResponse(content=response)
+@router.post("/v1/completions")
+async def call_api_autocompletion(
+    request: Request, 
+    session: AsyncSession = Depends(get_async_session)
+):
+    body = await request.json()
+    
+    try:
+        message = CompletionRequest.model_validate(body)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid request format: {e}")
+    
+    # prompt가 list면 첫 번째만 사용
+    prompt_text = message.prompt[0] if isinstance(message.prompt, list) else message.prompt
+
+    # CodeAssistAutoCompletion에 필요한 필드 생성
+    state: CodeAssistAutoCompletion = {
+        "prompt": "",
+        "current_code": prompt_text,
+        "response": "" 
+    }
+    
+    # CodeAssistChain class 선언
+    code_assist = CodeAssistChain(index_name="cg_code_assist", session=session)
+
+    # 스트리밍이 아닐 경우 일반 응답 반환
+    result = code_assist.chain_autocompletion().invoke(state)
+    return JSONResponse(content={"result": result})
+
+
+
 
 def convert_chat_message(chat_message):
     """ChatMessage를 LangChain의 Message 객체로 변환"""

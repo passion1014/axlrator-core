@@ -67,11 +67,13 @@ class PyMilvusVectorStore:
 
         data = [{"content": text, "embedding": embedding} for text, embedding in zip(texts, embeddings)]
 
-        self.client.insert(
+        result_dict = self.client.insert(
             collection_name=self.collection_name,
             data=data
         )
+        
         self.client.flush(self.collection_name)
+        return result_dict
 
     def similarity_search(self, query: str, k: int = 3):
         query_vector = self.embedding_function.embed_query(query)
