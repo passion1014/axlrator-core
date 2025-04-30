@@ -1,6 +1,7 @@
 
 import json
 import os
+import time
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -33,18 +34,40 @@ class CompletionRequest(BaseModel):
     suffix: Optional[str] = None
     max_tokens: Optional[int] = 16
     temperature: Optional[float] = 1.0
-    # top_p: Optional[float] = 1.0
-    # n: Optional[int] = 1
-    # stream: Optional[bool] = False
-    # logprobs: Optional[int] = None
-    # echo: Optional[bool] = False
-    # stop: Optional[Union[str, List[str]]] = None
-    # presence_penalty: Optional[float] = 0.0
-    # frequency_penalty: Optional[float] = 0.0
-    # best_of: Optional[int] = 1
-    # logit_bias: Optional[dict] = None
-    # user: Optional[str] = None
+    top_p: Optional[float] = 1.0
+    n: Optional[int] = 1
+    stream: Optional[bool] = False
+    logprobs: Optional[int] = None
+    echo: Optional[bool] = False
+    stop: Optional[Union[str, List[str]]] = None
+    presence_penalty: Optional[float] = 0.0
+    frequency_penalty: Optional[float] = 0.0
+    best_of: Optional[int] = 1
+    logit_bias: Optional[dict] = None
+    user: Optional[str] = None
 
+
+class Choice(BaseModel):
+    text: str
+    index: int
+    logprobs: Optional[dict] = None
+    finish_reason: Optional[str] = None
+
+
+class Usage(BaseModel):
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+
+class CompletionResponse(BaseModel):
+    id: str
+    object: str
+    created: int
+    model: str
+    system_fingerprint: Optional[str] = None
+    choices: List[Choice]
+    usage: Usage
 
 
 @router.post("/v1/chat/completions", response_class=JSONResponse)
@@ -146,13 +169,33 @@ async def call_api_autocompletion(
         "response": "" 
     }
     
-    # CodeAssistChain class 선언
+    # CodeAssistChain 실행
     code_assist = CodeAssistChain(index_name="cg_code_assist", session=session)
+    result_state = code_assist.chain_autocompletion().invoke(state)
+    completion_text = result_state["response"][0] if result_state["response"] else ""
 
-    # 스트리밍이 아닐 경우 일반 응답 반환
-    result = code_assist.chain_autocompletion().invoke(state)
-    return JSONResponse(content={"result": result})
-
+    # OpenAI 호환 응답 생성
+    response = CompletionResponse(
+        id=f"cmpl-{uuid.uuid4().hex[:24]}",
+        object="text_completion",
+        created=int(time.time()),
+        model=message.model,
+        system_fingerprint="fp_mocked123456",
+        choices=[
+            Choice(
+                text=completion_text,
+                index=0,
+                logprobs=None,
+                finish_reason="stop"
+            )
+        ],
+        usage=Usage(
+            prompt_tokens=10, # → 추정 또는 tokenizer 사용해서 계산
+            completion_tokens=len(completion_text.split()),  # 간단한 추정
+            total_tokens=10 + len(completion_text.split())
+        )
+    )
+    return JSONResponse(content=response.model_dump())
 
 
 
