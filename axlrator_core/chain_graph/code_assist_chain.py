@@ -292,11 +292,12 @@ async def code_assist_chain(type:str, session):
         # 질문의 추가 맥락 생성
         # enriched_query = contextual_enrichment(state['question'])  # 맥락을 추가로 풍부화
         enriched_query = state['question']
+        vector_store = get_vector_store(collection_name="code_assist")
+        docs = vector_store.similarity_search_with_score(query=enriched_query, k=2) 
+        
+        state['context'] = "\n".join(doc['content'] for doc in docs)
+        return state
 
-        # MILVUS 호스팅을 결정하기 전까지 잠시 막아놓음 25.045.04        
-        # # 맥락 기반 검색
-        # vector_store = get_vector_store(collection_name="cg_code_assist")
-        # docs = vector_store.similarity_search_with_score(query=enriched_query, k=2) 
         
         # # 문서 결합
         # state['context'] = combine_documents_with_relevance(docs)  # 단순 병합 대신 관련성을 고려하여 결합
@@ -351,7 +352,7 @@ async def code_assist_chain(type:str, session):
         elif ("02" == type) :
             langfuse_prompt = langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
             prompt = langfuse_prompt.compile(
-                REFERENCE_CODE="", # state['context'],
+                REFERENCE_CODE=state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
@@ -379,7 +380,7 @@ async def code_assist_chain(type:str, session):
         else:
             langfuse_prompt = langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
             prompt = langfuse_prompt.compile(
-                REFERENCE_CODE="", # state['context'],
+                REFERENCE_CODE=state['context'],
                 TASK=state['question'],
                 CURRENT_CODE=state['current_code']
             )
