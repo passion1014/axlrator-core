@@ -248,6 +248,7 @@ def get_file_type(file_path: str) -> str:
 def chunk_file(file_path) -> list[BaseChunkMeta]:
     """Main function to chunk a file based on its extension."""
     file_name = os.path.basename(file_path)
+    
     content = read_file(file_path)
     extension = get_file_extension(file_path)
     file_type = get_file_type(file_path)
@@ -284,7 +285,7 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     return chunks
 
 
-async def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, list]:
+async def file_chunk_and_save(file_path: str, chunk_type="01", session=None) -> tuple[OrgRSrc, list]:
     """
     파일을 청크로 분할하고 DB에 저장합니다.
     
@@ -296,13 +297,12 @@ async def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, li
     Returns:
         청크 리스트
     """
-    
         
     proc_chunk_list = []
-    # try:
+
     # 원본 파일 정보 저장
     orgRSrcRepository = OrgRSrcRepository(session=session)
-    org_resrc = await orgRSrcRepository.create_org_resrc(file_path=file_path, type="01", desc="JAVA")
+    org_resrc = await orgRSrcRepository.create_org_resrc(file_path=file_path, chunk_type=chunk_type, desc="JAVA")
 
     # 파일 chunking
     file_chunk_list = chunk_file(file_path)
@@ -350,16 +350,12 @@ async def file_chunk_and_save(file_path: str, session=None) -> tuple[OrgRSrc, li
         
     # 세션 커밋
     await session.commit()
-        
-    # except Exception as e:
-    #     session.rollback()
-    #     print(f"### Error processing file {file_path}: {e}")
     
     return org_resrc, proc_chunk_list
 
 
 
-    # # Java 파일 파싱 (함수별로 split)
+    # Java 파일 파싱 (함수별로 split)
     # def parse_java(self):
     #     class_info, methods = parse_java_file(self.file_path)
         
