@@ -302,7 +302,7 @@ async def file_chunk_and_save(file_path: str, chunk_type="01", session=None) -> 
 
     # 원본 파일 정보 저장
     orgRSrcRepository = OrgRSrcRepository(session=session)
-    org_resrc = await orgRSrcRepository.create_org_resrc(file_path=file_path, chunk_type=chunk_type, desc="JAVA")
+    org_resrc = await orgRSrcRepository.create_org_resrc(file_path=file_path, type=chunk_type, desc="JAVA")
 
     # 파일 chunking
     file_chunk_list = chunk_file(file_path)
