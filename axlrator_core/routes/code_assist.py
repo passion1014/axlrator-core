@@ -35,12 +35,13 @@ async def call_api_autocompletion(
     
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    callback_handler = CallbackHandler()
     
     # CodeAssistChain class 선언
     code_assist = CodeAssistChain(index_name="code_assist", session=session)
 
     # 스트리밍이 아닐 경우 일반 응답 반환
-    result = code_assist.chain_autocompletion().invoke(message)
+    result = code_assist.chain_autocompletion().invoke(message, config={"callbacks": [callback_handler]})
     return JSONResponse(content={"result": result})
 
 

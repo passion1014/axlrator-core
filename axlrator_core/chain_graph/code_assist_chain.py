@@ -268,7 +268,7 @@ class CodeAssistChain:
         graph.add_edge("extract_code_node", END)
         
         chain = graph.compile()
-        chain.with_config(callbacks=[CallbackHandler()])
+        # chain.with_config(callbacks=[CallbackHandler()])
         
         return chain
 
