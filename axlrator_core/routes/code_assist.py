@@ -63,7 +63,7 @@ async def call_api_code(
     code_assist = CodeAssistChain(index_name="code_assist", session=session)
 
     # 스트리밍 여부를 결정하는 플래그 (body에 "stream": true/false 추가)
-    stream_mode = body.get("stream", False)
+    stream_mode = body.get("stream", True)
     if stream_mode:
         async def stream_response() :
             async for chunk in code_assist.chain_codeassist().astream(message, stream_mode="custom", config={"callbacks": [callback_handler]}):
