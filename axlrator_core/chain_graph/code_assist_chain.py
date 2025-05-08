@@ -29,9 +29,9 @@ class CodeAssistChain:
 
         # VectorDB / BM25 조회
         vector_store = get_vector_store(collection_name=self.index_name)
-        semantic_results = vector_store.similarity_search_with_score(query=question, k=50) 
+        semantic_results = vector_store.similarity_search_with_score(query=question, k=10) 
         
-        bm25_results = self.es_bm25.search(query=question, k=50) # elasticsearch 조회
+        bm25_results = self.es_bm25.search(query=question, k=10) # elasticsearch 조회
         
         logging.info("## Step1. Semantic Results: %s", semantic_results)
         logging.info("## Step1. BM25 Results: %s", bm25_results)
@@ -124,7 +124,8 @@ class CodeAssistChain:
         vector_store = get_vector_store(collection_name=self.index_name)
         docs = vector_store.similarity_search_with_score(query=enriched_query, k=2) 
         
-        state['context'] = "\n".join(doc['content'] for doc in docs)
+        # state['context'] = "\n".join(doc['content'] for doc in docs)
+        state['context'] = combine_documents_with_relevance(docs)
         return state
 
     def get_table_desc(self, state: AgentState) -> AgentState:
@@ -194,28 +195,27 @@ class CodeAssistChain:
         return state
     
     def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
-        # valid_documents[0]['content']
-        reference_code = combine_documents_with_relevance(state['context'])
-        
         langfuse_prompt = self.langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
-        prompt = langfuse_prompt.compile(
-            REFERENCE_CODE=reference_code,
+        state['prompt'] = langfuse_prompt.compile(
+            REFERENCE_CODE=state['context'],
             TASK=state['question'],
             CURRENT_CODE=state.get('current_code', '')
         )
-        
-        state['prompt'] = prompt
-        
         return state
 
     def chain_codeassist(self) -> CodeAssistState:
+        '''
+        명령형 코드생성 / AI.CODE_URL
+        '''
         graph = StateGraph(CodeAssistState)
-        graph.add_node("contextual_reranker", self.contextual_reranker) # 컨텍스트 정보 조회
+        # graph.add_node("contextual_reranker", self.contextual_reranker) # hybrid cotext search
+        graph.add_node("search_similar_context", self.search_similar_context) # 컨텍스트 정보 조회
+        # -> 여기에 조회된 컨텍스트가 적합한지 체크하는 노드를 추가한다.
         graph.add_node("choose_prompt_for_task", self.choose_prompt_for_task) # 프롬프트 선택
         graph.add_node("generate_response_astream", self.generate_response_astream) # 모델호출
         
-        graph.set_entry_point("contextual_reranker")
-        graph.add_edge("contextual_reranker", "choose_prompt_for_task")
+        graph.set_entry_point("search_similar_context")    
+        graph.add_edge("search_similar_context", "choose_prompt_for_task")
         graph.add_edge("choose_prompt_for_task", "generate_response_astream")
         graph.add_edge("generate_response_astream", END)
 
@@ -224,16 +224,10 @@ class CodeAssistChain:
         
         return chain
     
-    def chain_make_comment(self) -> CodeAssistState:
-        pass
-        # elif ("03" == type) : # 주석생성하기
-        #     langfuse_prompt = langfuse.get_prompt("MAKE_CODE_COMMENT_PROMPT", version=1)
-        #     prompt = langfuse_prompt.compile(
-        #         SOURCE_CODE=state['question']
-        #     )
-
     def chain_autocompletion(self) -> CodeAssistAutoCompletion:
-        
+        '''
+        자동완성(ghost text) / AI.AUTOCODE_URL
+        '''
         def _prompt_node(state: CodeAssistAutoCompletion) -> CodeAssistAutoCompletion:
 
             request_type = state.get('request_type', '')
@@ -286,7 +280,7 @@ async def code_assist_chain(type:str, session):
     langfuse = Langfuse()
     
     # 모델 선언
-    model = get_llm_model().with_config(callbacks=[CallbackHandler()])
+    model = get_llm_model()
 
     async def get_context(state: AgentState) -> AgentState:
         # 질문의 추가 맥락 생성
@@ -296,11 +290,6 @@ async def code_assist_chain(type:str, session):
         docs = vector_store.similarity_search_with_score(query=enriched_query, k=2) 
         
         state['context'] = "\n".join(doc['content'] for doc in docs)
-        return state
-
-        
-        # # 문서 결합
-        # state['context'] = combine_documents_with_relevance(docs)  # 단순 병합 대신 관련성을 고려하여 결합
         return state
 
     async def get_table_desc(state: AgentState) -> AgentState:
@@ -450,8 +439,7 @@ async def code_assist_chain(type:str, session):
         workflow.add_edge("generate_response", END)
         pass
     
-    chain = workflow.compile() # CompiledStateGraph
-    chain.with_config(callbacks=[CallbackHandler()])
+    chain = workflow.compile()
     
     return chain
 
@@ -463,7 +451,7 @@ def combine_documents_with_relevance(docs):
         return ""
 
     combined_context = []
-    for doc in docs[:3]:  # 앞에서 3개의 항목만 사용
+    for doc in docs[:2]:  # 앞에서 2개의 항목만 사용
         if doc['content'] not in combined_context:  # 중복 제거
             combined_context.append(doc['content'])
 

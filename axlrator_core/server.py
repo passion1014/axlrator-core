@@ -129,7 +129,7 @@ app.include_router(upload.router, prefix="/upload")
 app.include_router(vector_db.router, prefix="/faiss") # TODO admin.faiss로 옮겨야 함
 app.include_router(terms_conversion.router, prefix="/termsconversion")
 app.include_router(code_assist.router, prefix="/codeassist")
-app.include_router(sample.router, prefix="/sample") # TODO 해당 파일과 라우트들은 삭제 예정
+
 
 print('''
  █████╗ ██╗  ██╗██╗     ██████╗  █████╗ ████████╗ ██████╗ ██████╗ 

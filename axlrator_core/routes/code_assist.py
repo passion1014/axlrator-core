@@ -16,19 +16,48 @@ from axlrator_core.db_model.data_repository import RSrcTableRepository
 
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-
+from langfuse.callback import CallbackHandler
 from psycopg_pool import AsyncConnectionPool
 
 logger = setup_logging()
 router = APIRouter()
 
+
+
+@router.post("/api/autocompletion")
+async def call_api_autocompletion(
+    request: Request, 
+    session: AsyncSession = Depends(get_async_session)
+) -> Response:
+    '''
+    자동완성(ghost text) / AI.AUTOCODE_URL
+    '''
+    
+    body = await request.json()
+    message = CodeAssistInfo.model_validate(body)
+    
+    # CodeAssistChain class 선언
+    code_assist = CodeAssistChain(index_name="code_assist", session=session)
+
+    # 스트리밍이 아닐 경우 일반 응답 반환
+    result = code_assist.chain_autocompletion().invoke(message)
+    return JSONResponse(content={"result": result})
+
+
+
 @router.post("/api/code-contextual")
-async def conde_contextual(
+@router.post("/api/code")
+async def call_api_code(
     request: Request, 
     session = Depends(get_async_session)
 ):
+    '''
+    명령형 코드생성 / AI.CODE_URL
+    '''
+    
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    callback_handler = CallbackHandler()
     
     # CodeAssistChain class 선언
     code_assist = CodeAssistChain(index_name="code_assist", session=session)
@@ -37,37 +66,13 @@ async def conde_contextual(
     stream_mode = body.get("stream", False)
     if stream_mode:
         async def stream_response() :
-            async for chunk in code_assist.chain_codeassist().astream(message, stream_mode="custom"):
+            async for chunk in code_assist.chain_codeassist().astream(message, stream_mode="custom", config={"callbacks": [callback_handler]}):
                 yield chunk.content
         return StreamingResponse(stream_response(), media_type="text/event-stream")
 
     else:
         # 스트리밍이 아닐 경우 일반 응답 반환
-        result = await code_assist.chain_codeassist().ainvoke(message)
-        return JSONResponse(content={"result": result})
-
-
-@router.post("/api/code")
-async def call_api_code(
-    request: Request, 
-    session: AsyncSession = Depends(get_async_session)
-) -> Response:
-    body = await request.json()
-    message = CodeAssistInfo.model_validate(body)
-    
-    chain = await code_assist_chain(type="02", session=session)
-    
-    # 스트리밍 여부를 결정하는 플래그 (body에 "stream": true/false 추가)
-    stream_mode = body.get("stream", True)
-    if stream_mode:
-        async def stream_response() :
-            async for chunk in chain.astream(message, stream_mode="custom"):
-                yield chunk.content
-        return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-    else:
-        # 스트리밍이 아닐 경우, 비동기 제너레이터의 결과를 리스트로 변환 후 반환
-        result_generator = chain.astream(message, stream_mode="custom")
+        result_generator = code_assist.chain_codeassist().astream(message, stream_mode="custom", config={"callbacks": [callback_handler]})
         result_text = "".join([chunk.content async for chunk in result_generator])
         return JSONResponse(content={"result": result_text})
 
@@ -234,23 +239,6 @@ async def chat(
                 yield content
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-
-# 이클립스에서 사용하는 거
-@router.post("/api/autocompletion")
-async def call_api_autocompletion(
-    request: Request, 
-    session: AsyncSession = Depends(get_async_session)
-) -> Response:
-    body = await request.json()
-    message = CodeAssistInfo.model_validate(body)
-    
-    # CodeAssistChain class 선언
-    code_assist = CodeAssistChain(index_name="cg_code_assist", session=session)
-
-    # 스트리밍이 아닐 경우 일반 응답 반환
-    result = code_assist.chain_autocompletion().invoke(message)
-    return JSONResponse(content={"result": result})
 
 
 
