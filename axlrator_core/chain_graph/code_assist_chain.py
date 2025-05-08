@@ -184,7 +184,7 @@ class CodeAssistChain:
     #   task_type ?? -> generate_talk
     # TODO : async, sync 둘다 가능하도록 변경 필요
     async def generate_response_astream(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
-        prompt = state['question']
+        prompt = state['prompt']
         
         # Stream 방식
         chunks = []
