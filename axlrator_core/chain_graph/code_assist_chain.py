@@ -183,7 +183,7 @@ class CodeAssistChain:
     #   task_type 05 -> generate_text2sql
     #   task_type ?? -> generate_talk
     # TODO : async, sync 둘다 가능하도록 변경 필요
-    async def generate_response_astream(self, state: CodeAssistChatState, writer: StreamWriter) -> CodeAssistChatState:
+    async def generate_response_astream(self, state: CodeAssistState, writer: StreamWriter) -> CodeAssistChatState:
         prompt = state['prompt']
         
         # Stream 방식
