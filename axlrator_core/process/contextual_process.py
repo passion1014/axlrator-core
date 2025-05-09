@@ -1,5 +1,3 @@
-
-
 import json
 from axlrator_core.chain_graph.contexutal_retrieval_chain import chain_create_summary
 from axlrator_core.formatter.code_formatter import parse_augmented_chunk
@@ -17,9 +15,6 @@ def generate_code_context(chunk_content:str):
         "content": chunk_content
     }
     
-    summary_ai_message = summary_chain.invoke(inputs, config={"callbacks": [callback_handler]})
-    # parsed_ai_message = parse_augmented_chunk(summary_ai_message.content)
-    # parsed_json_message = json.loads(parsed_ai_message.model_dump_json())  # Pydantic v2의 기본 json 메서드를 사용해 JSON으로 변환
-    # result = json.dumps(parsed_json_message, ensure_ascii=False, indent=4)
+    message = summary_chain.invoke(inputs, config={"callbacks": [callback_handler]})
 
-    return summary_ai_message
+    return message['result']

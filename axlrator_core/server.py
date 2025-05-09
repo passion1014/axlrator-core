@@ -36,7 +36,6 @@ from axlrator_core.process.reranker import AlfredReranker
 from axlrator_core.routes import (
     code_assist,
     open_webui,
-    sample,
     terms_conversion,
     upload,
     user_service,

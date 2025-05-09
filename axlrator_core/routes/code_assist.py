@@ -19,6 +19,8 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langfuse.callback import CallbackHandler
 from psycopg_pool import AsyncConnectionPool
 
+from axlrator_core.process.contextual_process import generate_code_context
+
 logger = setup_logging()
 router = APIRouter()
 
@@ -76,6 +78,23 @@ async def call_api_code(
         result_generator = code_assist.chain_codeassist().astream(message, stream_mode="custom", config={"callbacks": [callback_handler]})
         result_text = "".join([chunk.content async for chunk in result_generator])
         return JSONResponse(content={"result": result_text})
+
+
+@router.post("/api/summary")
+async def summary_endpoint(
+    request: Request,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    chunk를 받아서 summary를 만들어줌
+    """
+    body = await request.json()
+    chunk_content = body.get("content", "")
+
+    # 요약 생성
+    summary_message = generate_code_context(chunk_content)
+
+    return JSONResponse(summary_message)
 
 
 @router.post("/api/autocode")
