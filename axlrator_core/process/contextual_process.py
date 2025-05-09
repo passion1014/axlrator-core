@@ -14,7 +14,7 @@ def generate_code_context(chunk_content:str):
     
     # 요약 생성을 위한 프롬프트 입력
     inputs = {
-        "SOURCE_CODE": chunk_content
+        "content": chunk_content
     }
     
     summary_ai_message = summary_chain.invoke(inputs, config={"callbacks": [callback_handler]})
