@@ -35,13 +35,13 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
     uuids = [str(uuid4()) for _ in range(len(chunked_data_list))]
     
     # 각각의 ChunkedData에 대해 처리
-    documents = [
-        Document(
-            page_content=data.content,
-            metadata={"id": uuid, **(data.document_metadata if isinstance(data.document_metadata, dict) else {})}
-        )
-        for data, uuid in zip(chunked_data_list, uuids)
-    ]
+    documents = []
+    for data, uuid in zip(chunked_data_list, uuids):
+        metadata = {"id": uuid, **(data.document_metadata if isinstance(data.document_metadata, dict) else {})}
+        documents.append(Document(page_content=data.content, metadata=metadata))
+        if hasattr(data, "context_chunk") and data.context_chunk:
+            summary_metadata = {**metadata, "type": "context_chunk"}
+            documents.append(Document(page_content=data.context_chunk, metadata=summary_metadata))
     
     # vector_store에 저장
     vector_dict = vector_store.add_documents(docs=documents)
