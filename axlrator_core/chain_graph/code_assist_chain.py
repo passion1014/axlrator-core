@@ -210,7 +210,6 @@ class CodeAssistChain:
         graph = StateGraph(CodeAssistState)
         # graph.add_node("contextual_reranker", self.contextual_reranker) # hybrid cotext search
         graph.add_node("search_similar_context", self.search_similar_context) # 컨텍스트 정보 조회
-        # -> 여기에 조회된 컨텍스트가 적합한지 체크하는 노드를 추가한다.
         graph.add_node("choose_prompt_for_task", self.choose_prompt_for_task) # 프롬프트 선택
         graph.add_node("generate_response_astream", self.generate_response_astream) # 모델호출
         
@@ -271,6 +270,7 @@ class CodeAssistChain:
         # chain.with_config(callbacks=[CallbackHandler()])
         
         return chain
+    
 
 # ------------------------------------------------
 # 아래는 이전 버전 - 삭제필요
