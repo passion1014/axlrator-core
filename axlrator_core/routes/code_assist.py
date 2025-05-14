@@ -179,11 +179,12 @@ async def make_mapdatautil_endpoint(
 ):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    callback_handler = CallbackHandler()
     
     chain = await code_assist_chain(type="04", session=session)
 
     async def stream_response() :
-        async for chunk in chain.astream(message, stream_mode="custom"):
+        async for chunk in chain.astream(message, stream_mode="custom", config={"callbacks": [callback_handler]}):
             yield chunk.content
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
@@ -196,11 +197,12 @@ async def make_sql_endpoint(
 ):
     body = await request.json()
     message = CodeAssistInfo.model_validate(body)
+    callback_handler = CallbackHandler()
     
     chain = await code_assist_chain(type="05", session=session)
 
     async def stream_response() :
-        async for chunk in chain.astream(message, stream_mode="custom"):
+        async for chunk in chain.astream(message, stream_mode="custom", config={"callbacks": [callback_handler]}):
             yield chunk.content
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
