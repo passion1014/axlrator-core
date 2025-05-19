@@ -35,6 +35,7 @@ from axlrator_core.process.reranker import AlfredReranker
 # client service
 from axlrator_core.routes import (
     code_assist,
+    document_manual,
     open_webui,
     terms_conversion,
     upload,
@@ -128,6 +129,7 @@ app.include_router(upload.router, prefix="/upload")
 app.include_router(vector_db.router, prefix="/faiss") # TODO admin.faiss로 옮겨야 함
 app.include_router(terms_conversion.router, prefix="/termsconversion")
 app.include_router(code_assist.router, prefix="/codeassist")
+app.include_router(document_manual.router, prefix="/manual")
 
 
 print('''
