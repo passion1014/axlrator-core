@@ -37,7 +37,10 @@ async def call_api_contextual_query(
     # DocumentManualChain class 선언
     document_manual_chain = DocumentManualChain(index_name="manual_document", session=session)
 
-    # 스트리밍이 아닐 경우 일반 응답 반환
-    result_generator = document_manual_chain.chain_manual_query().astream(message, stream_mode="custom", config={"callbacks": [callback_handler]})
-    result_text = "".join([chunk.content async for chunk in result_generator])
-    return JSONResponse(content={"result": result_text})
+    # result_generator = document_manual_chain.chain_manual_query().astream(message, stream_mode="custom", config={"callbacks": [callback_handler]})
+    # result_text = "".join([chunk.content async for chunk in result_generator])
+    # return JSONResponse(content={"result": result_generator['response']})
+
+    result = document_manual_chain.chain_manual_query().invoke(message, config={"callbacks": [callback_handler]})
+    return JSONResponse(content={"result": result})
+

@@ -24,7 +24,7 @@ class DocumentManualChain:
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
         self.langfuse = Langfuse()
 
-    async def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
+    def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
         # VectorDB / BM25 조회
@@ -114,11 +114,11 @@ class DocumentManualChain:
         reranker = get_reranker()
         reranker.cross_encoder(query=question, documents=valid_documents)
 
-        state['context'] = valid_documents
+        state['context'] = [doc['content'] for doc in valid_documents]
 
         return state
 
-    async def search_similar_context(self, state: AgentState) -> AgentState:
+    def search_similar_context(self, state: AgentState) -> AgentState:
         enriched_query = state['question']
         
         vector_store = get_vector_store(collection_name=self.index_name)
@@ -155,7 +155,7 @@ class DocumentManualChain:
         state['context'] = table_json
         return state
 
-    async def generate_response_astream(self, state: CodeAssistState, writer: StreamWriter) -> CodeAssistChatState:
+    def generate_response_astream(self, state: CodeAssistState, writer: StreamWriter) -> CodeAssistChatState:
         prompt = state['prompt']
         response = self.model.invoke(prompt)
 

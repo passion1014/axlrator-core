@@ -20,14 +20,24 @@ class ElasticsearchBM25:
     def create_index(self):
         index_settings = {
             "settings": {
-                "analysis": {"analyzer": {"default": {"type": "english"}}},
+                # "analysis": {"analyzer": {"default": {"type": "english"}}},
+                "analysis": {
+                    "analyzer": {
+                        "default": {
+                            "type": "custom",
+                            "tokenizer": "nori_tokenizer"
+                        }
+                    }
+                },                
                 "similarity": {"default": {"type": "BM25"}},
                 "index.queries.cache.enabled": False  # 쿼리 캐시 비활성화
             },
             "mappings": {
                 "properties": {
-                    "content": {"type": "text", "analyzer": "english"},
-                    "contextualized_content": {"type": "text", "analyzer": "english"},
+                    # "content": {"type": "text", "analyzer": "english"},
+                    # "contextualized_content": {"type": "text", "analyzer": "english"},
+                    "content": {"type": "text", "analyzer": "default"},
+                    "contextualized_content": {"type": "text", "analyzer": "default"},
                     "doc_id": {"type": "keyword", "index": False},
                     "chunk_id": {"type": "keyword", "index": False},
                     "original_index": {"type": "integer", "index": False},
@@ -36,7 +46,7 @@ class ElasticsearchBM25:
         }
         if not self.es_client.indices.exists(index=self.index_name):
             self.es_client.indices.create(index=self.index_name, body=index_settings)
-        else :
+        else:
             print(f"### Index already exists: {self.index_name}")
 
     # 문서 인덱싱 함수
@@ -65,10 +75,10 @@ class ElasticsearchBM25:
             "query": {
                 "multi_match": {
                     "query": query,
-                    "fields": ["content", "contextualized_content"],
+                    "fields": ["content", "contextualized_content"]
                 }
             },
-            "size": k,
+            "size": k
         }
         response = self.es_client.search(index=self.index_name, body=search_body)
         return [
