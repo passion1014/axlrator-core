@@ -123,7 +123,7 @@ async def get_completions(
             "choices": [
                 {
                     "index": 0,
-                    "message": {"role": "assistant", "content": result},
+                    "message": {"role": "assistant", "content": result['response']},
                     "finish_reason": "stop"
                 }
             ]
