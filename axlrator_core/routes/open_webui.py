@@ -80,6 +80,7 @@ async def get_completions(
         url = http://localhost:8001/aifred-oi/v1
     '''
     body = await request.json()
+    print(f"### /v1/chat/completions - body = {body}")
     
     try:
         message = ChatCompletionRequest.model_validate(body)
