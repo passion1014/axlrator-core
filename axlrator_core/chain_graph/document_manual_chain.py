@@ -165,7 +165,7 @@ class DocumentManualChain:
         return state
     
     def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
-        langfuse_prompt = self.langfuse.get_prompt("AXL_MANUAL_DOC_QUERY", version=1)
+        langfuse_prompt = self.langfuse.get_prompt("AXL_MANUAL_DOC_QUERY")
         state['prompt'] = langfuse_prompt.compile(
             reference=state['context'],
             query=state['question'],
