@@ -108,7 +108,7 @@ async def get_completions(
 
         document_manual_info = DocumentManualInfo(
             indexname="manual_document",
-            question=body['messages'][0]['content']
+            question=body['messages'][-1]['content']
         )
         
         document_manual_chain = DocumentManualChain(index_name="manual_document", session=session)
