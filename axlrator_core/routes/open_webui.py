@@ -12,6 +12,7 @@ from typing import List, Optional, Union
 from axlrator_core.chain_graph.agent_state import CodeAssistAutoCompletion
 from axlrator_core.chain_graph.code_assist_chain import CodeAssistChain, code_assist_chain
 from axlrator_core.chain_graph.code_chat_agent import CodeChatAgent
+from axlrator_core.chain_graph.document_manual_chain import DocumentManualChain
 from axlrator_core.dataclasses.code_assist_data import CodeAssistInfo
 from axlrator_core.db_model.database import get_async_session
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -97,9 +98,15 @@ async def get_completions(
     
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
-
-    agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session) 
-    graph, _ = agent.get_chain(thread_id=thread_id)
+    
+    if model == "chat":
+        print("### DocumentManualChain 체인을 생성합니다.")
+        document_manual_chain = DocumentManualChain(index_name="manual_document", session=session)
+        graph = document_manual_chain.chain_manual_query()
+    else:
+        print("### CodeChatAgent 체인을 생성합니다.")
+        agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session) 
+        graph, _ = agent.get_chain(thread_id=thread_id)
 
     if stream_mode:
         async def stream_response():
