@@ -14,8 +14,10 @@ from axlrator_core.chain_graph.code_assist_chain import CodeAssistChain, code_as
 from axlrator_core.chain_graph.code_chat_agent import CodeChatAgent
 from axlrator_core.chain_graph.document_manual_chain import DocumentManualChain
 from axlrator_core.dataclasses.code_assist_data import CodeAssistInfo
+from axlrator_core.dataclasses.document_manual_data import DocumentManualInfo
 from axlrator_core.db_model.database import get_async_session
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langfuse.callback import CallbackHandler
 
 router = APIRouter()
 
@@ -87,6 +89,8 @@ async def get_completions(
         message = ChatCompletionRequest.model_validate(body)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid request format: {e}")
+    
+    callback_handler = CallbackHandler()
 
     model = message.model
     stream_mode = message.stream
@@ -101,43 +105,15 @@ async def get_completions(
     
     if model == "chat":
         print("### DocumentManualChain 체인을 생성합니다.")
+
+        document_manual_info = DocumentManualInfo(
+            indexname="manual_document",
+            question=body['messages'][0]['content']
+        )
+        
         document_manual_chain = DocumentManualChain(index_name="manual_document", session=session)
-        graph = document_manual_chain.chain_manual_query()
-    else:
-        print("### CodeChatAgent 체인을 생성합니다.")
-        agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session) 
-        graph, _ = agent.get_chain(thread_id=thread_id)
-
-    if stream_mode:
-        async def stream_response():
-            async for event in graph.astream({"messages": messages}, config, stream_mode="custom"):
-                if event.content and len(event.content) > 0:
-                    content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
-                    chunk = json.dumps({
-                        "id": thread_id,
-                        "object": "chat.completion.chunk",
-                        "created": int(uuid.uuid4().time_low),
-                        "model": model,
-                        "choices": [{
-                            "index": 0,
-                            "delta": {"content": content},
-                            "finish_reason": None
-                        }]
-                    })
-                    yield f"data: {chunk}\n\n"
-
-            yield f"data: {json.dumps({'id': thread_id, 'object': 'chat.completion.chunk', 'created': int(uuid.uuid4().time_low), 'model': model, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]})}\n\n"
-        return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-    else:
-        result = await graph.ainvoke({"messages": messages}, config)
-
-        if result["messages"]:
-            content = "".join(
-                m.content for m in result["messages"] if isinstance(m, AIMessage) and m.content
-            )
-        else:
-            content = ""
+        result = document_manual_chain.chain_manual_query().invoke(document_manual_info, config={"callbacks": [callback_handler]})
+        # return JSONResponse(content={"result": result})
         
         response = {
             "id": thread_id,
@@ -147,12 +123,63 @@ async def get_completions(
             "choices": [
                 {
                     "index": 0,
-                    "message": {"role": "assistant", "content": content},
+                    "message": {"role": "assistant", "content": result},
                     "finish_reason": "stop"
                 }
             ]
         }
-        return JSONResponse(content=response)
+        return JSONResponse(content=response)        
+        
+    else:
+        print("### CodeChatAgent 체인을 생성합니다.")
+        agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session) 
+        graph, _ = agent.get_chain(thread_id=thread_id)
+
+        if stream_mode:
+            async def stream_response():
+                async for event in graph.astream({"messages": messages}, config, stream_mode="custom"):
+                    if event.content and len(event.content) > 0:
+                        content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
+                        chunk = json.dumps({
+                            "id": thread_id,
+                            "object": "chat.completion.chunk",
+                            "created": int(uuid.uuid4().time_low),
+                            "model": model,
+                            "choices": [{
+                                "index": 0,
+                                "delta": {"content": content},
+                                "finish_reason": None
+                            }]
+                        })
+                        yield f"data: {chunk}\n\n"
+
+                yield f"data: {json.dumps({'id': thread_id, 'object': 'chat.completion.chunk', 'created': int(uuid.uuid4().time_low), 'model': model, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]})}\n\n"
+            return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+        else:
+            result = await graph.ainvoke({"messages": messages}, config)
+
+            if result["messages"]:
+                content = "".join(
+                    m.content for m in result["messages"] if isinstance(m, AIMessage) and m.content
+                )
+            else:
+                content = ""
+            
+            response = {
+                "id": thread_id,
+                "object": "chat.completion",
+                "created": int(uuid.uuid4().time_low),
+                "model": model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": content},
+                        "finish_reason": "stop"
+                    }
+                ]
+            }
+            return JSONResponse(content=response)
 
 
 @router.post("/v1/completions")
