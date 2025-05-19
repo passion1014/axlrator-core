@@ -37,7 +37,10 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
     # 각각의 ChunkedData에 대해 처리
     documents = []
     for data, uuid in zip(chunked_data_list, uuids):
-        metadata = {"id": uuid, **(data.document_metadata if isinstance(data.document_metadata, dict) else {})}
+        metadata = {"id": uuid
+                    , "doc_id": data.org_resrc_id
+                    , "seq": data.seq
+                    , **(data.document_metadata if isinstance(data.document_metadata, dict) else {})}
         documents.append(Document(page_content=data.content, metadata=metadata))
         if hasattr(data, "context_chunk") and data.context_chunk:
             summary_metadata = {**metadata, "type": "context_chunk"}
