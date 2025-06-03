@@ -209,4 +209,82 @@ def combine_documents_with_relevance(docs):
 
 
 
+from langchain_core.prompts import PromptTemplate
 
+def combine_documents_with_next_content(docs) -> list:
+    if not docs:
+        return ""
+
+    model = get_llm_model()
+    
+    '''
+    다음 두 문장은 서로 연결되어 하나의 문장처럼 읽히나요?
+    문장1: {{chunk}}
+    문장2: {{next_chunk}}
+
+    응답은 'YES' 또는 'NO'로만 답변하세요.
+    '''
+    # TODO: 2개 문장의 컨텍스트가 연결되어 있는지 확인하도록 프롬프트 수정해야 됨
+    # max token 을 체크하여서 문장이 너무 길면 문장을 잘라야 함
+    langfuse_prompt = Langfuse().get_prompt("AXL_CHECK_MERGE_CONTEXT")
+
+    merged_chunks = []
+    buffer = ""
+
+    i = 0
+    while i < len(docs):
+        current = docs[i].strip()
+        if not buffer:
+            buffer = current
+        else:
+            buffer = f"{buffer} {current}"
+
+        should_merge = False
+        if i + 1 < len(docs):
+            next_content = docs[i + 1].strip()
+            # prompt = prompt_template.format(sentence1=buffer, sentence2=next_content)
+            prompt = langfuse_prompt.compile(
+                chunk=buffer,
+                next_chunk=next_content,
+            )
+            
+            response = model.invoke(prompt)
+            answer = response.content.strip().lower()
+            if "YES" in answer:
+                buffer = f"{buffer} {next_content}"
+                i += 1
+                continue  # 다음 문장과 계속 비교
+            else:
+                should_merge = True
+        else:
+            should_merge = True
+
+        if should_merge:
+            merged_chunks.append(buffer)
+            buffer = ""
+
+        i += 1
+
+    if buffer:
+        merged_chunks.append(buffer)
+
+    return merged_chunks
+
+def main():
+    # 테스트용 문장 리스트 (chunk 들)
+    docs = [
+        "이 제품은 천연 성분으로 만들어졌습니다.",
+        "피부에 자극이 거의 없습니다.",
+        "사용 방법은 매우 간단합니다.",
+        "스프레이를 피부에 고르게 분사하세요.",
+        "직사광선을 피해서 보관하세요.",
+        "어린이 손에 닿지 않는 곳에 보관하십시오."
+    ]
+
+    # 병합된 결과 출력
+    merged_result = combine_documents_with_next_content(docs)
+    print("=== 병합된 결과 ===")
+    print(merged_result)
+
+if __name__ == "__main__":
+    main()

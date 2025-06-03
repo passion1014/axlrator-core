@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from axlrator_core.chain_graph.document_manual_chain import DocumentManualChain
+from axlrator_core.chain_graph.document_manual_chain import DocumentManualChain, combine_documents_with_next_content
 from axlrator_core.common.chat_history_manager import checkpoint_to_code_chat_info
 from axlrator_core.config import setup_logging
 from axlrator_core.dataclasses.document_manual_data import DocumentManualInfo
@@ -42,5 +42,30 @@ async def call_api_contextual_query(
     # return JSONResponse(content={"result": result_generator['response']})
 
     result = document_manual_chain.chain_manual_query().invoke(message, config={"callbacks": [callback_handler]})
+    return JSONResponse(content={"result": result})
+
+
+@router.post("/api/combine-contextual-test")
+async def call_api_combine_contextual_query(
+    request: Request, 
+    session: AsyncSession = Depends(get_async_session)
+) -> Response:
+    # body = await request.json()
+    # message = DocumentManualInfo.model_validate(body)
+    # callback_handler = CallbackHandler()
+    
+    
+    docs = [
+        "이 제품은 천연 성분으로 만들어졌습니다.",
+        "피부에 자극이 거의 없습니다.",
+        "사용 방법은 매우 간단합니다.",
+        "스프레이를 피부에 고르게 분사하세요.",
+        "직사광선을 피해서 보관하세요.",
+        "어린이 손에 닿지 않는 곳에 보관하십시오."
+    ]
+
+    
+    result = combine_documents_with_next_content(docs)
+    
     return JSONResponse(content={"result": result})
 
