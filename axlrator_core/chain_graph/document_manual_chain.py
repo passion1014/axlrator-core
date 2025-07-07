@@ -216,6 +216,7 @@ def combine_documents_with_next_content(docs) -> list:
         return ""
 
     model = get_llm_model()
+    callback_handler = CallbackHandler()
     
     '''
     다음 두 문장은 서로 연결되어 하나의 문장처럼 읽히나요?
@@ -242,18 +243,18 @@ def combine_documents_with_next_content(docs) -> list:
         should_merge = False
         if i + 1 < len(docs):
             next_content = docs[i + 1].strip()
-            # prompt = prompt_template.format(sentence1=buffer, sentence2=next_content)
             prompt = langfuse_prompt.compile(
                 chunk=buffer,
                 next_chunk=next_content,
             )
-            
             response = model.invoke(prompt)
             answer = response.content.strip().lower()
-            if "YES" in answer:
+            if "YES" in answer.upper():
                 buffer = f"{buffer} {next_content}"
-                i += 1
-                continue  # 다음 문장과 계속 비교
+                i += 2  # 다음 항목도 같이 사용했으므로 2개 스킵
+                merged_chunks.append(buffer)
+                buffer = ""
+                continue
             else:
                 should_merge = True
         else:
@@ -262,29 +263,11 @@ def combine_documents_with_next_content(docs) -> list:
         if should_merge:
             merged_chunks.append(buffer)
             buffer = ""
-
-        i += 1
+            i += 1
+            continue
 
     if buffer:
         merged_chunks.append(buffer)
 
     return merged_chunks
 
-def main():
-    # 테스트용 문장 리스트 (chunk 들)
-    docs = [
-        "이 제품은 천연 성분으로 만들어졌습니다.",
-        "피부에 자극이 거의 없습니다.",
-        "사용 방법은 매우 간단합니다.",
-        "스프레이를 피부에 고르게 분사하세요.",
-        "직사광선을 피해서 보관하세요.",
-        "어린이 손에 닿지 않는 곳에 보관하십시오."
-    ]
-
-    # 병합된 결과 출력
-    merged_result = combine_documents_with_next_content(docs)
-    print("=== 병합된 결과 ===")
-    print(merged_result)
-
-if __name__ == "__main__":
-    main()

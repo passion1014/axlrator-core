@@ -1,4 +1,5 @@
 from langchain_core.runnables import RunnableConfig
+from typing import Callable, Awaitable
 from axlrator_core.chain_graph.agent_state import AgentState, CodeAssistAutoCompletion, CodeAssistChatState, CodeAssistState
 from axlrator_core.common.code_assist_utils import extract_code_blocks
 from axlrator_core.common.string_utils import is_table_name
@@ -222,8 +223,9 @@ class CodeAssistChain:
         chain.with_config(callbacks=[CallbackHandler()])
         
         return chain
-    
-    def chain_autocompletion(self) -> CodeAssistAutoCompletion:
+
+    # def chain_autocompletion(self) -> CodeAssistAutoCompletion:
+    def chain_autocompletion(self) -> Callable[[CodeAssistAutoCompletion], Awaitable[CodeAssistAutoCompletion]]:    
         '''
         자동완성(ghost text) / AI.AUTOCODE_URL
         '''

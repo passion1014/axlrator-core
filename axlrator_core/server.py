@@ -2,29 +2,35 @@ import argparse
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 import warnings
-import logging
 
+import logging
 # ---------------------------------------
 # 파라미터 처리
 # ---------------------------------------
 parser = argparse.ArgumentParser(description="FastAPI 서버 실행 옵션")
-parser.add_argument("--env", type=str, default=".env", help="Path to .env file") # 값이 없을 경우 .env 기본 설정
-parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트")
-parser.add_argument("--port", type=int, default=8000, help="서버 포트")
-parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화")
-parser.add_argument("--reload", action="store_true")  
-parser.add_argument("--cert-file", type=str, default=None)
-parser.add_argument("--key-file", type=str, default=None)
+parser.add_argument("--env", type=str, default=".env", help="Path to .env file") # 환경변수 파일 경로
+parser.add_argument("--host", type=str, default="0.0.0.0", help="서버 호스트") # 서버 호스트 주소
+parser.add_argument("--port", type=int, default=8000, help="서버 포트") # 서버 포트 번호
+parser.add_argument("--debug", action="store_true", help="디버그 모드 활성화") # 디버그 모드 설정
+parser.add_argument("--reload", action="store_true") # 코드 변경시 자동 리로드
+parser.add_argument("--cert-file", type=str, default=None) # SSL 인증서 파일
+parser.add_argument("--key-file", type=str, default=None) # SSL 키 파일
 args = parser.parse_args()
-
 print(f"args = {args}")
 
-# .env 파일 로드
+
+# 환경변수 파일 로드
 load_dotenv(dotenv_path=args.env, override=True)
+
+
+
 
 
 import argparse
 from pydantic import BaseModel
+# LLM 모델 관련 import
+# from app.chain_graph.code_assist_chain import code_assist_chain 
+from axlrator_core.utils import get_llm_model
 # from app.chain_graph.code_assist_chain import code_assist_chain 
 from axlrator_core.utils import get_llm_model
 from fastapi.staticfiles import StaticFiles
@@ -38,11 +44,13 @@ from axlrator_core.routes import (
     document_manual,
     open_webui,
     terms_conversion,
+    ui_converter,
     upload,
     user_service,
     vector_db,
     view,
 )
+
 
 # admin service 
 from axlrator_core.routes.admin import (
@@ -130,7 +138,7 @@ app.include_router(vector_db.router, prefix="/faiss") # TODO admin.faiss로 옮�
 app.include_router(terms_conversion.router, prefix="/termsconversion")
 app.include_router(code_assist.router, prefix="/codeassist")
 app.include_router(document_manual.router, prefix="/manual")
-
+app.include_router(ui_converter.router, prefix="/uiconv") # UI 컨버터
 
 print('''
  █████╗ ██╗  ██╗██╗     ██████╗  █████╗ ████████╗ ██████╗ ██████╗ 
