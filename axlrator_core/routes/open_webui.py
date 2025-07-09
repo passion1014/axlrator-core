@@ -25,12 +25,22 @@ class ChatMessage(BaseModel):
     role: str
     content: str
 
+class ChatFileContext(BaseModel):
+    '''채팅에서 파일 컨텍스트를 전달하기 위한 데이터'''
+    file_name: str
+    context: str
+
+
 class ChatCompletionRequest(BaseModel):
+    '''채팅 요청 데이터 (OpenAI API 호환 요청 데이터 형식)'''
     model: str
     messages: List[ChatMessage]
-    temperature: Optional[float] = 0.7
+    temperature: Optional[float] = 0.8
     stream: Optional[bool] = True
+    file_contexts: Optional[List[ChatFileContext]] = None
+    metadata: Optional[dict] = None
     
+
 class CompletionRequest(BaseModel):
     model: str
     prompt: Union[str, List[str]]  # 하나 또는 여러 개의 prompt 가능
@@ -94,14 +104,20 @@ async def get_completions(
 
     model = message.model
     stream_mode = message.stream
-    # messages = message.messages
+    metadata = message.metadata or {}
+
     messages = [convert_chat_message(m) for m in message.messages]
+    file_contexts = [ctx.model_dump() for ctx in message.file_contexts] if message.file_contexts else []
+    files = metadata.get("files", [])
+    
 
     if not messages:
         raise HTTPException(status_code=400, detail="Messages cannot be empty")
     
-    thread_id = str(uuid.uuid4())
-    config = {"configurable": {"thread_id": thread_id}}
+    # 채팅 스레드 아이디 설정 없으면 생성
+    thread_id = metadata.get("chat_id") or str(uuid.uuid4())
+    # config = {"configurable": {"thread_id": thread_id}, "callbacks": [callback_handler]}
+    config = {"callbacks": [callback_handler]}
     
     if model == "chat":
         print("### DocumentManualChain 체인을 생성합니다.")
@@ -112,7 +128,7 @@ async def get_completions(
         )
         
         document_manual_chain = DocumentManualChain(index_name="manual_document", session=session)
-        result = document_manual_chain.chain_manual_query().invoke(document_manual_info, config={"callbacks": [callback_handler]})
+        result = document_manual_chain.chain_manual_query().invoke(document_manual_info, config)
         # return JSONResponse(content={"result": result})
         
         response = {
@@ -128,7 +144,7 @@ async def get_completions(
                 }
             ]
         }
-        return JSONResponse(content=response)        
+        return JSONResponse(content=response)
         
     else:
         print("### CodeChatAgent 체인을 생성합니다.")
@@ -142,6 +158,7 @@ async def get_completions(
                         content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
                         chunk = json.dumps({
                             "id": thread_id,
+                            "thread_id": thread_id,
                             "object": "chat.completion.chunk",
                             "created": int(uuid.uuid4().time_low),
                             "model": model,
@@ -157,17 +174,19 @@ async def get_completions(
             return StreamingResponse(stream_response(), media_type="text/event-stream")
 
         else:
-            result = await graph.ainvoke({"messages": messages}, config)
+            result = await graph.ainvoke({"messages": messages, "file_contexts": file_contexts, "files": files}, config)
 
-            if result["messages"]:
-                content = "".join(
-                    m.content for m in result["messages"] if isinstance(m, AIMessage) and m.content
-                )
-            else:
-                content = ""
+            # if result["messages"]:
+            #     content = "".join(
+            #         m.content for m in result["messages"] if isinstance(m, AIMessage) and m.content
+            #     )
+            # else:
+            #     content = ""
+            content = result.get("response")
             
             response = {
                 "id": thread_id,
+                "thread_id": thread_id,
                 "object": "chat.completion",
                 "created": int(uuid.uuid4().time_low),
                 "model": model,
