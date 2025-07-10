@@ -96,10 +96,10 @@ async def get_completions(
     body = await request.json()
     print(f"### /v1/chat/completions - body = {body}")
     
-    try:
-        message = ChatCompletionRequest.model_validate(body)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid request format: {e}")
+    # try:
+    message = ChatCompletionRequest.model_validate(body)
+    # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=f"Invalid request format: {e}")
     
     callback_handler = CallbackHandler()
 
