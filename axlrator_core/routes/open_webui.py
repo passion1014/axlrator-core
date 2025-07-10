@@ -34,7 +34,7 @@ class ChatFileContext(BaseModel):
 class ChatCompletionRequest(BaseModel):
     '''채팅 요청 데이터 (OpenAI API 호환 요청 데이터 형식)'''
     model: str
-    chat_type:Optional[str]
+    chat_type:Optional[str] = "02"
     messages: List[ChatMessage]
     temperature: Optional[float] = 0.8
     stream: Optional[bool] = True
