@@ -169,6 +169,42 @@ class CodeChatAgent:
             )
         return {"messages": outputs}
 
+    @staticmethod
+    def convert_to_messages(chat_prompts_raw):
+        '''
+        LangChain 모델에 사용할 수 있도록 입력된 메시지 목록을 변환합니다.
+
+        Args:
+            chat_prompts_raw (List[Union[dict, BaseMessage]]): 
+                'role'과 'content'를 포함한 딕셔너리 형태 또는 
+                LangChain의 메시지 객체(BaseMessage 하위 클래스)로 구성된 리스트.
+
+        Returns:
+            List[BaseMessage]: 
+                SystemMessage, HumanMessage, AIMessage 등 LangChain에서 사용하는 메시지 객체 리스트.
+
+        Raises:
+            ValueError: 
+                알 수 없는 역할(role)이 있는 경우 또는 지원하지 않는 타입이 포함된 경우 예외를 발생시킵니다.
+        '''
+        converted = []
+        for item in chat_prompts_raw:
+            if isinstance(item, dict):
+                role = item.get("role")
+                content = item.get("content", "")
+                if role == "system":
+                    converted.append(SystemMessage(content=content))
+                elif role == "user":
+                    converted.append(HumanMessage(content=content))
+                elif role == "assistant":
+                    converted.append(AIMessage(content=content))
+                else:
+                    raise ValueError(f"Unknown role: {role}")
+            elif isinstance(item, BaseMessage):
+                converted.append(item)
+            else:
+                raise ValueError(f"Unsupported chat_prompt type: {type(item)}")
+        return converted
 
     # Define the node that calls the model
     async def call_model_node(self,
@@ -206,6 +242,23 @@ class CodeChatAgent:
             chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
                 chat_history = chat_history
             )
+            
+        # system 메세지 뒤에 채팅이력 추가
+        messages = (state.get("messages") or [])[:-1]
+        # @todo messages 길이를 체크해서 filter 로직 추가
+
+        if chat_type in ("02") and isinstance(chat_prompts, list):
+            last_system_idx = -1
+            for idx, msg in enumerate(chat_prompts):
+                if isinstance(msg, dict) and msg.get("role") == "system":
+                    last_system_idx = idx
+            if last_system_idx >= 0:
+                if messages:
+                    chat_prompts = chat_prompts[:last_system_idx+1] + messages + chat_prompts[last_system_idx+1:]
+
+        # LangChain 모델에 사용할 수 있도록 입력된 메시지 목록을 변환
+        chat_prompts = self.convert_to_messages(chat_prompts)
+            
 
         # Stream 방식
         tokens = []
