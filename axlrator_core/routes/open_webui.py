@@ -34,7 +34,7 @@ class ChatFileContext(BaseModel):
 class ChatCompletionRequest(BaseModel):
     '''채팅 요청 데이터 (OpenAI API 호환 요청 데이터 형식)'''
     model: str
-    chat_type:Optional[str] = "02"
+    chat_type:Optional[str] = "99"
     messages: List[ChatMessage]
     temperature: Optional[float] = 0.8
     stream: Optional[bool] = True
@@ -107,6 +107,10 @@ async def get_completions(
     model = message.model
     stream_mode = message.stream
     metadata = message.metadata or {}
+    
+    if chat_type == "99":
+        print(">>>>>>>>>>> chat_type 안들어왔음!!!!")
+        chat_type = "02"
 
     messages = [convert_chat_message(m) for m in message.messages]
     file_contexts = [ctx.model_dump() for ctx in message.file_contexts] if message.file_contexts else []
