@@ -116,8 +116,7 @@ async def get_completions(
     
     # 채팅 스레드 아이디 설정 없으면 생성
     thread_id = metadata.get("chat_id") or str(uuid.uuid4())
-    # config = {"configurable": {"thread_id": thread_id}, "callbacks": [callback_handler]}
-    config = {"callbacks": [callback_handler]}
+    config = {"configurable": {"thread_id": thread_id}, "callbacks": [callback_handler]}
     
     if model == "chat":
         print("### DocumentManualChain 체인을 생성합니다.")
