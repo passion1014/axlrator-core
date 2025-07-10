@@ -34,6 +34,7 @@ class ChatFileContext(BaseModel):
 class ChatCompletionRequest(BaseModel):
     '''채팅 요청 데이터 (OpenAI API 호환 요청 데이터 형식)'''
     model: str
+    chat_type:str
     messages: List[ChatMessage]
     temperature: Optional[float] = 0.8
     stream: Optional[bool] = True
@@ -102,6 +103,7 @@ async def get_completions(
     
     callback_handler = CallbackHandler()
 
+    chat_type = message.chat_type
     model = message.model
     stream_mode = message.stream
     metadata = message.metadata or {}
@@ -146,13 +148,13 @@ async def get_completions(
         return JSONResponse(content=response)
         
     else:
-        print("### CodeChatAgent 체인을 생성합니다.")
+        print(f"### CodeChatAgent 체인을 생성합니다. stream_mode = {stream_mode}, chat_type = {chat_type}")
         agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session) 
         graph, _ = agent.get_chain(thread_id=thread_id)
 
         if stream_mode:
             async def stream_response():
-                async for event in graph.astream({"messages": messages}, config, stream_mode="custom"):
+                async for event in graph.astream({"chat_type": chat_type, "messages": messages, "file_contexts": file_contexts, "files": files}, config, stream_mode="custom"):
                     if event.content and len(event.content) > 0:
                         content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
                         chunk = json.dumps({
@@ -173,7 +175,7 @@ async def get_completions(
             return StreamingResponse(stream_response(), media_type="text/event-stream")
 
         else:
-            result = await graph.ainvoke({"messages": messages, "file_contexts": file_contexts, "files": files}, config)
+            result = await graph.ainvoke({"chat_type": chat_type, "messages": messages, "file_contexts": file_contexts, "files": files}, config)
 
             # if result["messages"]:
             #     content = "".join(
