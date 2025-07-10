@@ -91,7 +91,7 @@ class CodeChatAgent:
     def add_file_context_node(self, state: CodeChatState) -> CodeChatState:
         parts = []
 
-        if state.get("files"):
+        if isinstance(state.get("files"), list):
             for i, file in enumerate(state["files"]):
                 file_data = self.get_file_context(file["id"])
                 if file_data:
@@ -101,7 +101,7 @@ class CodeChatAgent:
                             f"<source id=\"{i+1}\" name=\"{file['name']}\">\n{_content}\n</source>"
                         )
 
-        if state.get("file_contexts"):
+        if isinstance(state.get("file_contexts"), list):
             parts.extend([
                 f"<source id=\"{i+len(parts)+1}\" name=\"context_{i+1}\">\n{ctx['context']}\n</source>"
                 # f"<source id=\"\" name=\"context_{i+1}\">\n{ctx['context']}\n</source>"
