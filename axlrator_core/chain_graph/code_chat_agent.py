@@ -285,10 +285,12 @@ class CodeChatAgent:
 
 
     def remove_source_tags_node(self, state: CodeChatState) -> CodeChatState:
-        # Remove <source ...>태그와 그 뒤에 붙은 '는', '은', '이', '가' 조사까지 함께 제거
-        cleaned = re.sub(r"<source[^>]*>[ \t]*(?:는|은|이|가)?", "", state["response"])
-        cleaned = re.sub(r"</source>", "", cleaned)
-        state["response"] = cleaned
+        # chat_type이 02인 경우만 아래 로직을 타도록
+        if state.get("chat_type") == "02":
+            # Remove <source ...>태그와 그 뒤에 붙은 '는', '은', '이', '가' 조사까지 함께 제거
+            cleaned = re.sub(r"<source[^>]*>[ \t]*(?:는|은|이|가)?", "", state["response"])
+            cleaned = re.sub(r"</source>", "", cleaned)
+            state["response"] = cleaned
         return state
 
     def get_chain(self, thread_id: str = str(uuid.uuid4()), checkpointer = None):

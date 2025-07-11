@@ -95,11 +95,7 @@ async def get_completions(
     '''
     body = await request.json()
     print(f"### /v1/chat/completions - body = {body}")
-    
-    # try:
     message = ChatCompletionRequest.model_validate(body)
-    # except Exception as e:
-    #     raise HTTPException(status_code=400, detail=f"Invalid request format: {e}")
     
     callback_handler = CallbackHandler()
 
@@ -109,7 +105,7 @@ async def get_completions(
     metadata = message.metadata or {}
     
     if chat_type == "99":
-        print(">>>>>>>>>>> chat_type 안들어왔음!!!!")
+        print(f">>>>>>>>>>> chat_type 안들어왔음!!!! >>>>>>> 값 = {body}")
         chat_type = "02"
 
     messages = [convert_chat_message(m) for m in message.messages]
