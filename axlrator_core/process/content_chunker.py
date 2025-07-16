@@ -7,7 +7,7 @@ from axlrator_core.db_model.data_repository import ChunkedDataRepository, OrgRSr
 from axlrator_core.db_model.database import get_async_session, get_session
 from axlrator_core.db_model.database_models import OrgRSrc
 from axlrator_core.process.contextual_process import generate_code_context
-from axlrator_core.process.java_parser import parse_java_file, should_skip_by_line_count
+from axlrator_core.process.java_parser import parse_java_file, check_content_to_skip
 
 class BaseChunkMeta:
     def __init__(self, chunk_content, start_line=-1, end_line=-1, type="base"):
@@ -275,7 +275,7 @@ def chunk_file(file_path) -> list[BaseChunkMeta]:
     if file_type == 'java' and "Dao.java" not in file_name:
         for chunk in chunks:
             # 함수의 라인 수를 기준으로 건너뛸지 여부를 확인
-            if not should_skip_by_line_count(function_body=chunk.chunk_content, max_lines=20):
+            if not check_content_to_skip(function_body=chunk.chunk_content, max_lines=20):
                 # 코드 요약정보 생성
                 summary = generate_code_context(chunk.chunk_content)
                 chunk.set_summary(summary)

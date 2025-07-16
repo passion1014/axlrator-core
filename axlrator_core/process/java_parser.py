@@ -291,27 +291,30 @@ if __name__ == '__main__':
 
 
 
-def should_skip_by_line_count(function_body: str, max_lines: int = 3) -> bool:
+def check_content_to_skip(function_body: str, max_lines: int = 2, min_chars: int = 50) -> bool:
     """
-    함수의 라인 수를 기준으로 건너뛸지 여부를 확인합니다.
+    함수 본문을 라인 수 또는 글자 수 기준으로 건너뛸지 여부를 판단합니다.
+
     Args:
         function_body (str): 함수 본문 문자열
-        max_lines (int): 건너뛰기 전 허용되는 최대 라인 수
-    
+        max_lines (int): 의미 있는 최대 허용 라인 수
+        min_chars (int): 최소 허용 글자 수
+
     Returns:
-        bool: 함수를 건너뛰어야 하면 True, 그렇지 않으면 False
+        bool: 스킵해야 하면 True, 그렇지 않으면 False
     """
-    # 함수 본문을 라인 단위로 분할
     lines = function_body.split("\n")
     
-    # 빈 줄과 주석만 있는 줄 제거
+    # 의미 있는 라인만 필터링 (공백/주석 제거)
     meaningful_lines = [
         line for line in lines 
         if line.strip() and not line.strip().startswith("//")
     ]
 
-    # 의미있는 라인 수가 max_lines 이하인지 확인
-    return len(meaningful_lines) <= max_lines
+    # 전체에서 공백 제거한 글자 수 기준
+    char_count = len(''.join(line.strip() for line in meaningful_lines))
+
+    return len(meaningful_lines) <= max_lines or char_count < min_chars
 
 # # Example usage:
 # if __name__ == "__main__":
