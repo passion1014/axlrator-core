@@ -15,6 +15,8 @@ def generate_code_context(chunk_content:str):
         "content": chunk_content
     }
     
-    message = summary_chain.invoke(inputs, config={"callbacks": [callback_handler]})
+    # message = summary_chain.invoke(inputs, config={"callbacks": [callback_handler]})
+    # langfuse 서버 3.x 대로 올리고 로그 트레이싱 작업 추가하기
+    message = summary_chain.invoke(inputs)
 
     return message['result']

@@ -6,6 +6,7 @@ class AugmentedChunkMetadata(BaseModel):
     function_name: str = Field(description="Name of the function")
     summary: str = Field(description="Summary of the function's purpose")
     features: list[str] = Field(description="Key features or operations")
+    related_questions: list[str] = Field(description="related questions")
     # code: str = Field(description="The original code chunk")
 
 # Augmented Chunk 파싱 함수
@@ -16,11 +17,26 @@ def parse_augmented_chunk(text: str) -> AugmentedChunkMetadata:
     # 요약 추출 - <summary> 태그 사이의 내용을 가져옴
     summary = re.search(r"<summary>(.*?)</summary>", text).group(1)
     
-    # features 태그 전체 내용 추출 
-    features = re.findall(r"<features>\s*-(.*?)\s*</features>", text, re.DOTALL)
+    # <features> 태그 블록만 추출
+    features_block = re.search(r"<features>(.*?)</features>", text, re.DOTALL)
+    if features_block:
+        features = [
+            f.strip() for f in re.findall(r"- (.*?)\n", features_block.group(1))
+        ]
+    else:
+        features = []
     
-    # features 목록에서 각 항목('-' 로 시작하는) 추출하여 공백 제거
-    features = [feature.strip() for feature in re.findall(r"- (.*?)\n", text)]
+    # related_questions 태그 전체 내용 추출
+    related_block = re.search(
+        r"<related_questions>(.*?)</related_questions>", text, re.DOTALL
+    )
+    if related_block:
+        # 각 항목('- '로 시작하는 줄)을 리스트로 추출
+        related_questions = [
+            q.strip() for q in re.findall(r"- (.*?)\n", related_block.group(1))
+        ]
+    else:
+        related_questions = []
 
     # code = re.search(r"<code>(.*?)</code>", text, re.DOTALL).group(1).strip()
 
@@ -29,5 +45,6 @@ def parse_augmented_chunk(text: str) -> AugmentedChunkMetadata:
         function_name=function_name,
         summary=summary,
         features=features,
+        related_questions=related_questions,
         # code=code
     )
