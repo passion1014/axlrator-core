@@ -39,6 +39,7 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = 0.8
     stream: Optional[bool] = True
     file_contexts: Optional[List[ChatFileContext]] = None
+    is_vectordb: Optional[bool] = True
     metadata: Optional[dict] = None
     
 
@@ -90,6 +91,7 @@ async def get_completions(
     session: AsyncSession = Depends(get_async_session)
 ):
     '''
+    chat_type : 01: 검색어 찾기, 02: 질문하기, 03: 후속질문하기, 04: 제목짓기, 05: 태그 추출
     연결 > Edit Connection >
         url = http://localhost:8001/aifred-oi/v1
     '''
@@ -149,12 +151,33 @@ async def get_completions(
         
     else:
         print(f"### CodeChatAgent 체인을 생성합니다. stream_mode = {stream_mode}, chat_type = {chat_type}")
-        agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session) 
+        agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session, config=config) 
         graph, _ = agent.get_chain(thread_id=thread_id)
+        
+        # type(file, selection, vectordb), id, name, content
+        context_datas = []
 
+        for idx, file in enumerate(files, start=1):
+            context_datas.append({
+                "id": file.get("id"),
+                "seq": idx,
+                "type": "file",
+                "name": file.get("name"),
+                "content": ""  # 조회해서 셋팅할 부분
+            })
+
+        for ctx in file_contexts:
+            context_datas.append({
+                "id": "",
+                "seq": -1,
+                "type": "selection",
+                "name": ctx.get("file_name"),
+                "content": ctx.get("context")
+            })
+    
         if stream_mode:
             async def stream_response():
-                async for event in graph.astream({"chat_type": chat_type, "messages": messages, "file_contexts": file_contexts, "files": files}, config, stream_mode="custom"):
+                async for event in graph.astream({"chat_type": chat_type, "messages": messages, "context_datas": context_datas}, config, stream_mode="custom"):
                     if event.content and len(event.content) > 0:
                         content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
                         chunk = json.dumps({
@@ -175,7 +198,7 @@ async def get_completions(
             return StreamingResponse(stream_response(), media_type="text/event-stream")
 
         else:
-            result = await graph.ainvoke({"chat_type": chat_type, "messages": messages, "file_contexts": file_contexts, "files": files}, config)
+            result = await graph.ainvoke({"chat_type": chat_type, "messages": messages, "context_datas": context_datas}, config)
 
             # if result["messages"]:
             #     content = "".join(

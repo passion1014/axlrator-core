@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from axlrator_core.utils import get_llm_model
 from axlrator_core.vectordb.bm25_search import ElasticsearchBM25
+from axlrator_core.vectordb.vector_store import get_vector_store
 
 
 
@@ -28,9 +29,9 @@ class CodeChatState(TypedDict):
     thread_id: str
     chat_type:str # 01: 검색어 찾기, 02: 질문하기, 03: 후속질문하기, 04: 제목짓기, 05: 태그 추출
     messages: Annotated[Sequence[BaseMessage], add_messages] # add_messages is a reducer
-    file_contexts: Optional[List[dict]] = None
-    files: Optional[List[dict]] = None
+    context_datas: Optional[List[dict]] = None # file_contexts, files, vectordatas를 모은 context 데이터 리스트
     context:str
+    is_vector_search: str # yes or no 벡터를 조회할지 말지 여부    
     response:str
     
 
@@ -40,7 +41,7 @@ class CodeChatAgent:
         self.langfuse = Langfuse()
         
     @classmethod
-    async def create(cls, index_name: str, session: AsyncSession) -> 'CodeChatAgent':
+    async def create(cls, index_name: str, session: AsyncSession, config) -> 'CodeChatAgent':
         # __init__ 호출
         instance = cls(index_name)
         
@@ -48,11 +49,9 @@ class CodeChatAgent:
         # instance.faissVectorDB = await get_vector_db(collection_name=index_name, session=session)
         # instance.es_bm25 = ElasticsearchBM25(index_name=index_name)
         
-        callback_handler = CallbackHandler()
-        instance.callback_handler = callback_handler
-        # instance.model = get_llm_model()
-        instance.model = get_llm_model().with_config(callbacks=[callback_handler])
-        instance.callback_handler = callback_handler
+        instance.callback_handlers = config.get("callbacks")
+        instance.model = get_llm_model()
+        # instance.model = get_llm_model().with_config(callbacks=[callback_handler])
         
         
         return instance
@@ -87,27 +86,32 @@ class CodeChatAgent:
         chat_history = "<chat_history>\n" + "\n\n".join(chat_lines) + "\n</chat_history>"
         return chat_history
 
-    # Add a context node to inject file context as a system message
-    def add_file_context_node(self, state: CodeChatState) -> CodeChatState:
-        parts = []
-
-        if isinstance(state.get("files"), list):
-            for i, file in enumerate(state["files"]):
-                file_data = self.get_file_context(file["id"])
+    def pre_process_node(self, state: CodeChatState) -> CodeChatState:
+        # context_datas의 항목중에서 type이 files인 항목들은 content를 조회해서 셋팅한다.
+        context_datas = state.get("context_datas", [])
+        for i, file in enumerate(context_datas):
+            if file.get("type") == "file":
+                file_data = self.get_file_context(file["id"])  # file db에서 조회
                 if file_data:
-                    _content = file_data.get("content", "")
+                    file["content"] = file_data.get("content", "").strip() or ""  # 조회된 content 셋팅
+        
+        state["context_datas"] = context_datas
+        return state
+
+
+    def merge_context_datas_node(self, state: CodeChatState) -> CodeChatState:
+        parts = []
+        context_datas = state.get("context_datas", [])
+        
+        if isinstance(context_datas, list):
+            for i, context_data in enumerate(context_datas):
+                if context_data:
+                    _content = context_data.get("content", "")
                     if _content.strip():
                         parts.append(
-                            f"<source id=\"{i+1}\" name=\"{file['name']}\">\n{_content}\n</source>"
+                            f"<source id=\"{i+1}\" name=\"{context_data['name']}\">\n{_content}\n</source>"
+                            # id= 셋팅되는 값을 별도의 seq로 관리하는게 좋을듯.
                         )
-
-        if isinstance(state.get("file_contexts"), list):
-            parts.extend([
-                f"<source id=\"{i+len(parts)+1}\" name=\"context_{i+1}\">\n{ctx['context']}\n</source>"
-                # f"<source id=\"\" name=\"context_{i+1}\">\n{ctx['context']}\n</source>"
-                for i, ctx in enumerate(state["file_contexts"])
-                if ctx.get("context")
-            ])
 
         if parts:
             content = "\n\n".join(parts)
@@ -231,15 +235,15 @@ class CodeChatAgent:
                 user_query = user_query
             )
         elif (chat_type == "03") :
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
+            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_03").compile(
                 chat_history = chat_history
             )
         elif (chat_type == "04") :
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
+            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_04").compile(
                 chat_history = chat_history
             )
         elif (chat_type == "05") :
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
+            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_05").compile(
                 chat_history = chat_history
             )
             
@@ -284,7 +288,7 @@ class CodeChatAgent:
             return "continue"
 
 
-    def remove_source_tags_node(self, state: CodeChatState) -> CodeChatState:
+    def clean_response_node(self, state: CodeChatState) -> CodeChatState:
         # chat_type이 02인 경우만 아래 로직을 타도록
         if state.get("chat_type") == "02":
             # Remove <source ...>태그와 그 뒤에 붙은 '는', '은', '이', '가' 조사까지 함께 제거
@@ -293,32 +297,82 @@ class CodeChatAgent:
             state["response"] = cleaned
         return state
 
+
+    # 1. file 컨텍스트가 없을 경우
+    # 2. LLM 
+
+    async def search_vector_datas_node(self, state:CodeChatState) -> CodeChatState:
+
+        index_name = "code_assist" # 추후 입력값을 받을 수 있도록 변경
+        search_text = self.get_last_user_message(state)
+
+        # 체크
+        if not search_text:
+            return state
+
+        vector_store = get_vector_store(collection_name=index_name)
+        search_results = vector_store.similarity_search_with_score(query=search_text, k=5)
+        
+        context_datas = state.get("context_datas", [])
+
+        for i, vector_data in enumerate(search_results, start=1):
+            context_datas.append({
+                "id": vector_data["id"],
+                "seq": -1,
+                "type": "vectordb",
+                "name": f"vectordb_{i}", # 이부분 수정필요. 조회된 vector 조각이 어디서 왔는지 확인이 필요함
+                "content": vector_data.get("content", "")
+            })
+
+        state["context_datas"] = context_datas
+        
+        return state
+
+
+    def check_need_vector_search_node(self, state: CodeChatState) -> CodeChatState:
+        query = self.get_last_user_message(state)
+        prompt = f"다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해줘. 필요하면 'yes', 아니면 'no'만 답해줘:\n\n{query}"
+        # result = await self.model.ainvoke([HumanMessage(content=prompt)])
+        result = self.model.invoke([HumanMessage(content=prompt)])
+        answer = result.content.strip().lower()
+        
+        decision = "yes" if "yes" in answer else "no"
+        state["is_vector_search"] = decision
+            
+        return state
+
+    def route_based_on_vector_need(self, state: CodeChatState) -> str:
+        return state.get("is_vector_search", "no")
+
+
     def get_chain(self, thread_id: str = str(uuid.uuid4()), checkpointer = None):
         # tools = [self.get_weather]
         # self.model = self.model.bind_tools(tools)
         
         graph = StateGraph(CodeChatState)
-        graph.add_node("add_file_context", self.add_file_context_node)
-        # graph.add_node("tools", self.tool_node)
-        graph.add_node("agent", self.call_model_node)
-        graph.add_node("clean_response", self.remove_source_tags_node)
+        
+        graph.add_node("pre_process", self.pre_process_node)
+        graph.add_node("check_need_vector_search", self.check_need_vector_search_node)
+        graph.add_node("merge_context_datas", self.merge_context_datas_node)
+        graph.add_node("search_vector_datas", self.search_vector_datas_node)
+        graph.add_node("call_model", self.call_model_node)
+        graph.add_node("clean_response", self.clean_response_node)
 
-        graph.set_entry_point("add_file_context")
-        graph.add_edge("add_file_context", "agent")
-        graph.add_edge("agent", "clean_response")
+        graph.set_entry_point("pre_process")
+        graph.add_edge("pre_process", "check_need_vector_search")
+        graph.add_conditional_edges(
+            "check_need_vector_search",
+            self.route_based_on_vector_need,
+            {
+                "yes": "search_vector_datas",
+                "no": "merge_context_datas"
+            }
+        )
+        graph.add_edge("search_vector_datas", "merge_context_datas")
+        graph.add_edge("merge_context_datas", "call_model")
+        graph.add_edge("call_model", "clean_response")
         graph.add_edge("clean_response", END)
-        # graph.add_edge("agent", END)
-
-        # # We now add a conditional edge
-        # graph.add_conditional_edges(
-        #     "agent",
-        #     self.should_continue,
-        #     {
-        #         "continue": "tools",
-        #         "end": END,
-        #     },
-        # )
-        # graph.add_edge("tools", "agent")
+        # graph.add_edge("tools", "call_model")
 
         return graph.compile(checkpointer=checkpointer), thread_id
 
