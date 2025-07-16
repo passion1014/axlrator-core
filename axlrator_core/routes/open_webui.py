@@ -112,7 +112,7 @@ async def get_completions(
 
     messages = [convert_chat_message(m) for m in message.messages]
     file_contexts = [ctx.model_dump() for ctx in message.file_contexts] if message.file_contexts else []
-    files = metadata.get("files", [])
+    files = metadata.get("files") or []
     
 
     if not messages:
