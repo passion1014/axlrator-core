@@ -304,6 +304,14 @@ class ChunkedDataRepository:
         stmt = select(ChunkedData).where(ChunkedData.id == id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+    
+    async def get_by_resrc_id_and_chunk_id(self, org_resrc_id:int, id:int) -> ChunkedData:
+        """
+        content를 포함하는 ChunkedData 목록을 조회합니다.
+        """
+        stmt = select(ChunkedData).where(ChunkedData.org_resrc_id == org_resrc_id, ChunkedData.id == id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def create_chunked_data(
         self, 

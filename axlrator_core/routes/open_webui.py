@@ -15,6 +15,8 @@ from axlrator_core.chain_graph.code_chat_agent import CodeChatAgent
 from axlrator_core.chain_graph.document_manual_chain import DocumentManualChain
 from axlrator_core.dataclasses.code_assist_data import CodeAssistInfo
 from axlrator_core.dataclasses.document_manual_data import DocumentManualInfo
+from axlrator_core.db_model.axlrui_database import get_axlr_session
+from axlrator_core.db_model.axlrui_database_models import Chat
 from axlrator_core.db_model.database import get_async_session
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langfuse.callback import CallbackHandler
@@ -46,6 +48,7 @@ class ChatCompletionRequest(BaseModel):
 class ChatCompleted(BaseModel):
     '''채팅 요청 데이터 (OpenAI API 호환 요청 데이터 형식)'''
     user_id:str
+    chat_id:str
     messages: List[dict]
     sources: List[dict]
 
@@ -117,6 +120,9 @@ async def post_v1_chat_completions(
         print(f">>>>>>>>>>> chat_type 안들어왔음!!!! >>>>>>> 값 = {body}")
         chat_type = "02"
 
+
+    user_id = metadata.get("user_id") or ""
+    message_id = metadata.get("message_id") or ""
     messages = [convert_chat_message(m) for m in message.messages]
     file_contexts = [ctx.model_dump() for ctx in message.file_contexts] if message.file_contexts else []
     files = metadata.get("files") or []
@@ -134,11 +140,12 @@ async def post_v1_chat_completions(
 
         document_manual_info = DocumentManualInfo(
             indexname="manual_document",
-            question=body['messages'][-1]['content']
+            question=body['messages'][-1]['content'],
+            metadata=metadata
         )
         
         document_manual_chain = DocumentManualChain(index_name="manual_document", session=session)
-        result = document_manual_chain.chain_manual_query().invoke(document_manual_info, config)
+        result = await document_manual_chain.chain_manual_query().ainvoke(document_manual_info, config)
         # return JSONResponse(content={"result": result})
         
         response = {
@@ -184,7 +191,7 @@ async def post_v1_chat_completions(
     
         if stream_mode:
             async def stream_response():
-                async for event in graph.astream({"chat_type": chat_type, "messages": messages, "context_datas": context_datas}, config, stream_mode="custom"):
+                async for event in graph.astream({"chat_type": chat_type, "messages": messages, "context_datas": context_datas, "metadata": metadata}, config, stream_mode="custom"):
                     if event.content and len(event.content) > 0:
                         content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
                         chunk = json.dumps({
@@ -205,7 +212,7 @@ async def post_v1_chat_completions(
             return StreamingResponse(stream_response(), media_type="text/event-stream")
 
         else:
-            result = await graph.ainvoke({"chat_type": chat_type, "messages": messages, "context_datas": context_datas}, config)
+            result = await graph.ainvoke({"chat_type": chat_type, "messages": messages, "context_datas": context_datas, "metadata": metadata}, config)
 
             # if result["messages"]:
             #     content = "".join(
@@ -238,11 +245,61 @@ async def post_v1_chat_completed(
     session: AsyncSession = Depends(get_async_session)
 ):
     body = await request.json()
-    print(f"### /v1/chat/completions - body = {body}")
-    message = ChatCompleted.model_validate(body)    
-    callback_handler = CallbackHandler()    
+    print(f"### /v1/chat/completed - body = {body}")
+    
+    message = ChatCompleted.model_validate(body)
+    chat_id = message.chat_id
+    
+    user_id = '' # 1572da60-4459-40f6-8a81-c524312e3c67
+    resrc_org_id = '' # 3f3e4b80-295f-4654-beae-bc69dc9b78cf
+    resrc_name = '' # 이용약관.txt    
+    context_datas = []
+
+    
+    with get_axlr_session() as session:
+        # 조회
+        chat_row = session.query(Chat).filter(Chat.id == chat_id).first()
+        if chat_row and chat_row.chat:
+            try:
+                chat_data = chat_row.chat
+
+                # content가 문자열인지 확인하고, 인코딩 문제 예방을 위한 보정
+                if isinstance(chat_data, str):
+                    import json
+                    chat_data = json.loads(chat_data)
+                if isinstance(chat_data, bytes):
+                    chat_data = json.loads(chat_data.decode("utf-8", errors="replace"))
+                elif not isinstance(chat_data, dict):
+                    chat_data = {}
+
+
+                # 메시지에 소스 추가
+                message_id = message.messages[0]["id"] if message.messages else None
+                if message_id and isinstance(chat_data, dict):
+                    # 메시지 목록 가져오기
+                    chat_messages = chat_data.get("history", {}).get("messages", {})
+                    if message_id in chat_messages:
+                        # 해당 메시지에 sources가 없으면 초기화
+                        chat_messages[message_id].setdefault("sources", [])
+                        # 예시 신규 소스 추가 (여기서 원하는 source dict로 교체하세요)
+                        
+                        chat_messages[message_id]["sources"].append(new_source)
+
+
+                return chat_data
+            except Exception as e:
+                # 로깅을 추가하고 None 반환
+                print(f"Error parsing file data: {e}")
+                return None
+    return None
+
     
     '''
+    user_id:str
+    messages: List[dict]
+    sources: List[dict]
+
+    
     # request
     {
         "user_id" : 값
@@ -257,71 +314,8 @@ async def post_v1_chat_completed(
         "sources": [추가] <——
     }
     '''
-    import copy
 
-    # 템플릿 선언
-    base_result_template = {
-        "source": {
-            "id": "",
-            "meta": {
-                "name": "",
-                "content_type": "",
-                "size": -1,
-                "data": {},
-                "collection_name": ""
-            },
-            "created_at": -1,
-            "updated_at": -1,
-            "collection": {
-                "name": "",
-                "description": ""
-            },
-            "name": "",
-            "description": "",
-            "type": "",
-            "status": ""
-        },
-        "document": [""],
-        "metadata": [
-            {
-                "created_by": "",
-                "creationdate": "",
-                "creator": "",
-                "embedding_config": "",
-                "file_id": "",
-                "hash": "",
-                "moddate": "",
-                "name": "",
-                "page": -1,
-                "page_label": "",
-                "producer": "",
-                "source": "",
-                "start_index": -1,
-                "title": "",
-                "total_pages": 1
-            }
-        ],
-        "distances": [0.0]
-    }
 
-    # 새로운 데이터 채워넣기
-    def build_result(source_id: str, doc_text: str, distance: float) -> dict:
-        result = copy.deepcopy(base_result_template)
-        
-        result["source"]["id"] = source_id
-        result["source"]["meta"]["name"] = "example.txt"
-        result["document"] = [doc_text]
-        result["metadata"][0]["file_id"] = source_id
-        result["distances"] = [distance]
-        
-        return result
-
-    # 예시
-    results = []
-    results.append(build_result("file-123", "이 문서는 예시입니다.", 0.7143))
-    
-    
-    pass
 
 @router.post("/v1/completions")
 async def call_api_autocompletion(

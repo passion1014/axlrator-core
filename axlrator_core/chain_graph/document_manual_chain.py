@@ -1,8 +1,9 @@
 from langchain_core.runnables import RunnableConfig
+from langchain_core.messages import HumanMessage
 from axlrator_core.chain_graph.agent_state import AgentState, CodeAssistAutoCompletion, CodeAssistChatState, CodeAssistState
 from axlrator_core.common.code_assist_utils import extract_code_blocks
 from axlrator_core.common.string_utils import is_table_name
-from axlrator_core.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository
+from axlrator_core.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository, ChunkedDataRepository
 from axlrator_core.process.reranker import get_reranker
 from langgraph.graph import StateGraph, END
 from axlrator_core.utils import get_llm_model
@@ -10,6 +11,7 @@ from axlrator_core.vectordb.bm25_search import ElasticsearchBM25
 from langfuse.callback import CallbackHandler
 from langgraph.types import StreamWriter
 from langfuse import Langfuse
+
 
 import logging
 
@@ -24,13 +26,24 @@ class DocumentManualChain:
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
         self.langfuse = Langfuse()
 
-    def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
+    async def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
-        # VectorDB / BM25 조회
+        # VectorDB 조회
         vector_store = get_vector_store(collection_name=self.index_name)
-        semantic_results = vector_store.similarity_search_with_score(query=question, k=10) 
+        semantic_results = vector_store.similarity_search_with_score(query=question, k=5) 
+
+        # 조회된 청크가 작을 경우 체크하여 보완한다.
+        for doc in semantic_results:
+            _content = doc.get("content")
+            _chunked_data_id = doc.get("chunked_data_id")
+            _doc_id = doc.get("doc_id")
+            if _content and _chunked_data_id:
+                expanded_content = await self.check_need_next_chunk(query=question, doc_id=_doc_id, chunked_data_id=_chunked_data_id, context=_content)
+                doc["content"] = expanded_content
+
         
+        # BM25 조회
         bm25_results = self.es_bm25.search(query=question, k=10) # elasticsearch 조회
         
         logging.info("## Step1. Semantic Results: %s", semantic_results)
@@ -39,17 +52,18 @@ class DocumentManualChain:
         # VectorDB의 doc_id, original_index값 추출
         ranked_chunk_ids = [
             (
-                result['id'], 
-                result['id']
+                result['id'],
+                result.get('metadata', {}).get('chunked_data_id', None) # chunked_data_id
             )
             for result in semantic_results
+            if 'id' in result
         ]
 
         # BM25조회 결과의 doc_id, original_index값 추출
         ranked_bm25_chunk_ids = [
             (
                 result['doc_id'], 
-                result['original_index']
+                result['original_index'] # chunked_data_id
             ) 
             for result in bm25_results
         ]
@@ -83,7 +97,7 @@ class DocumentManualChain:
         semantic_docid_to_content = {
             (
                 result['id'], 
-                result['id']
+                result.get('metadata', {}).get('chunked_data_id', None) # chunked_data_id
             ): result['content']
             for result in semantic_results
         }
@@ -100,6 +114,11 @@ class DocumentManualChain:
             'score': chunk_id_to_score[chunk_id],
             'from_semantic': chunk_id in ranked_chunk_ids,
             'from_bm25': chunk_id in ranked_bm25_chunk_ids,
+            'chunked_data_id': (
+                chunk_id[1] if chunk_id in ranked_chunk_ids
+                else chunk_id[1] if chunk_id in ranked_bm25_chunk_ids
+                else ''
+            ),
             'content': (
                 semantic_docid_to_content.get(chunk_id, '') if chunk_id in ranked_chunk_ids
                 else bm25_docid_to_value.get(chunk_id, '') if chunk_id in ranked_bm25_chunk_ids
@@ -191,7 +210,61 @@ class DocumentManualChain:
         chain.with_config(callbacks=[CallbackHandler()])
         
         return chain
-    
+
+    async def check_need_next_chunk(self, query: str, doc_id:str, chunked_data_id:int, context: str):
+        prompt = f"""The following context is from a vector database. Decide if it is enough to answer the question.
+
+- If earlier context is needed: [front]  
+- If later context is needed: [back]  
+- If both are needed: [both]  
+- If the context is enough: [enough]
+
+Context:
+{context}
+
+Question:
+{query}
+
+Answer with one of: [front], [back], [both], [enough]
+"""
+        result = self.model.invoke([HumanMessage(content=prompt)])
+        answer = result.content.strip()
+        answer = answer.lower()
+
+        chunkedDataRepository = ChunkedDataRepository(session=self.db_session)
+
+        iDoc_id = int(doc_id)
+        iChunked_data_id = int(chunked_data_id)
+        
+        if "front" in answer:
+            before_chunk_id = iChunked_data_id - 1
+            before_data = await chunkedDataRepository.get_by_resrc_id_and_chunk_id(org_resrc_id=iDoc_id, id=before_chunk_id)
+            before = before_data.content if before_data and before_data.content else ""
+            context = f"{before}\n{context}"
+            return context
+            
+        elif "back" in answer:
+            after_chunk_id = iChunked_data_id + 1
+            after_data = await chunkedDataRepository.get_by_resrc_id_and_chunk_id(org_resrc_id=iDoc_id, id=after_chunk_id)
+            after = after_data.content if after_data and after_data.content else ""
+            context = f"{context}\n{after}"
+            return context
+        
+        elif "both" in answer:
+            after_chunk_id = iChunked_data_id + 1
+            after_data = await chunkedDataRepository.get_by_resrc_id_and_chunk_id(org_resrc_id=iDoc_id, id=after_chunk_id)
+
+            before_chunk_id = iChunked_data_id - 1
+            before_data = await chunkedDataRepository.get_by_resrc_id_and_chunk_id(org_resrc_id=iDoc_id, id=before_chunk_id)
+
+            before = before_data.content if before_data and before_data.content else ""
+            after = after_data.content if after_data and after_data.content else ""
+            context = f"{before}\n{context}\n{after}"
+            return context
+
+        return context
+
+
 
 
 # Helper function: combine_documents_with_relevance
@@ -270,4 +343,3 @@ def combine_documents_with_next_content(docs) -> list:
         merged_chunks.append(buffer)
 
     return merged_chunks
-

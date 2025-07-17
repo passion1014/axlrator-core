@@ -17,3 +17,25 @@ class File(Base):
     updated_at = Column(BigInteger, nullable=True, comment="업데이트 일시 (UNIX Timestamp)")
     path = Column(Text, nullable=True, comment="파일 경로")
     access_control = Column(JSON, nullable=True, comment="접근 제어 정보")
+    
+    
+class Chat(Base):
+    '''
+    open_webui/models/chats.py 파일과 내용이 일치해야 함
+    '''
+    __tablename__ = "chat"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String)
+    title = Column(Text)
+    chat = Column(JSON)
+
+    created_at = Column(BigInteger)
+    updated_at = Column(BigInteger)
+
+    share_id = Column(Text, unique=True, nullable=True)
+    archived = Column(Boolean, default=False)
+    pinned = Column(Boolean, default=False, nullable=True)
+
+    meta = Column(JSON, server_default="{}")
+    folder_id = Column(Text, nullable=True)
