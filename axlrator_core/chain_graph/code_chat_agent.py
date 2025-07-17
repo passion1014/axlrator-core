@@ -314,7 +314,7 @@ class CodeChatAgent:
             return state
 
         vector_store = get_vector_store(collection_name=index_name)
-        search_results = vector_store.similarity_search_with_score(query=search_text, k=5)
+        search_results = vector_store.similarity_search_with_score(query=search_text, k=3)
         
         context_datas = state.get("context_datas", [])
 

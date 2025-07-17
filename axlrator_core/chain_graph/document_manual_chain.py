@@ -32,7 +32,7 @@ class DocumentManualChain:
 
         # VectorDB 조회
         vector_store = get_vector_store(collection_name=self.index_name)
-        semantic_results = vector_store.similarity_search_with_score(query=question, k=5) 
+        semantic_results = vector_store.similarity_search_with_score(query=question, k=3) 
 
 
         # 조회된 청크가 작을 경우 체크하여 보완한다.
@@ -56,7 +56,7 @@ class DocumentManualChain:
 
         
         # BM25 조회
-        bm25_results = self.es_bm25.search(query=question, k=10) # elasticsearch 조회
+        bm25_results = self.es_bm25.search(query=question, k=2) # elasticsearch 조회
         
         logging.info("## Step1. Semantic Results: %s", semantic_results)
         logging.info("## Step1. BM25 Results: %s", bm25_results)
