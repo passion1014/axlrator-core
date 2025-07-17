@@ -375,7 +375,7 @@ async def get_models(request: Request):
                 "owned_by": "aifred"
             },
             {
-                "id": "chat",
+                "id": "AXLR-Chat",
                 "object": "model",
                 "created": 1686935002,
                 "owned_by": "aifred"
