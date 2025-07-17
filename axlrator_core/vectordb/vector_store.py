@@ -75,6 +75,8 @@ class PyMilvusVectorStore:
             }
             data.append(entry)
 
+        print(f"##### vector db에 저장할 데이터 = {data}\n\n\n")
+        
         result_dict = self.client.insert(
             collection_name=self.collection_name,
             data=data
