@@ -1,4 +1,3 @@
-
 from uuid import uuid4
 from axlrator_core.db_model.data_repository import ChunkedDataRepository, OrgRSrcRepository
 from axlrator_core.db_model.database import get_async_session
@@ -37,16 +36,16 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
     # 각각의 ChunkedData에 대해 처리
     documents = []
     for data, uuid in zip(chunked_data_list, uuids):
-        metadata = {"id": uuid
-                    , "doc_id": data.org_resrc_id
-                    , "seq": data.seq
-                    , **(data.document_metadata if isinstance(data.document_metadata, dict) else {})}
-        
-        documents.append(Document(page_content=data.content, metadata=metadata))
-        
-        if hasattr(data, "context_chunk") and data.context_chunk:
-            summary_metadata = {**metadata, "type": "context_chunk"}
-            documents.append(Document(page_content=data.context_chunk, metadata=summary_metadata))
+        metadata = {
+            "id": uuid,
+            "doc_id": data.org_resrc_id,
+            "seq": data.seq,
+            **(data.document_metadata if isinstance(data.document_metadata, dict) else {})
+        }
+
+        page_content = data.context_chunk if hasattr(data, "context_chunk") and data.context_chunk else data.content
+        metadata["type"] = "summary" if hasattr(data, "context_chunk") and data.context_chunk else "original"
+        documents.append(Document(page_content=page_content, metadata=metadata))
     
     # vector_store에 저장
     vector_dict = vector_store.add_documents(docs=documents)
