@@ -330,70 +330,10 @@ class CodeChatAgent:
 
         # webui에 인용정보를 보여주기 위하여 저장한다
         if search_results:
-            self._store_vector_sources(state, search_results, context_datas)
+            store_vector_sources(state.get("metadata"), search_results, context_datas)
         
         return state
 
-    def _store_vector_sources(self, state: 'CodeChatState', search_results, context_datas):
-        metadata = state.get("metadata")
-        chat_type = metadata.get("chat_type") if metadata else None
-        user_id = metadata.get("user_id") if metadata else None
-        chat_id = metadata.get("chat_id") if metadata else None
-        message_id = metadata.get("message_id") if metadata else None
-        
-        print(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}, chat_type: {chat_type}")
-        
-        if user_id and chat_id and message_id:
-            doc_id = search_results[0].get("doc_id", "")
-            contents = [item.get("content", "") for item in context_datas if isinstance(item.get("content", ""), str)]
-            source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
-
-            with get_axlr_session() as session:
-                # 조회
-                chat_row = session.query(Chat).filter(Chat.id == chat_id).first()
-                if chat_row and chat_row.chat:
-                    try:
-                        chat_data = chat_row.chat
-
-                        # content가 문자열인지 확인하고, 인코딩 문제 예방을 위한 보정
-                        if isinstance(chat_data, str):
-                            chat_data = json.loads(chat_data)
-                        if isinstance(chat_data, bytes):
-                            chat_data = json.loads(chat_data.decode("utf-8", errors="replace"))
-                        elif not isinstance(chat_data, dict):
-                            chat_data = {}
-
-                        # 메시지에 소스 추가
-                        _history_messages = chat_data.get("history", {}).get("messages", {})
-                        _history_msg = _history_messages.get(message_id)
-                        
-                        if _history_msg:
-                            _history_msg.setdefault("sources", []).append(source)
-                        
-                        if message_id and isinstance(chat_data, dict):
-                            # 메시지 목록 가져오기
-                            _messages = chat_data.get("messages", [])
-                            for msg in _messages:
-                                if msg.get("id") == message_id:
-                                    # sources에 소스 추가
-                                    msg.setdefault("sources", [])
-                                    msg["sources"].append(source)
-                                    
-                                    # 파일목록에 소스 추가
-                                    chat_data.setdefault("files", []).append(source.get("source"))
-
-                                    # 업데이트된 chat_data 내용을 DB update
-                                    chat_row.chat = chat_data
-                                    flag_modified(chat_row, "chat")  # 변경 감지 강제
-                                    session.flush()
-                                    session.commit()
-                                    break
-                                
-                        return chat_data
-                    except Exception as e:
-                        # 로깅을 추가하고 None 반환
-                        print(f"Error parsing file data: {e}")
-                        return None
 
     def check_need_vector_search_node(self, state: CodeChatState) -> CodeChatState:
         query = self.get_last_user_message(state)
@@ -442,6 +382,66 @@ class CodeChatAgent:
 
         return graph.compile(checkpointer=checkpointer), thread_id
 
+def store_vector_sources(metadata, search_results, context_datas):
+    # metadata = state.get("metadata")
+    chat_type = metadata.get("chat_type") if metadata else None
+    user_id = metadata.get("user_id") if metadata else None
+    chat_id = metadata.get("chat_id") if metadata else None
+    message_id = metadata.get("message_id") if metadata else None
+    
+    print(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}, chat_type: {chat_type}")
+    
+    if user_id and chat_id and message_id:
+        doc_id = search_results[0].get("doc_id", "")
+        contents = [item.get("content", "") for item in context_datas if isinstance(item.get("content", ""), str)]
+        source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
+
+        with get_axlr_session() as session:
+            # 조회
+            chat_row = session.query(Chat).filter(Chat.id == chat_id).first()
+            if chat_row and chat_row.chat:
+                try:
+                    chat_data = chat_row.chat
+
+                    # content가 문자열인지 확인하고, 인코딩 문제 예방을 위한 보정
+                    if isinstance(chat_data, str):
+                        chat_data = json.loads(chat_data)
+                    if isinstance(chat_data, bytes):
+                        chat_data = json.loads(chat_data.decode("utf-8", errors="replace"))
+                    elif not isinstance(chat_data, dict):
+                        chat_data = {}
+
+                    # 메시지에 소스 추가
+                    _history_messages = chat_data.get("history", {}).get("messages", {})
+                    _history_msg = _history_messages.get(message_id)
+                    
+                    if _history_msg:
+                        _history_msg.setdefault("sources", []).append(source)
+                    
+                    if message_id and isinstance(chat_data, dict):
+                        # 메시지 목록 가져오기
+                        _messages = chat_data.get("messages", [])
+                        for msg in _messages:
+                            if msg.get("id") == message_id:
+                                # sources에 소스 추가
+                                msg.setdefault("sources", [])
+                                msg["sources"].append(source)
+                                
+                                # 파일목록에 소스 추가
+                                chat_data.setdefault("files", []).append(source.get("source"))
+
+                                # 업데이트된 chat_data 내용을 DB update
+                                chat_row.chat = chat_data
+                                flag_modified(chat_row, "chat")  # 변경 감지 강제
+                                session.flush()
+                                session.commit()
+                                break
+                            
+                    return chat_data
+                except Exception as e:
+                    # 로깅을 추가하고 None 반환
+                    print(f"Error parsing file data: {e}")
+                    return None
 
 def make_source_item(user_id:str, resrc_org_id:str, resrc_name:str, context_datas:list) -> dict:
     created_at = int(time.time())

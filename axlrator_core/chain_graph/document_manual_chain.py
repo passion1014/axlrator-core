@@ -1,6 +1,7 @@
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage
 from axlrator_core.chain_graph.agent_state import AgentState, CodeAssistAutoCompletion, CodeAssistChatState, CodeAssistState
+from axlrator_core.chain_graph.code_chat_agent import store_vector_sources
 from axlrator_core.common.code_assist_utils import extract_code_blocks
 from axlrator_core.common.string_utils import is_table_name
 from axlrator_core.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository, ChunkedDataRepository
@@ -33,6 +34,7 @@ class DocumentManualChain:
         vector_store = get_vector_store(collection_name=self.index_name)
         semantic_results = vector_store.similarity_search_with_score(query=question, k=5) 
 
+
         # 조회된 청크가 작을 경우 체크하여 보완한다.
         for doc in semantic_results:
             _content = doc.get("content")
@@ -41,6 +43,16 @@ class DocumentManualChain:
             if _content and _chunked_data_id:
                 expanded_content = await self.check_need_next_chunk(query=question, doc_id=_doc_id, chunked_data_id=_chunked_data_id, context=_content)
                 doc["content"] = expanded_content
+
+
+        # webui에 인용정보를 보여주기 위하여 저장한다
+        # 현재는 bm25를 조회하지 않으므로 여기서 셋팅, 추후는 bm25데이터도 고려해서 셋팅해야 함
+                # chat_type = metadata.get("chat_type") if metadata else None
+                # user_id = metadata.get("user_id") if metadata else None
+                # chat_id = metadata.get("chat_id") if metadata else None
+                # message_id = metadata.get("message_id") if metadata else None
+        if semantic_results:
+            store_vector_sources(state.get("metadata"), semantic_results, semantic_results)
 
         
         # BM25 조회
