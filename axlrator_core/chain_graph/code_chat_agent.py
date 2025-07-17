@@ -336,11 +336,12 @@ class CodeChatAgent:
 
     def _store_vector_sources(self, state: 'CodeChatState', search_results, context_datas):
         metadata = state.get("metadata")
+        chat_type = metadata.get("chat_type") if metadata else None
         user_id = metadata.get("user_id") if metadata else None
         chat_id = metadata.get("chat_id") if metadata else None
         message_id = metadata.get("message_id") if metadata else None
         
-        print(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}")
+        print(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}, chat_type: {chat_type}")
         
         if user_id and chat_id and message_id:
             doc_id = search_results[0].get("doc_id", "")
@@ -363,7 +364,12 @@ class CodeChatAgent:
                             chat_data = {}
 
                         # 메시지에 소스 추가
-                        # message_id = message.messages[0]["id"] if message.messages else None
+                        _history_messages = chat_data.get("history", {}).get("messages", {})
+                        _history_msg = _history_messages.get(message_id)
+                        
+                        if _history_msg:
+                            _history_msg.setdefault("sources", []).append(source)
+                        
                         if message_id and isinstance(chat_data, dict):
                             # 메시지 목록 가져오기
                             _messages = chat_data.get("messages", [])
@@ -382,6 +388,7 @@ class CodeChatAgent:
                                     session.flush()
                                     session.commit()
                                     break
+                                
                         return chat_data
                     except Exception as e:
                         # 로깅을 추가하고 None 반환

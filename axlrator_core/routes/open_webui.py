@@ -119,7 +119,7 @@ async def post_v1_chat_completions(
     if chat_type == "99":
         print(f">>>>>>>>>>> chat_type 안들어왔음!!!! >>>>>>> 값 = {body}")
         chat_type = "02"
-
+    metadata['chat_type'] = chat_type
 
     user_id = metadata.get("user_id") or ""
     message_id = metadata.get("message_id") or ""
