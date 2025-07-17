@@ -68,10 +68,11 @@ class PyMilvusVectorStore:
         # data = [{"content": text, "embedding": embedding} for text, embedding in zip(texts, embeddings)]
         data = []
         for doc, embedding in zip(docs, embeddings):
+            metadata = {k: v for k, v in (doc.metadata or {}).items() if k != "id"}  # id 제거 - milvus정적필드와 충돌남
             entry = {
                 "content": doc.page_content,
                 "embedding": embedding,
-                **(doc.metadata or {})  # Include metadata as dynamic fields
+                **metadata  # Include metadata as dynamic fields
             }
             print(f"##### vector db에 저장할 meta data = {doc.metadata}\n\n\n")
             data.append(entry)
