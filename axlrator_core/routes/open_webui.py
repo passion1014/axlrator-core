@@ -47,10 +47,9 @@ class ChatCompletionRequest(BaseModel):
 
 class ChatCompleted(BaseModel):
     '''채팅 요청 데이터 (OpenAI API 호환 요청 데이터 형식)'''
-    user_id:str
     chat_id:str
-    messages: List[dict]
-    sources: List[dict]
+    messages: Optional[List[dict]] = None
+    sources: Optional[List[dict]] = None
 
 
 class CompletionRequest(BaseModel):
@@ -250,11 +249,6 @@ async def post_v1_chat_completed(
     message = ChatCompleted.model_validate(body)
     chat_id = message.chat_id
     
-    user_id = '' # 1572da60-4459-40f6-8a81-c524312e3c67
-    resrc_org_id = '' # 3f3e4b80-295f-4654-beae-bc69dc9b78cf
-    resrc_name = '' # 이용약관.txt    
-    context_datas = []
-
     chat_data = {}
     with get_axlr_session() as session:
         # 조회
