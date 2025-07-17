@@ -134,7 +134,7 @@ async def post_v1_chat_completions(
     thread_id = metadata.get("chat_id") or str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}, "callbacks": [callback_handler]}
     
-    if model == "chat":
+    if model == "AXLR-Chat":
         print("### DocumentManualChain 체인을 생성합니다.")
 
         document_manual_info = DocumentManualInfo(
