@@ -39,7 +39,6 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
         metadata = {
             "id": uuid,
             "doc_id": data.org_resrc_id,
-            "seq": data.seq,
             "chunked_data_id": data.id,
             **(data.document_metadata if isinstance(data.document_metadata, dict) else {})
         }
