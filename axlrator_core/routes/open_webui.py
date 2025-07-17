@@ -255,7 +255,7 @@ async def post_v1_chat_completed(
     resrc_name = '' # 이용약관.txt    
     context_datas = []
 
-    
+    chat_data = {}
     with get_axlr_session() as session:
         # 조회
         chat_row = session.query(Chat).filter(Chat.id == chat_id).first()
@@ -276,7 +276,7 @@ async def post_v1_chat_completed(
                 # 로깅을 추가하고 None 반환
                 print(f"Error parsing file data: {e}")
                 return None
-    return None
+    return chat_data
 
     
     '''
