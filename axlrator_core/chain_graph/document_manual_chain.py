@@ -101,8 +101,8 @@ class DocumentManualChain:
             'from_semantic': chunk_id in ranked_chunk_ids,
             'from_bm25': chunk_id in ranked_bm25_chunk_ids,
             'content': (
-                semantic_docid_to_content.get(chunk_id, 'Content not found') if chunk_id in ranked_chunk_ids
-                else bm25_docid_to_value.get(chunk_id, 'Value not found') if chunk_id in ranked_bm25_chunk_ids
+                semantic_docid_to_content.get(chunk_id, '') if chunk_id in ranked_chunk_ids
+                else bm25_docid_to_value.get(chunk_id, '') if chunk_id in ranked_bm25_chunk_ids
                 else ''
             )
         } for chunk_id in sorted_chunk_ids[:k]]

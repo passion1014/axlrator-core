@@ -41,7 +41,9 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
                     , "doc_id": data.org_resrc_id
                     , "seq": data.seq
                     , **(data.document_metadata if isinstance(data.document_metadata, dict) else {})}
+        
         documents.append(Document(page_content=data.content, metadata=metadata))
+        
         if hasattr(data, "context_chunk") and data.context_chunk:
             summary_metadata = {**metadata, "type": "context_chunk"}
             documents.append(Document(page_content=data.context_chunk, metadata=summary_metadata))

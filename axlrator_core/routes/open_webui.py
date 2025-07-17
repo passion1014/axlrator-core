@@ -41,7 +41,14 @@ class ChatCompletionRequest(BaseModel):
     file_contexts: Optional[List[ChatFileContext]] = None
     is_vectordb: Optional[bool] = True
     metadata: Optional[dict] = None
-    
+
+
+class ChatCompleted(BaseModel):
+    '''채팅 요청 데이터 (OpenAI API 호환 요청 데이터 형식)'''
+    user_id:str
+    messages: List[dict]
+    sources: List[dict]
+
 
 class CompletionRequest(BaseModel):
     model: str
@@ -86,7 +93,7 @@ class CompletionResponse(BaseModel):
 
 
 @router.post("/v1/chat/completions", response_class=JSONResponse)
-async def get_completions(
+async def post_v1_chat_completions(
     request: Request,
     session: AsyncSession = Depends(get_async_session)
 ):
@@ -224,6 +231,97 @@ async def get_completions(
             }
             return JSONResponse(content=response)
 
+
+@router.post("/v1/chat/completed", response_class=JSONResponse)
+async def post_v1_chat_completed(
+    request: Request,
+    session: AsyncSession = Depends(get_async_session)
+):
+    body = await request.json()
+    print(f"### /v1/chat/completions - body = {body}")
+    message = ChatCompleted.model_validate(body)    
+    callback_handler = CallbackHandler()    
+    
+    '''
+    # request
+    {
+        "user_id" : 값
+        , "messages"[{"id" : 값}]
+    }
+
+    # response
+    {
+        "user_id" : "-----"
+        , "messages"[{"id" : "——"}]
+
+        "sources": [추가] <——
+    }
+    '''
+    import copy
+
+    # 템플릿 선언
+    base_result_template = {
+        "source": {
+            "id": "",
+            "meta": {
+                "name": "",
+                "content_type": "",
+                "size": -1,
+                "data": {},
+                "collection_name": ""
+            },
+            "created_at": -1,
+            "updated_at": -1,
+            "collection": {
+                "name": "",
+                "description": ""
+            },
+            "name": "",
+            "description": "",
+            "type": "",
+            "status": ""
+        },
+        "document": [""],
+        "metadata": [
+            {
+                "created_by": "",
+                "creationdate": "",
+                "creator": "",
+                "embedding_config": "",
+                "file_id": "",
+                "hash": "",
+                "moddate": "",
+                "name": "",
+                "page": -1,
+                "page_label": "",
+                "producer": "",
+                "source": "",
+                "start_index": -1,
+                "title": "",
+                "total_pages": 1
+            }
+        ],
+        "distances": [0.0]
+    }
+
+    # 새로운 데이터 채워넣기
+    def build_result(source_id: str, doc_text: str, distance: float) -> dict:
+        result = copy.deepcopy(base_result_template)
+        
+        result["source"]["id"] = source_id
+        result["source"]["meta"]["name"] = "example.txt"
+        result["document"] = [doc_text]
+        result["metadata"][0]["file_id"] = source_id
+        result["distances"] = [distance]
+        
+        return result
+
+    # 예시
+    results = []
+    results.append(build_result("file-123", "이 문서는 예시입니다.", 0.7143))
+    
+    
+    pass
 
 @router.post("/v1/completions")
 async def call_api_autocompletion(

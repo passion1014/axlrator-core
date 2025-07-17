@@ -65,7 +65,15 @@ class PyMilvusVectorStore:
         raw_embeddings = self.embedding_function.embed_documents(texts)
         embeddings = [np.array(vec, dtype=np.float32).tolist() for vec in raw_embeddings]
 
-        data = [{"content": text, "embedding": embedding} for text, embedding in zip(texts, embeddings)]
+        # data = [{"content": text, "embedding": embedding} for text, embedding in zip(texts, embeddings)]
+        data = []
+        for doc, embedding in zip(docs, embeddings):
+            entry = {
+                "content": doc.page_content,
+                "embedding": embedding,
+                **(doc.metadata or {})  # Include metadata as dynamic fields
+            }
+            data.append(entry)
 
         result_dict = self.client.insert(
             collection_name=self.collection_name,
@@ -83,13 +91,16 @@ class PyMilvusVectorStore:
             anns_field="embedding",
             search_params={"nprobe": 10},
             limit=k,
-            output_fields=["content"]
+            # output_fields=["content"]
+            output_fields=["*"]
         )
         return [
             {
-                "id" : hit["id"],
+                "id": hit["id"],
                 "score": hit["distance"],
-                "content": hit["entity"].get("content")
+                # "content": hit["entity"].get("content")
+                "content": hit["entity"].get("content"),
+                "metadata": {k: v for k, v in hit["entity"].items() if k not in ("content", "embedding")}
             } for hit in results[0]
         ]
         
@@ -101,13 +112,16 @@ class PyMilvusVectorStore:
             anns_field="embedding",
             search_params={"nprobe": 10},
             limit=k,
-            output_fields=["content"]
+            # output_fields=["content"]
+            output_fields=["*"]
         )
         return [
             {
-                "id" : hit["id"],
+                "id": hit["id"],
                 "score": hit["distance"],
-                "content": hit["entity"].get("content")
+                # "content": hit["entity"].get("content")
+                "content": hit["entity"].get("content"),
+                "metadata": {k: v for k, v in hit["entity"].items() if k not in ("content", "embedding")}
             } for hit in results[0]
         ]
 
