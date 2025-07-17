@@ -82,6 +82,8 @@ class PyMilvusVectorStore:
             data=data
         )
         
+        print(f"##### vector db에 저장 결과 = {result_dict}\n\n\n")
+        
         self.client.flush(self.collection_name)
         return result_dict
 
@@ -122,6 +124,26 @@ class PyMilvusVectorStore:
                 "id": hit["id"],
                 "score": hit["distance"],
                 # "content": hit["entity"].get("content")
+                "content": hit["entity"].get("content"),
+                "metadata": {k: v for k, v in hit["entity"].items() if k not in ("content", "embedding")}
+            } for hit in results[0]
+        ]
+
+    def similarity_search_with_filter(self, query: str, filter_expr: str, k: int = 3):
+        query_vector = self.embedding_function.embed_query(query)
+        results = self.client.search(
+            collection_name=self.collection_name,
+            data=[query_vector],
+            anns_field="embedding",
+            search_params={"nprobe": 10},
+            limit=k,
+            output_fields=["*"],
+            filter=filter_expr
+        )
+        return [
+            {
+                "id": hit["id"],
+                "score": hit["distance"],
                 "content": hit["entity"].get("content"),
                 "metadata": {k: v for k, v in hit["entity"].items() if k not in ("content", "embedding")}
             } for hit in results[0]
