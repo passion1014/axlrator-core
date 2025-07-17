@@ -271,22 +271,7 @@ async def post_v1_chat_completed(
                     chat_data = json.loads(chat_data.decode("utf-8", errors="replace"))
                 elif not isinstance(chat_data, dict):
                     chat_data = {}
-
-
-                # 메시지에 소스 추가
-                message_id = message.messages[0]["id"] if message.messages else None
-                if message_id and isinstance(chat_data, dict):
-                    # 메시지 목록 가져오기
-                    chat_messages = chat_data.get("history", {}).get("messages", {})
-                    if message_id in chat_messages:
-                        # 해당 메시지에 sources가 없으면 초기화
-                        chat_messages[message_id].setdefault("sources", [])
-                        # 예시 신규 소스 추가 (여기서 원하는 source dict로 교체하세요)
-                        
-                        chat_messages[message_id]["sources"].append(new_source)
-
-
-                return chat_data
+                
             except Exception as e:
                 # 로깅을 추가하고 None 반환
                 print(f"Error parsing file data: {e}")
