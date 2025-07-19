@@ -23,11 +23,13 @@ def create_collection(collection_name:str):
 
     # 컬렉션 존재 여부 확인
     if not client.has_collection(collection_name):
+        # 동적으로 임베딩 차원 계산
+        dim = len(get_embedding_model().embed_query("test"))
         # 새로운 컬렉션 스키마 정의 (`id` 필드를 `VARCHAR`로 변경)
         fields = [
             FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),  # ID 필드 설정
             FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=65535),  # 텍스트 필드 추가
-            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=3072, params={"dim": 3072}),  # 벡터 필드 설정, dim 추가 확인        
+            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=dim, params={"dim": dim}),  # 벡터 필드 설정        
         ]
 
         schema = CollectionSchema(fields=fields, description=collection_name, enable_dynamic_field=True)
