@@ -6,15 +6,16 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:axlrator!1@91.99.20.220:5432/axlrlangfuse
+      - DATABASE_URL=postgresql://postgres:axlrator!1@172.17.0.1:5432/axlrlangfuse
       - NEXTAUTH_SECRET=mysecret
       - SALT=mysalt
       - ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000 # generate via `openssl rand -hex 32`
-      - NEXTAUTH_URL=http://91.99.20.220:3000
+      - NEXTAUTH_URL=http://localhost:3000
       - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-true}
       - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
     networks:
       - alfred_network
+    #entrypoint: ["tail", "-f", "/dev/null"]    
 
   rag_server:
     image: rag_server # 빌드된 이미지 이름
@@ -22,9 +23,8 @@ services:
     container_name: rag_server
     ports:
       - "8000:8000"
-      - "11434:11434"
     volumes:
-      - ../rag_server:/app/rag_server
+      - ../axlrator-core:/app/axlrator-core
       - ../rag_data:/app/rag_data
     networks:
       - alfred_network

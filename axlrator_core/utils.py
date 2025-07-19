@@ -38,7 +38,7 @@ def get_llm_model():
     ollama_url = os.getenv("OLLAMA_URL")
     model = None
 
-    if llm_model in ['EEVE-Korean-10.8B:latest', 'gemma2:9b', 'gemma2:27b', 'llama3.3:latest', 'qwq:latest', 'phi4:latest']: # ChatOllama
+    if llm_model in ['gemma3:27b','EEVE-Korean-10.8B:latest', 'gemma2:9b', 'gemma2:27b', 'llama3.3:latest', 'qwq:latest', 'phi4:latest']: # ChatOllama
         from langchain_community.chat_models import ChatOllama
         model = ChatOllama(model=llm_model, base_url=ollama_url)
         

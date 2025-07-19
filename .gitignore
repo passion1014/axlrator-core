@@ -3,6 +3,7 @@
 **/__pycache__/**
 .DS_Store
 venv
+**/server/**
 workflow/working
 example/example/*.html
 data/vector
@@ -13,3 +14,4 @@ data
 copy_changed_files.sh
 test/ppt
 test/document
+volumes
