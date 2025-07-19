@@ -196,7 +196,7 @@ class CodeAssistChain:
         return state
     
     def choose_prompt_for_task(self, state: CodeAssistState) -> CodeAssistState:
-        langfuse_prompt = self.langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT", version=1)
+        langfuse_prompt = self.langfuse.get_prompt("CODE_ASSIST_TASK_PROMPT")
         state['prompt'] = langfuse_prompt.compile(
             REFERENCE_CODE=state['context'],
             TASK=state['question'],

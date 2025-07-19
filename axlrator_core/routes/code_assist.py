@@ -126,11 +126,11 @@ async def autocode_endpoint(
     context = form_data.get("context")
     # ...
 
-    message = CodeAssistInfo(
-        question=question,
-        context=context,
-        # ...
-    )
+    # message = CodeAssistInfo(
+    #     question=question,
+    #     context=context,
+    #     # ...
+    # )
 
     
     

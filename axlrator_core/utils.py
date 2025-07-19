@@ -11,7 +11,7 @@ def get_embedding_model():
     ollama_url = os.getenv("OLLAMA_URL")
     embeddings = None
 
-    if embedding_model in ['nomic-embed-text', 'bge-m3:latest']:
+    if embedding_model in ['nomic-embed-text', 'bge-m3:latest', 'bge-m3:567m']:
         from langchain.embeddings import OllamaEmbeddings
         
         embeddings = OllamaEmbeddings(
