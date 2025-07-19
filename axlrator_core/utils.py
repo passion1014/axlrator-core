@@ -42,7 +42,7 @@ def get_llm_model():
         from langchain_community.chat_models import ChatOllama
         model = ChatOllama(model=llm_model, base_url=ollama_url)
         
-    elif llm_model in ['gpt-3.5-turbo']: # ChatOpenAI
+    elif llm_model in ['gpt-3.5-turbo', 'gpt-4.1', 'gpt-4-turbo']: # ChatOpenAI
         from langchain_community.chat_models import ChatOpenAI
         model = ChatOpenAI(model=llm_model)
 

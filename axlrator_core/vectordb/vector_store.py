@@ -2,7 +2,7 @@ import os
 from typing import List
 from dotenv import load_dotenv
 from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, MilvusClient, connections
-from axlrator_core.utils import get_embedding_model
+from axlrator_core.utils import get_embedding_model, get_llm_model
 from langchain_milvus import Milvus
 from langchain.schema import Document
 import numpy as np
@@ -57,6 +57,7 @@ class PyMilvusVectorStore:
         self.collection_name = collection_name
         self.embedding_function = embedding_function
         self.client = MilvusClient(uri=URI)
+        self.model = get_llm_model()
 
 
     def add_documents(self, docs: List[Document]):
@@ -119,15 +120,20 @@ class PyMilvusVectorStore:
             # output_fields=["content"]
             output_fields=["*"]
         )
-        return [
+        
+        search_docs = [
             {
                 "id": hit["id"],
                 "score": hit["distance"],
-                # "content": hit["entity"].get("content")
                 "content": hit["entity"].get("content"),
+                "chunked_data_id": hit["entity"].get("chunked_data_id", ""),
+                "doc_id": hit["entity"].get("doc_id", ""),
                 "metadata": {k: v for k, v in hit["entity"].items() if k not in ("content", "embedding")}
             } for hit in results[0]
         ]
+        
+        return search_docs
+
 
     def similarity_search_with_filter(self, query: str, filter_expr: str, k: int = 3):
         query_vector = self.embedding_function.embed_query(query)

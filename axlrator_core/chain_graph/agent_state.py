@@ -29,6 +29,7 @@ class CodeAssistState(TypedDict):
     question: str
     context: Annotated[list[dict], "컨텍스트 조회 결과 리스트"]
     current_code: str
+    metadata:Optional[dict] = None
     response: str
 
 

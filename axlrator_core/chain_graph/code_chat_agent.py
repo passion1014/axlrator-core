@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import re
+import time
 import uuid
 
 from typing import Annotated, List, Optional, Sequence, TypedDict
@@ -17,7 +18,10 @@ from langgraph.graph.message import add_messages
 from langgraph.types import StreamWriter
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
+from axlrator_core.db_model.axlrui_database import get_axlr_session
+from axlrator_core.db_model.axlrui_database_models import Chat
 from axlrator_core.utils import get_llm_model
 from axlrator_core.vectordb.bm25_search import ElasticsearchBM25
 from axlrator_core.vectordb.vector_store import get_vector_store
@@ -31,7 +35,7 @@ class CodeChatState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages] # add_messages is a reducer
     context_datas: Optional[List[dict]] = None # file_contexts, files, vectordatas를 모은 context 데이터 리스트
     context:str
-    is_vector_search: str # yes or no 벡터를 조회할지 말지 여부    
+    metadata:Optional[dict] = None
     response:str
     
 
@@ -130,7 +134,6 @@ class CodeChatAgent:
                     # content가 문자열인지 확인하고, 인코딩 문제 예방을 위한 보정
                     data = file_row.data
                     if isinstance(data, str):
-                        import json
                         data = json.loads(data)
 
                     if isinstance(data, bytes):
@@ -311,7 +314,7 @@ class CodeChatAgent:
             return state
 
         vector_store = get_vector_store(collection_name=index_name)
-        search_results = vector_store.similarity_search_with_score(query=search_text, k=5)
+        search_results = vector_store.similarity_search_with_score(query=search_text, k=3)
         
         context_datas = state.get("context_datas", [])
 
@@ -323,8 +326,11 @@ class CodeChatAgent:
                 "name": f"vectordb_{i}", # 이부분 수정필요. 조회된 vector 조각이 어디서 왔는지 확인이 필요함
                 "content": vector_data.get("content", "")
             })
-
         state["context_datas"] = context_datas
+
+        # webui에 인용정보를 보여주기 위하여 저장한다
+        if search_results:
+            store_vector_sources(state.get("metadata"), search_results, context_datas)
         
         return state
 
@@ -376,6 +382,121 @@ class CodeChatAgent:
 
         return graph.compile(checkpointer=checkpointer), thread_id
 
+def store_vector_sources(metadata, search_results, context_datas):
+    # metadata = state.get("metadata")
+    chat_type = metadata.get("chat_type") if metadata else None
+    user_id = metadata.get("user_id") if metadata else None
+    chat_id = metadata.get("chat_id") if metadata else None
+    message_id = metadata.get("message_id") if metadata else None
+    
+    print(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}, chat_type: {chat_type}")
+    
+    if user_id and chat_id and message_id:
+        doc_id = search_results[0].get("doc_id", "")
+        contents = [item.get("content", "") for item in context_datas if isinstance(item.get("content", ""), str)]
+        source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
+
+        with get_axlr_session() as session:
+            # 조회
+            chat_row = session.query(Chat).filter(Chat.id == chat_id).first()
+            if chat_row and chat_row.chat:
+                try:
+                    chat_data = chat_row.chat
+
+                    # content가 문자열인지 확인하고, 인코딩 문제 예방을 위한 보정
+                    if isinstance(chat_data, str):
+                        chat_data = json.loads(chat_data)
+                    if isinstance(chat_data, bytes):
+                        chat_data = json.loads(chat_data.decode("utf-8", errors="replace"))
+                    elif not isinstance(chat_data, dict):
+                        chat_data = {}
+
+                    # 메시지에 소스 추가
+                    _history_messages = chat_data.get("history", {}).get("messages", {})
+                    _history_msg = _history_messages.get(message_id)
+                    
+                    if _history_msg:
+                        _history_msg.setdefault("sources", []).append(source)
+                    
+                    if message_id and isinstance(chat_data, dict):
+                        # 메시지 목록 가져오기
+                        _messages = chat_data.get("messages", [])
+                        for msg in _messages:
+                            if msg.get("id") == message_id:
+                                # sources에 소스 추가
+                                msg.setdefault("sources", [])
+                                msg["sources"].append(source)
+                                
+                                # 파일목록에 소스 추가
+                                chat_data.setdefault("files", []).append(source.get("source"))
+
+                                # 업데이트된 chat_data 내용을 DB update
+                                chat_row.chat = chat_data
+                                flag_modified(chat_row, "chat")  # 변경 감지 강제
+                                session.flush()
+                                session.commit()
+                                break
+                            
+                    return chat_data
+                except Exception as e:
+                    # 로깅을 추가하고 None 반환
+                    print(f"Error parsing file data: {e}")
+                    return None
+
+def make_source_item(user_id:str, resrc_org_id:str, resrc_name:str, context_datas:list) -> dict:
+    created_at = int(time.time())
+
+    source = {
+        "source": {
+            "type": "milvus",
+            "file": {
+                "id": resrc_org_id, # resrc_org_id
+                "user_id": user_id, # 넘겨준 값 유지
+                "hash": "", # 생성
+                "filename": resrc_name, # resrc_name
+                "data":{
+                    "content": "\n".join(context_datas)
+                },
+                "meta": {
+                    "name": resrc_name, # resrc_name
+                    "content_type": "text/plain", # 같은 값
+                    "size": 0, # size
+                    "data": {},
+                    "collection_name": "" # 빈값
+                },
+                "created_at": created_at, # 생성
+                "updated_at": created_at  # 생성
+            },
+            "id": resrc_org_id, # resrc_org_id
+            "url": f"/api/v1/files/{resrc_org_id}", # 뒤에 resrc_org_id 붙이기
+            "name": resrc_name, # resrc_name
+            "collection_name": "", # 빈겂
+            "status": "retrieve", # retrieve
+            "size": 0, # text length
+            "error": "", # 빈값
+            "itemId": "" # 빈값
+        },
+        "document": context_datas,
+        "metadata": [
+            {
+                "created_by": user_id, # 넘겨준 값 유지 (user_id)
+                "embedding_config": {"engine": "", "model": "sentence-transformers/all-MiniLM-L6-v2"}, # bge-m3
+                "file_id": resrc_org_id, # 빈겂
+                "hash": "", # 빈겂
+                "name": resrc_name,
+                "source": resrc_name,
+                "start_index":0 # 0
+            }
+            for _ in context_datas
+        ],
+        "distances": [1.0 for _ in context_datas]
+        # [ 가능하면 score 값을 넘겨주도록 추후 수정
+        #     0.7450273014932309,
+        #     0.7285945578988293
+        # ]
+    }
+    
+    return source
 
 if __name__ == "__main__":
     """
