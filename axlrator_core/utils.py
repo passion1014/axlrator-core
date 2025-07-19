@@ -15,7 +15,7 @@ def get_embedding_model():
         from langchain.embeddings import OllamaEmbeddings
         
         embeddings = OllamaEmbeddings(
-            model="nomic-embed-text",
+            model=embedding_model,
             base_url=ollama_url  # Ollama의 기본 URL입니다.
         )
         
