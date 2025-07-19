@@ -12,10 +12,12 @@ class AugmentedChunkMetadata(BaseModel):
 # Augmented Chunk 파싱 함수
 def parse_augmented_chunk(text: str) -> AugmentedChunkMetadata:
     # 함수명 추출 - <function_name> 태그 사이의 내용을 가져옴
-    function_name = re.search(r"<function_name>(.*?)</function_name>", text).group(1)
+    function_match = re.search(r"<function_name>(.*?)</function_name>", text)
+    function_name = function_match.group(1).strip() if function_match else ""
     
     # 요약 추출 - <summary> 태그 사이의 내용을 가져옴
-    summary = re.search(r"<summary>(.*?)</summary>", text).group(1)
+    summary_match = re.search(r"<summary>(.*?)</summary>", text)
+    summary = summary_match.group(1).strip() if summary_match else ""
     
     # <features> 태그 블록만 추출
     features_block = re.search(r"<features>(.*?)</features>", text, re.DOTALL)
