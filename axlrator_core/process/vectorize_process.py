@@ -43,7 +43,7 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
             **(data.document_metadata if isinstance(data.document_metadata, dict) else {})
         }
 
-        page_content = data.context_chunk if hasattr(data, "context_chunk") and data.context_chunk else data.content
+        page_content = f"{data.content}\n{data.context_chunk}" if hasattr(data, "context_chunk") and data.context_chunk else data.content
         metadata["type"] = "summary" if hasattr(data, "context_chunk") and data.context_chunk else "original"
         documents.append(Document(page_content=page_content, metadata=metadata))
     
