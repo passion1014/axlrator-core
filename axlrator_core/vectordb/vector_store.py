@@ -44,7 +44,6 @@ def create_collection(collection_name:str):
         )
         
         collection.load()  # 컬렉션 로드 필수
-    
 
 
 def delete_collection(collection_name:str):

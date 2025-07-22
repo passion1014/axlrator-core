@@ -81,7 +81,8 @@ class CodeChatAgent:
         """
         chat_lines = []
         indent = "  "
-        for msg in state["messages"]:
+        recent_messages = state["messages"][-3:]
+        for msg in recent_messages:
             if isinstance(msg, HumanMessage):
                 chat_lines.append(f"{indent}USER: {msg.content.strip()}")
             elif isinstance(msg, AIMessage):
@@ -249,6 +250,9 @@ class CodeChatAgent:
             chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_05").compile(
                 chat_history = chat_history
             )
+        else :
+            chat_prompts = user_query
+            pass
             
         # system 메세지 뒤에 채팅이력 추가
         messages = (state.get("messages") or [])[:-1]
@@ -312,13 +316,65 @@ class CodeChatAgent:
         # 체크
         if not search_text:
             return state
+        
+        '''
+        # query-rewring 프로세스 구현
+You are a helpful AI assistant for code search query rewriting.
+
+Your task is to take a user question written in Korean and:
+1. Rewrite it in clearer and more specific Korean, suitable for semantic code search.
+2. Translate and rewrite it into clear and precise English, suitable for embedding-based search.
+
+Instructions:
+- Maintain the user's original intent.
+- Avoid vague expressions or colloquial language.
+- Use proper code-related terminology (e.g., "function", "logic", "API call", etc.).
+- Do not answer the question.
+- Output only a JSON object with the two rewritten queries.
+
+Format your output like this:
+{
+  "rewritten_ko": "보정된 한국어 질문",
+  "rewritten_en": "Rewritten English version of the question"
+}
+
+User Question (Korean):
+"{{user_input}}"
+        '''
+        # embedding-friendly한 query로 재작성한다.
+        query_rewriting_prompt = self.langfuse.get_prompt("AXLR_UI_QUERY_REWRITE_CODE_SEARCH").compile(
+            user_input = search_text
+        )
+
+        result = self.model.invoke(query_rewriting_prompt)
+
+        try:
+            result_json = json.loads(result.content.strip())
+            rewritten_ko = result_json.get("rewritten_ko")
+            rewritten_en = result_json.get("rewritten_en")
+        except json.JSONDecodeError:
+            print("### JSON 파싱 실패! 결과:\n", result.content)
+            rewritten_ko = rewritten_en = None
 
         vector_store = get_vector_store(collection_name=index_name)
-        search_results = vector_store.similarity_search_with_score(query=search_text, k=3)
+        search_ko_results = vector_store.similarity_search_with_score(query=rewritten_ko, k=5)
+        search_en_results = vector_store.similarity_search_with_score(query=rewritten_en, k=5)
         
         context_datas = state.get("context_datas", [])
 
-        for i, vector_data in enumerate(search_results, start=1):
+        # 2개의 결과값을 머지
+        merged_results = search_ko_results + search_en_results
+        
+        # 중복 제거: id 기준으로 dict 구성 후 다시 리스트로
+        unique_results_dict = {}
+        for result in merged_results:
+            result_id = result.get("id")
+            if result_id and result_id not in unique_results_dict:
+                unique_results_dict[result_id] = result
+        merged_results = list(unique_results_dict.values())
+        
+        
+        for i, vector_data in enumerate(merged_results, start=1):
             context_datas.append({
                 "id": vector_data["id"],
                 "seq": -1,
@@ -329,8 +385,8 @@ class CodeChatAgent:
         state["context_datas"] = context_datas
 
         # webui에 인용정보를 보여주기 위하여 저장한다
-        if search_results:
-            store_vector_sources(state.get("metadata"), search_results, context_datas)
+        if merged_results:
+            store_vector_sources(state.get("metadata"), merged_results, context_datas)
         
         return state
 
@@ -338,7 +394,6 @@ class CodeChatAgent:
     def check_need_vector_search_node(self, state: CodeChatState) -> CodeChatState:
         query = self.get_last_user_message(state)
         prompt = f"다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해줘. 필요하면 'yes', 아니면 'no'만 답해줘:\n\n{query}"
-        # result = await self.model.ainvoke([HumanMessage(content=prompt)])
         result = self.model.invoke([HumanMessage(content=prompt)])
         answer = result.content.strip().lower()
         

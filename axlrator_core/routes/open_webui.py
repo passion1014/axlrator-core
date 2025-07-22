@@ -115,9 +115,9 @@ async def post_v1_chat_completions(
     stream_mode = message.stream
     metadata = message.metadata or {}
     
-    if chat_type == "99":
-        print(f">>>>>>>>>>> chat_type 안들어왔음!!!! >>>>>>> 값 = {body}")
-        chat_type = "02"
+    # if chat_type == "99":
+    #     print(f">>>>>>>>>>> chat_type 안들어왔음!!!! >>>>>>> 값 = {body}")
+    #     chat_type = "02"
     metadata['chat_type'] = chat_type
 
     user_id = metadata.get("user_id") or ""
@@ -140,6 +140,7 @@ async def post_v1_chat_completions(
         document_manual_info = DocumentManualInfo(
             indexname="manual_document",
             question=body['messages'][-1]['content'],
+            messages=messages,
             metadata=metadata
         )
         
@@ -190,6 +191,7 @@ async def post_v1_chat_completions(
     
         if stream_mode:
             async def stream_response():
+                # todo : astream에 들어가는 항목들을 클래스로 정의해서 넘길것
                 async for event in graph.astream({"chat_type": chat_type, "messages": messages, "context_datas": context_datas, "metadata": metadata}, config, stream_mode="custom"):
                     if event.content and len(event.content) > 0:
                         content = event.content[-1]['text'] if isinstance(event.content[-1], dict) else event.content
