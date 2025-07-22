@@ -1,5 +1,6 @@
+from typing import Optional
 from langchain_core.runnables import RunnableConfig
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from axlrator_core.chain_graph.agent_state import AgentState, CodeAssistAutoCompletion, CodeAssistChatState, CodeAssistState
 from axlrator_core.chain_graph.code_chat_agent import store_vector_sources
 from axlrator_core.common.code_assist_utils import extract_code_blocks
@@ -27,6 +28,36 @@ class DocumentManualChain:
         self.model = get_llm_model().with_config(callbacks=[CallbackHandler()])
         self.langfuse = Langfuse()
 
+    @staticmethod
+    def get_last_user_message(state: CodeAssistState) -> Optional[str]:
+        """
+        Retrieves the last message from the user (HumanMessage) in the chat history.
+        
+        Returns:
+            The content of the last HumanMessage, or None if not found.
+        """
+        for msg in reversed(state["messages"]):
+            if isinstance(msg, HumanMessage):
+                return msg.content.strip()
+        return None
+
+    @staticmethod
+    def format_chat_history(state: CodeAssistState) -> str:
+        """
+        Formats the chat history for display, ensuring proper indentation and separation.
+        """
+        chat_lines = []
+        indent = "  "
+        for msg in state["messages"]:
+            if isinstance(msg, HumanMessage):
+                chat_lines.append(f"{indent}USER: {msg.content.strip()}")
+            elif isinstance(msg, AIMessage):
+                chat_lines.append(f"{indent}ASSISTANT: {msg.content.strip()}")
+        # Join messages with a blank line for separation
+        chat_history = "<chat_history>\n" + "\n\n".join(chat_lines) + "\n</chat_history>"
+        return chat_history
+
+
     async def contextual_reranker(self, state: CodeAssistState, k: int=10, semantic_weight: float = 0.8, bm25_weight: float = 0.2) -> CodeAssistState:
         question = state['question']
 
@@ -47,10 +78,6 @@ class DocumentManualChain:
 
         # webui에 인용정보를 보여주기 위하여 저장한다
         # 현재는 bm25를 조회하지 않으므로 여기서 셋팅, 추후는 bm25데이터도 고려해서 셋팅해야 함
-                # chat_type = metadata.get("chat_type") if metadata else None
-                # user_id = metadata.get("user_id") if metadata else None
-                # chat_id = metadata.get("chat_id") if metadata else None
-                # message_id = metadata.get("message_id") if metadata else None
         if semantic_results:
             store_vector_sources(state.get("metadata"), semantic_results, semantic_results)
 
