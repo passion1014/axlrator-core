@@ -360,6 +360,9 @@ User Question (Korean):
         search_ko_results = vector_store.similarity_search_with_score(query=rewritten_ko, k=5)
         search_en_results = vector_store.similarity_search_with_score(query=rewritten_en, k=5)
         
+        # 로그출력
+        # TODO: logging 모듈로 정해진 디렉토리에 저장하도록 한다.
+        
         context_datas = state.get("context_datas", [])
 
         # 2개의 결과값을 머지
@@ -392,8 +395,21 @@ User Question (Korean):
 
 
     def check_need_vector_search_node(self, state: CodeChatState) -> CodeChatState:
+        # chat_type이 02일 경우만 필요함
+        if state["chat_type"] != "02":
+            state["is_vector_search"] = "no"
+            return state
+        
         query = self.get_last_user_message(state)
-        prompt = f"다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해줘. 필요하면 'yes', 아니면 'no'만 답해줘:\n\n{query}"
+        # prompt = f"다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해줘. 필요하면 'yes', 아니면 'no'만 답해줘:\n\n{query}"
+        prompt = f"""
+다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해. 
+필요하면 'yes', 아니면 'no'만 답해줘:
+- 벡터DB는 '증권거래시스템 소스코드"를 담고 있어
+
+질문:
+{query}
+"""
         result = self.model.invoke([HumanMessage(content=prompt)])
         answer = result.content.strip().lower()
         
