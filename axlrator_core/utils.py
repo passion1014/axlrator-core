@@ -59,7 +59,7 @@ def get_llm_model():
         from langchain_google_genai import ChatGoogleGenerativeAI
         model = ChatGoogleGenerativeAI(
             model=llm_model,
-            google_api_key=os.getenv("GOOGLE_AI_API_KEY")
+            google_api_key=os.getenv("GOOGLE_API_KEY")
         )
     else:
         raise ValueError("ENV 환경변수가 설정되지 않았습니다.")
