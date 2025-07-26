@@ -422,11 +422,12 @@ User Question (Korean):
         return state.get("is_vector_search", "no")
 
 
-    def get_chain(self, thread_id: str = str(uuid.uuid4()), checkpointer = None):
+
+    def get_chain(self, thread_id: str = str(uuid.uuid4()), chat_type:str = "" , checkpointer = None):
         # tools = [self.get_weather]
         # self.model = self.model.bind_tools(tools)
         
-        graph = StateGraph(CodeChatState)
+        graph = StateGraph(CodeChatState, name=f"AXLR_UI_CHAT_CODE_{chat_type}")
         
         graph.add_node("pre_process", self.pre_process_node)
         graph.add_node("check_need_vector_search", self.check_need_vector_search_node)

@@ -166,7 +166,7 @@ async def post_v1_chat_completions(
     else:
         print(f"### CodeChatAgent 체인을 생성합니다. stream_mode = {stream_mode}, chat_type = {chat_type}")
         agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session, config=config) 
-        graph, _ = agent.get_chain(thread_id=thread_id)
+        graph, _ = agent.get_chain(thread_id=thread_id, chat_type=chat_type)
         
         # type(file, selection, vectordb), id, name, content
         context_datas = []

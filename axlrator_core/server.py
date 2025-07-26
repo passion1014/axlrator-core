@@ -29,9 +29,6 @@ load_dotenv(dotenv_path=args.env, override=True)
 import argparse
 from pydantic import BaseModel
 # LLM 모델 관련 import
-# from app.chain_graph.code_assist_chain import code_assist_chain 
-from axlrator_core.utils import get_llm_model
-# from app.chain_graph.code_assist_chain import code_assist_chain 
 from axlrator_core.utils import get_llm_model
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI

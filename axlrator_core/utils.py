@@ -1,6 +1,6 @@
 import re
 from typing import List, Tuple
-from langchain_core.prompts import format_document
+# from langchain_core.prompts import format_document
 import os
 
 def get_embedding_model():
