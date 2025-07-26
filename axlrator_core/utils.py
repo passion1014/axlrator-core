@@ -55,6 +55,12 @@ def get_llm_model():
             # timeout=None,
             # max_retries=2,
         )
+    elif llm_model in ['gemini-1.5-pro', 'gemini-1.5-flash']:  # ChatGoogleGenerativeAI
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        model = ChatGoogleGenerativeAI(
+            model=llm_model,
+            google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
     else:
         raise ValueError("ENV 환경변수가 설정되지 않았습니다.")
     
