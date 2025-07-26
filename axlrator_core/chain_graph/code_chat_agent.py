@@ -427,7 +427,9 @@ User Question (Korean):
         # tools = [self.get_weather]
         # self.model = self.model.bind_tools(tools)
         
-        graph = StateGraph(CodeChatState, name=f"AXLR_UI_CHAT_CODE_{chat_type}")
+        # TODO: langgraph 0.4.5 업데이트 이후 name 셋팅해서 trace name 구분
+        # graph = StateGraph(CodeChatState, name=f"AXLR_UI_CHAT_CODE_{chat_type}")
+        graph = StateGraph(CodeChatState)
         
         graph.add_node("pre_process", self.pre_process_node)
         graph.add_node("check_need_vector_search", self.check_need_vector_search_node)
