@@ -317,30 +317,6 @@ class CodeChatAgent:
         if not search_text:
             return state
         
-        '''
-        # query-rewring 프로세스 구현
-You are a helpful AI assistant for code search query rewriting.
-
-Your task is to take a user question written in Korean and:
-1. Rewrite it in clearer and more specific Korean, suitable for semantic code search.
-2. Translate and rewrite it into clear and precise English, suitable for embedding-based search.
-
-Instructions:
-- Maintain the user's original intent.
-- Avoid vague expressions or colloquial language.
-- Use proper code-related terminology (e.g., "function", "logic", "API call", etc.).
-- Do not answer the question.
-- Output only a JSON object with the two rewritten queries.
-
-Format your output like this:
-{
-  "rewritten_ko": "보정된 한국어 질문",
-  "rewritten_en": "Rewritten English version of the question"
-}
-
-User Question (Korean):
-"{{user_input}}"
-        '''
         # embedding-friendly한 query로 재작성한다.
         query_rewriting_prompt = self.langfuse.get_prompt("AXLR_UI_QUERY_REWRITE_CODE_SEARCH").compile(
             user_input = search_text
@@ -349,7 +325,11 @@ User Question (Korean):
         result = self.model.invoke(query_rewriting_prompt)
 
         try:
+            print(f"### result.content.strip() = {result.content.strip()}")
             result_json = json.loads(result.content.strip())
+            
+            print(f"### result_json = {result_json}")
+            
             rewritten_ko = result_json.get("rewritten_ko")
             rewritten_en = result_json.get("rewritten_en")
         except json.JSONDecodeError:
