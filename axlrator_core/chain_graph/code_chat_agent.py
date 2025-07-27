@@ -103,6 +103,23 @@ class CodeChatAgent:
         state["context_datas"] = context_datas
         return state
 
+    def check_added_file_context(self, context_datas: Optional[List[dict]]) -> bool:
+        """
+        context_datas에 'type'이 'selection' 또는 'file'인 항목이 존재하는지 여부를 반환합니다.
+
+        Args:
+            context_datas (Optional[List[dict]]): 컨텍스트 데이터 목록
+
+        Returns:
+            bool: 해당 항목이 하나라도 있으면 True, 없으면 False
+        """
+        if not context_datas:
+            return False
+
+        for item in context_datas:
+            if item.get("type") in ("selection", "file"):
+                return True
+        return False
 
     def merge_context_datas_node(self, state: CodeChatState) -> CodeChatState:
         parts = []
@@ -365,7 +382,6 @@ class CodeChatAgent:
                 unique_results_dict[result_id] = result
         merged_results = list(unique_results_dict.values())
         
-        
         for i, vector_data in enumerate(merged_results, start=1):
             context_datas.append({
                 "id": vector_data["id"],
@@ -389,8 +405,12 @@ class CodeChatAgent:
             state["is_vector_search"] = "no"
             return state
         
+        # 기존에 파일로 들어온 컨텍스트가 있으면 패스
+        if self.check_added_file_context(state["context_datas"]):
+            state["is_vector_search"] = "no"
+            return state
+        
         query = self.get_last_user_message(state)
-        # prompt = f"다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해줘. 필요하면 'yes', 아니면 'no'만 답해줘:\n\n{query}"
         prompt = f"""
 Determine whether a document search in the vector database is necessary for the following question.
 Respond with ‘yes’ if needed, ‘no’ otherwise.
@@ -422,8 +442,8 @@ Question:
         
         graph.add_node("pre_process", self.pre_process_node)
         graph.add_node("check_need_vector_search", self.check_need_vector_search_node)
-        graph.add_node("merge_context_datas", self.merge_context_datas_node)
         graph.add_node("search_vector_datas", self.search_vector_datas_node)
+        graph.add_node("merge_context_datas", self.merge_context_datas_node)
         graph.add_node("call_model", self.call_model_node)
         graph.add_node("clean_response", self.clean_response_node)
 
