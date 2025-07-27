@@ -403,11 +403,11 @@ User Question (Korean):
         query = self.get_last_user_message(state)
         # prompt = f"다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해줘. 필요하면 'yes', 아니면 'no'만 답해줘:\n\n{query}"
         prompt = f"""
-다음 질문에 대해 벡터DB에서 문서를 검색해야 하는지 판단해. 
-필요하면 'yes', 아니면 'no'만 답해줘:
-- 벡터DB는 '증권거래시스템 소스코드"를 담고 있어
+Determine whether a document search in the vector database is necessary for the following question.
+Respond with ‘yes’ if needed, ‘no’ otherwise.
+- The vector database contains source code of a securities trading system.
 
-질문:
+Question:
 {query}
 """
         result = self.model.invoke([HumanMessage(content=prompt)])
