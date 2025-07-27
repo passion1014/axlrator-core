@@ -337,8 +337,17 @@ class CodeChatAgent:
             rewritten_ko = rewritten_en = None
 
         vector_store = get_vector_store(collection_name=index_name)
-        search_ko_results = vector_store.similarity_search_with_score(query=rewritten_ko, k=5)
-        search_en_results = vector_store.similarity_search_with_score(query=rewritten_en, k=5)
+        
+        search_ko_results, search_en_results = [], []
+        if rewritten_ko:
+            search_ko_results = vector_store.similarity_search_with_score(query=rewritten_ko, k=5)
+        else:
+            print("### 벡터 검색 생략: rewritten_ko가 None")
+
+        if rewritten_en:
+            search_en_results = vector_store.similarity_search_with_score(query=rewritten_en, k=5)
+        else:
+            print("### 벡터 검색 생략: rewritten_en가 None")
         
         # 로그출력
         # TODO: logging 모듈로 정해진 디렉토리에 저장하도록 한다.
