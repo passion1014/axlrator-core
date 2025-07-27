@@ -18,12 +18,8 @@ parser.add_argument("--key-file", type=str, default=None) # SSL 키 파일
 args = parser.parse_args()
 print(f"args = {args}")
 
-
 # 환경변수 파일 로드
 load_dotenv(dotenv_path=args.env, override=True)
-
-
-
 
 
 import argparse

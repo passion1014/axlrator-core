@@ -272,10 +272,12 @@ class CodeChatAgent:
             pass
             
         # system 메세지 뒤에 채팅이력 추가
-        messages = (state.get("messages") or [])[:-1]
-        # @todo messages 길이를 체크해서 filter 로직 추가
-
         if chat_type in ("02") and isinstance(chat_prompts, list):
+            messages = (state.get("messages") or [])[:-1] # 마지막 메세지는 현재 질의내용이기에 이력에서 삭제한다.
+            # TODO: messages 길이를 체크해서 filter 로직 추가
+            print(f"### messages의 내용 = {messages}")
+            print(f"### chat_prompts 내용 = {chat_prompts}")
+            
             last_system_idx = -1
             for idx, msg in enumerate(chat_prompts):
                 if isinstance(msg, dict) and msg.get("role") == "system":
