@@ -36,19 +36,19 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
     # 각각의 ChunkedData에 대해 처리
     documents = []
     for data, uuid in zip(data_list, uuids):
-        org_resrc_dict = data["org_resrc"]
-        chunked_data_dict = data["chunked_data"]
+        org_resrc_dict = data.get("org_resrc", {})
+        chunked_data_dict = data.get("chunked_data", {})
 
         metadata = {
             "id": uuid,
-            "doc_id": org_resrc_dict["id"],
-            "name": org_resrc_dict["resrc_name"],
-            "chunked_data_id": chunked_data_dict["id"],
-            "doc_name": chunked_data_dict["data_name"],
-            **(chunked_data_dict["document_metadata"] if isinstance(chunked_data_dict.get("document_metadata"), dict) else {})
+            "doc_id": chunked_data_dict.get("org_resrc_id"),
+            "name": org_resrc_dict.get("resrc_name", ""),
+            "doc_name": chunked_data_dict.get("data_name", ""),
+            "chunked_data_id": chunked_data_dict.get("id"),
+            **(chunked_data_dict.get("document_metadata") if isinstance(chunked_data_dict.get("document_metadata"), dict) else {})
         }
 
-        page_content = f"{chunked_data_dict['content']}\n{chunked_data_dict['context_chunk']}" if chunked_data_dict.get("context_chunk") else chunked_data_dict["content"]
+        page_content = f"{chunked_data_dict.get('content', '')}\n{chunked_data_dict.get('context_chunk', '')}".strip()
         metadata["type"] = "summary" if chunked_data_dict.get("context_chunk") else "original"
         documents.append(Document(page_content=page_content, metadata=metadata))
 
