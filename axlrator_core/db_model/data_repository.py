@@ -290,8 +290,8 @@ class ChunkedDataRepository:
         result = await self.session.execute(stmt)
         return [
             {
-                "org_resrc": org_resrc.to_dict(),
-                "chunked_data": chunked_data.to_dict()
+                "org_resrc": {c.name: getattr(org_resrc, c.name) for c in OrgRSrc.__table__.columns},
+                "chunked_data": {c.name: getattr(chunked_data, c.name) for c in ChunkedData.__table__.columns}
             }
             for org_resrc, chunked_data in result.all()
         ]
