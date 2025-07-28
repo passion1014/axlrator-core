@@ -390,6 +390,8 @@ class CodeChatAgent:
                 unique_results_dict[result_id] = result
         merged_results = list(unique_results_dict.values())
         
+        print(f"\n\n>>>>>>>>>>>>>>>>>>>>> merged_results = {merged_results}")
+        
         for i, vector_data in enumerate(merged_results, start=1):
             context_datas.append({
                 "id": vector_data["id"],
@@ -551,9 +553,7 @@ def make_source_item(user_id: str, context_datas: list) -> list:
         resrc_org_id = doc_id
         resrc_name = items[0].get("name", f"vector_{doc_id}")
         content_joined = "\n".join(item.get("content", "") for item in items)
-        
-        print(f">>>>>>>>>>>>>>>>>>> content_joined = {content_joined}")
-
+        # print(f">>>>>>>>>>>>>>>>>>> content_joined = {content_joined}")
         source = {
             "source": {
                 "type": "milvus",
