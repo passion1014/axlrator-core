@@ -395,14 +395,17 @@ class CodeChatAgent:
                 "id": vector_data["id"],
                 "seq": i,
                 "type": "vectordb",
-                "name": f"{vector_data.get("name", "vector")}_{vector_data.get("doc_name", i)}", # 이부분 수정필요. 조회된 vector 조각이 어디서 왔는지 확인이 필요함
+                "doc_id": vector_data.get("doc_id", ""),
+                "name": vector_data.get("name", "vector"),
+                "chunked_data_id": vector_data.get("doc_id", ""),
+                "doc_name": vector_data.get("doc_name", i),
                 "content": vector_data.get("content", "")
             })
         state["context_datas"] = context_datas
 
         # webui에 인용정보를 보여주기 위하여 저장한다
         if merged_results:
-            store_vector_sources(state.get("metadata"), merged_results, context_datas)
+            store_vector_sources(state.get("metadata"), context_datas=context_datas)
         
         return state
 
@@ -473,7 +476,7 @@ Question:
 
         return graph.compile(checkpointer=checkpointer), thread_id
 
-def store_vector_sources(metadata, search_results, context_datas):
+def store_vector_sources(metadata, context_datas):
     # metadata = state.get("metadata")
     chat_type = metadata.get("chat_type") if metadata else None
     user_id = metadata.get("user_id") if metadata else None
@@ -483,10 +486,8 @@ def store_vector_sources(metadata, search_results, context_datas):
     print(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}, chat_type: {chat_type}")
     
     if user_id and chat_id and message_id:
-        doc_id = search_results[0].get("doc_id", "")
-        contents = [item.get("content", "") for item in context_datas if isinstance(item.get("content", ""), str)]
-        # source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
-        source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
+        # make_source_item now returns a list of sources
+        sources = make_source_item(user_id=user_id, context_datas=context_datas)
 
         with get_axlrui_session() as session:
             # 조회
@@ -506,10 +507,10 @@ def store_vector_sources(metadata, search_results, context_datas):
                     # 메시지에 소스 추가
                     _history_messages = chat_data.get("history", {}).get("messages", {})
                     _history_msg = _history_messages.get(message_id)
-                    
+
                     if _history_msg:
-                        _history_msg.setdefault("sources", []).append(source)
-                    
+                        _history_msg.setdefault("sources", []).extend(sources)
+
                     if message_id and isinstance(chat_data, dict):
                         # 메시지 목록 가져오기
                         _messages = chat_data.get("messages", [])
@@ -517,10 +518,10 @@ def store_vector_sources(metadata, search_results, context_datas):
                             if msg.get("id") == message_id:
                                 # sources에 소스 추가
                                 msg.setdefault("sources", [])
-                                msg["sources"].append(source)
-                                
+                                msg["sources"].extend(sources)
+
                                 # 파일목록에 소스 추가
-                                chat_data.setdefault("files", []).append(source.get("source"))
+                                chat_data.setdefault("files", []).extend([s.get("source") for s in sources])
 
                                 # 업데이트된 chat_data 내용을 DB update
                                 chat_row.chat = chat_data
@@ -528,67 +529,78 @@ def store_vector_sources(metadata, search_results, context_datas):
                                 session.flush()
                                 session.commit()
                                 break
-                            
+
                     return chat_data
                 except Exception as e:
                     # 로깅을 추가하고 None 반환
                     print(f"Error parsing file data: {e}")
                     return None
 
-def make_source_item(user_id:str, resrc_org_id:str, resrc_name:str, context_datas:list) -> dict:
+def make_source_item(user_id: str, context_datas: list) -> list:
+    from collections import defaultdict
     created_at = int(time.time())
+    grouped = defaultdict(list)
+    for item in context_datas:
+        doc_id = item.get("doc_id")
+        if doc_id:
+            grouped[doc_id].append(item)
 
-    source = {
-        "source": {
-            "type": "milvus",
-            "file": {
-                "id": resrc_org_id, # resrc_org_id
-                "user_id": user_id, # 넘겨준 값 유지
-                "hash": "", # 생성
-                "filename": resrc_name, # resrc_name
-                "data":{
-                    "content": "\n".join(context_datas)
+    sources = []
+
+    for doc_id, items in grouped.items():
+        resrc_org_id = doc_id
+        resrc_name = items[0].get("name", f"vector_{doc_id}")
+        content_joined = "\n".join(item.get("content", "") for item in items)
+
+        source = {
+            "source": {
+                "type": "milvus",
+                "file": {
+                    "id": resrc_org_id,
+                    "user_id": user_id,
+                    "hash": "",
+                    "filename": resrc_name,
+                    "data": {
+                        "content": content_joined
+                    },
+                    "meta": {
+                        "name": resrc_name,
+                        "content_type": "text/plain",
+                        "size": 0,
+                        "data": {},
+                        "collection_name": ""
+                    },
+                    "created_at": created_at,
+                    "updated_at": created_at
                 },
-                "meta": {
-                    "name": resrc_name, # resrc_name
-                    "content_type": "text/plain", # 같은 값
-                    "size": 0, # size
-                    "data": {},
-                    "collection_name": "" # 빈값
-                },
-                "created_at": created_at, # 생성
-                "updated_at": created_at  # 생성
-            },
-            "id": resrc_org_id, # resrc_org_id
-            "url": f"/api/v1/files/{resrc_org_id}", # 뒤에 resrc_org_id 붙이기
-            "name": resrc_name, # resrc_name
-            "collection_name": "", # 빈겂
-            "status": "retrieve", # retrieve
-            "size": 0, # text length
-            "error": "", # 빈값
-            "itemId": "" # 빈값
-        },
-        "document": context_datas,
-        "metadata": [
-            {
-                "created_by": user_id, # 넘겨준 값 유지 (user_id)
-                "embedding_config": {"engine": "", "model": "sentence-transformers/all-MiniLM-L6-v2"}, # bge-m3
-                "file_id": resrc_org_id, # 빈겂
-                "hash": "", # 빈겂
+                "id": resrc_org_id,
+                "url": f"/api/v1/files/{resrc_org_id}",
                 "name": resrc_name,
-                "source": resrc_name,
-                "start_index":0 # 0
-            }
-            for _ in context_datas
-        ],
-        "distances": [1.0 for _ in context_datas]
-        # [ 가능하면 score 값을 넘겨주도록 추후 수정
-        #     0.7450273014932309,
-        #     0.7285945578988293
-        # ]
-    }
-    
-    return source
+                "collection_name": "",
+                "status": "retrieve",
+                "size": 0,
+                "error": "",
+                "itemId": ""
+            },
+            "document": items,
+            "metadata": [
+                {
+                    "created_by": user_id,
+                    "embedding_config": {"engine": "", "model": "sentence-transformers/all-MiniLM-L6-v2"},
+                    "file_id": resrc_org_id,
+                    "hash": "",
+                    "name": resrc_name,
+                    "source": resrc_name,
+                    "start_index": 0
+                }
+                for _ in items
+            ],
+            "distances": [1.0 for _ in items]
+        }
+
+        sources.append(source)
+
+    return sources
 
 if __name__ == "__main__":
     """
