@@ -273,10 +273,8 @@ class CodeChatAgent:
             
         # system 메세지 뒤에 채팅이력 추가
         if chat_type in ("02") and isinstance(chat_prompts, list):
-            messages = (state.get("messages") or [])[:-1] # 마지막 메세지는 현재 질의내용이기에 이력에서 삭제한다.
-            # TODO: messages 길이를 체크해서 filter 로직 추가
-            print(f"### messages의 내용 = {messages}")
-            print(f"### chat_prompts 내용 = {chat_prompts}")
+            messages = (state.get("messages") or [])[:-1]
+            messages = messages[-3:]  # 최근 3개만 유지
             
             last_system_idx = -1
             for idx, msg in enumerate(chat_prompts):
@@ -285,11 +283,11 @@ class CodeChatAgent:
             if last_system_idx >= 0:
                 if messages:
                     chat_prompts = chat_prompts[:last_system_idx+1] + messages + chat_prompts[last_system_idx+1:]
+            
 
         # LangChain 모델에 사용할 수 있도록 입력된 메시지 목록을 변환
         chat_prompts = self.convert_to_messages(chat_prompts)
             
-
         # Stream 방식
         tokens = []
         async for chunk in self.model.astream(chat_prompts, config):
@@ -344,15 +342,23 @@ class CodeChatAgent:
         result = self.model.invoke(query_rewriting_prompt)
 
         try:
-            print(f"### result.content.strip() = {result.content.strip()}")
-            result_json = json.loads(result.content.strip())
-            
+            raw_content = result.content.strip()
+
+            # Markdown 코드블럭 제거 처리
+            if raw_content.startswith("```"):
+                lines = raw_content.splitlines()
+                # 첫 줄이 ```json 또는 ``` 이고 마지막 줄이 ```이면 제거
+                if len(lines) >= 3 and lines[0].strip().startswith("```") and lines[-1].strip() == "```":
+                    raw_content = "\n".join(lines[1:-1])
+
+            print(f"### raw_content = {raw_content}")
+            result_json = json.loads(raw_content)
             print(f"### result_json = {result_json}")
             
             rewritten_ko = result_json.get("rewritten_ko")
             rewritten_en = result_json.get("rewritten_en")
-        except json.JSONDecodeError:
-            print("### JSON 파싱 실패! 결과:\n", result.content)
+        except Exception as e:
+            print(f"### JSON 파싱 실패! 에러: {e}\n결과:\n{result.content}")
             rewritten_ko = rewritten_en = None
 
         vector_store = get_vector_store(collection_name=index_name)
