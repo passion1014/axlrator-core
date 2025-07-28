@@ -41,15 +41,15 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
 
         metadata = {
             "id": uuid,
-            "doc_id": org_resrc_dict["id"],
-            "name": org_resrc_dict["resrc_name"],
-            "chunked_data_id": chunked_data_dict["id"],
-            "doc_name": chunked_data_dict["data_name"],
-            **(chunked_data_dict["document_metadata"] if isinstance(chunked_data_dict.get("document_metadata"), dict) else {})
+            "doc_id": org_resrc_dict.id,
+            "name": org_resrc_dict.resrc_name,
+            "chunked_data_id": chunked_data_dict.id,
+            "doc_name": chunked_data_dict.data_name,
+            **(chunked_data_dict.document_metadata if isinstance(chunked_data_dict.document_metadata, dict) else {})
         }
 
-        page_content = f"{chunked_data_dict['content']}\n{chunked_data_dict['context_chunk']}" if chunked_data_dict.get("context_chunk") else chunked_data_dict["content"]
-        metadata["type"] = "summary" if chunked_data_dict.get("context_chunk") else "original"
+        page_content = f"{chunked_data_dict.content}\n{chunked_data_dict.context_chunk}" if chunked_data_dict.context_chunk else chunked_data_dict.content
+        metadata["type"] = "summary" if hasattr(chunked_data_dict, "context_chunk") and chunked_data_dict.context_chunk else "original"
         documents.append(Document(page_content=page_content, metadata=metadata))
 
     
