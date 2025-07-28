@@ -393,14 +393,15 @@ class CodeChatAgent:
         print(f"\n\n>>>>>>>>>>>>>>>>>>>>> merged_results = {merged_results}")
         
         for i, vector_data in enumerate(merged_results, start=1):
+            metadata = vector_data.get("metadata", {})
             context_datas.append({
                 "id": vector_data["id"],
                 "seq": i,
                 "type": "vectordb",
                 "doc_id": vector_data.get("doc_id", ""),
-                "name": vector_data.get("name", "vector"),
-                "chunked_data_id": vector_data.get("doc_id", ""),
-                "doc_name": vector_data.get("doc_name", i),
+                "doc_name": metadata.get("name", i),
+                "chunked_data_id": metadata.get("chunked_data_id", ""),
+                "name": metadata.get("doc_name", "vector"),
                 "content": vector_data.get("content", "")
             })
         state["context_datas"] = context_datas
