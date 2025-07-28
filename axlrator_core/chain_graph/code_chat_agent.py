@@ -551,6 +551,8 @@ def make_source_item(user_id: str, context_datas: list) -> list:
         resrc_org_id = doc_id
         resrc_name = items[0].get("name", f"vector_{doc_id}")
         content_joined = "\n".join(item.get("content", "") for item in items)
+        
+        print(f">>>>>>>>>>>>>>>>>>> content_joined = {content_joined}")
 
         source = {
             "source": {
