@@ -393,9 +393,9 @@ class CodeChatAgent:
         for i, vector_data in enumerate(merged_results, start=1):
             context_datas.append({
                 "id": vector_data["id"],
-                "seq": -1,
+                "seq": i,
                 "type": "vectordb",
-                "name": f"vectordb_{i}", # 이부분 수정필요. 조회된 vector 조각이 어디서 왔는지 확인이 필요함
+                "name": f"{vector_data.get("name", "vector")}_{vector_data.get("doc_name", i)}", # 이부분 수정필요. 조회된 vector 조각이 어디서 왔는지 확인이 필요함
                 "content": vector_data.get("content", "")
             })
         state["context_datas"] = context_datas
@@ -485,6 +485,7 @@ def store_vector_sources(metadata, search_results, context_datas):
     if user_id and chat_id and message_id:
         doc_id = search_results[0].get("doc_id", "")
         contents = [item.get("content", "") for item in context_datas if isinstance(item.get("content", ""), str)]
+        # source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
         source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
 
         with get_axlrui_session() as session:
