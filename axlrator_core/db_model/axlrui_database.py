@@ -26,5 +26,5 @@ _SessionLocal = sessionmaker(bind=axlrui_engine, autocommit=False, autoflush=Fal
 Base = declarative_base()
 
 
-def get_axlr_session():
+def get_axlrui_session():
     return _SessionLocal()

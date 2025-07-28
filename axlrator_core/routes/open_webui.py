@@ -15,7 +15,7 @@ from axlrator_core.chain_graph.code_chat_agent import CodeChatAgent
 from axlrator_core.chain_graph.document_manual_chain import DocumentManualChain
 from axlrator_core.dataclasses.code_assist_data import CodeAssistInfo
 from axlrator_core.dataclasses.document_manual_data import DocumentManualInfo
-from axlrator_core.db_model.axlrui_database import get_axlr_session
+from axlrator_core.db_model.axlrui_database import get_axlrui_session
 from axlrator_core.db_model.axlrui_database_models import Chat
 from axlrator_core.db_model.database import get_async_session
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -252,7 +252,7 @@ async def post_v1_chat_completed(
     chat_id = message.chat_id
     
     chat_data = {}
-    with get_axlr_session() as session:
+    with get_axlrui_session() as session:
         # 조회
         chat_row = session.query(Chat).filter(Chat.id == chat_id).first()
         if chat_row and chat_row.chat:

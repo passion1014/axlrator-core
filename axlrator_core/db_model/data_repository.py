@@ -278,13 +278,23 @@ class ChunkedDataRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
     
-    async def get_chunked_data_by_org_resrc_id(self, org_resrc_id: int) -> list[ChunkedData]:
+    async def get_chunked_data_by_org_resrc_id(self, org_resrc_id: int) -> list[dict]:
         """
-        원본 리소스 ID로 ChunkedData 목록을 조회합니다.
+        원본 리소스 ID로 ChunkedData와 OrgRSrc를 조인하여 조회합니다.
         """
-        stmt = select(ChunkedData).where(ChunkedData.org_resrc_id == org_resrc_id)
+        stmt = (
+            select(OrgRSrc, ChunkedData)
+            .where(OrgRSrc.id == ChunkedData.org_resrc_id)
+            .where(OrgRSrc.id == org_resrc_id)
+        )
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        return [
+            {
+                "org_resrc": org_resrc.to_dict(),
+                "chunked_data": chunked_data.to_dict()
+            }
+            for org_resrc, chunked_data in result.all()
+        ]
 
     async def get_chunked_data_by_content(self, data_type:str, content: str) -> list[ChunkedData]:
         """

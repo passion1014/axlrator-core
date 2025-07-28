@@ -29,31 +29,38 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
     chunked_data_Repository = ChunkedDataRepository(session=session)
     
     # org_resrc.id로 ChunkedData 를 조회
-    chunked_data_list = await chunked_data_Repository.get_chunked_data_by_org_resrc_id(org_resrc_id=org_resrc.id)
+    data_list = await chunked_data_Repository.get_chunked_data_by_org_resrc_id(org_resrc_id=org_resrc.id)
 
-    uuids = [str(uuid4()) for _ in range(len(chunked_data_list))]
+    uuids = [str(uuid4()) for _ in range(len(data_list))]
     
     # 각각의 ChunkedData에 대해 처리
     documents = []
-    for data, uuid in zip(chunked_data_list, uuids):
+    for data, uuid in zip(data_list, uuids):
+        org_resrc_dict = data["org_resrc"]
+        chunked_data_dict = data["chunked_data"]
+
         metadata = {
             "id": uuid,
-            "doc_id": data.org_resrc_id,
-            "chunked_data_id": data.id,
-            **(data.document_metadata if isinstance(data.document_metadata, dict) else {})
+            "doc_id": org_resrc_dict["id"],
+            "name": org_resrc_dict["resrc_name"],
+            "chunked_data_id": chunked_data_dict["id"],
+            "doc_name": chunked_data_dict["data_name"],
+            **(chunked_data_dict["document_metadata"] if isinstance(chunked_data_dict.get("document_metadata"), dict) else {})
         }
 
-        page_content = f"{data.content}\n{data.context_chunk}" if hasattr(data, "context_chunk") and data.context_chunk else data.content
-        metadata["type"] = "summary" if hasattr(data, "context_chunk") and data.context_chunk else "original"
+        page_content = f"{chunked_data_dict['content']}\n{chunked_data_dict['context_chunk']}" if chunked_data_dict.get("context_chunk") else chunked_data_dict["content"]
+        metadata["type"] = "summary" if chunked_data_dict.get("context_chunk") else "original"
         documents.append(Document(page_content=page_content, metadata=metadata))
+
     
     # vector_store에 저장
     vector_dict = vector_store.add_documents(docs=documents)
     
     # chunked_data 업데이트
-    for data, document, uuid, vector_id in zip(chunked_data_list, documents, uuids, vector_dict['ids']):
+    for row, document, uuid, vector_id in zip(data_list, documents, uuids, vector_dict['ids']):
+        chunked_data = row["chunked_data"]    
         await chunked_data_Repository.update_chunked_data(
-            chunked_data=data,
+            chunked_data=chunked_data,
             faiss_info_id=vector_id,
             vector_index=vector_id,
             document_metadata=document.metadata,

@@ -20,7 +20,7 @@ from langgraph.types import StreamWriter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
-from axlrator_core.db_model.axlrui_database import get_axlr_session
+from axlrator_core.db_model.axlrui_database import get_axlrui_session
 from axlrator_core.db_model.axlrui_database_models import Chat
 from axlrator_core.utils import get_llm_model
 from axlrator_core.vectordb.bm25_search import ElasticsearchBM25
@@ -142,10 +142,10 @@ class CodeChatAgent:
         return state
 
     def get_file_context(self, file_id: str) -> Optional[dict]:
-        from axlrator_core.db_model.axlrui_database import get_axlr_session
+        from axlrator_core.db_model.axlrui_database import get_axlrui_session
         from axlrator_core.db_model.axlrui_database_models import File
 
-        with get_axlr_session() as session:
+        with get_axlrui_session() as session:
             file_row = session.query(File).filter(File.id == file_id).first()
             if file_row and file_row.data:
                 try:
@@ -487,7 +487,7 @@ def store_vector_sources(metadata, search_results, context_datas):
         contents = [item.get("content", "") for item in context_datas if isinstance(item.get("content", ""), str)]
         source = make_source_item(user_id=user_id, resrc_org_id=doc_id, resrc_name=f"milvus_{doc_id}", context_datas=contents)
 
-        with get_axlr_session() as session:
+        with get_axlrui_session() as session:
             # 조회
             chat_row = session.query(Chat).filter(Chat.id == chat_id).first()
             if chat_row and chat_row.chat:
