@@ -401,7 +401,7 @@ class CodeChatAgent:
                 "doc_id": vector_data.get("doc_id", ""),
                 "doc_name": metadata.get("name", i),
                 "chunked_data_id": metadata.get("chunked_data_id", ""),
-                "name": metadata.get("doc_name", "vector"),
+                "name": metadata.get("name", "vector"),
                 "content": vector_data.get("content", "")
             })
         state["context_datas"] = context_datas
