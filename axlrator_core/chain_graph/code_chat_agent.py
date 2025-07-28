@@ -351,9 +351,9 @@ class CodeChatAgent:
                 if len(lines) >= 3 and lines[0].strip().startswith("```") and lines[-1].strip() == "```":
                     raw_content = "\n".join(lines[1:-1])
 
-            print(f"### raw_content = {raw_content}")
+            # print(f"### raw_content = {raw_content}")
             result_json = json.loads(raw_content)
-            print(f"### result_json = {result_json}")
+            # print(f"### result_json = {result_json}")
             
             rewritten_ko = result_json.get("rewritten_ko")
             rewritten_en = result_json.get("rewritten_en")
@@ -390,7 +390,7 @@ class CodeChatAgent:
                 unique_results_dict[result_id] = result
         merged_results = list(unique_results_dict.values())
         
-        print(f"\n\n>>>>>>>>>>>>>>>>>>>>> merged_results = {merged_results}")
+        # print(f"\n\n>>>>>>>>>>>>>>>>>>>>> merged_results = {merged_results}")
         
         for i, vector_data in enumerate(merged_results, start=1):
             metadata = vector_data.get("metadata", {})
@@ -586,7 +586,7 @@ def make_source_item(user_id: str, context_datas: list) -> list:
                 "error": "",
                 "itemId": ""
             },
-            "document": items,
+            "document": content_list,
             "metadata": [
                 {
                     "created_by": user_id,
