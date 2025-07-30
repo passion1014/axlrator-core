@@ -36,6 +36,7 @@ class CodeChatState(TypedDict):
     context_datas: Optional[List[dict]] = None # file_contexts, files, vectordatas를 모은 context 데이터 리스트
     context:str
     metadata:Optional[dict] = None
+    is_vector_search:str
     response:str
     
 
@@ -414,8 +415,21 @@ class CodeChatAgent:
 
 
     def check_need_vector_search_node(self, state: CodeChatState) -> CodeChatState:
+        metadata = state.get("metadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
+        features = metadata.get("features")
+        if not isinstance(features, dict):
+            features = {}
+        
+        # metadata.features.is_vectordb 의 값이 False이면 패스
+        is_vectordb = features.get("is_vectordb", False)
+        if is_vectordb in (False, "False"):
+            state["is_vector_search"] = "no"
+            return state
+            
         # chat_type이 02일 경우만 필요함
-        if state["chat_type"] != "02":
+        if state.get("chat_type") != "02":
             state["is_vector_search"] = "no"
             return state
         
@@ -443,7 +457,6 @@ Question:
 
     def route_based_on_vector_need(self, state: CodeChatState) -> str:
         return state.get("is_vector_search", "no")
-
 
 
     def get_chain(self, thread_id: str = str(uuid.uuid4()), chat_type:str = "" , checkpointer = None):
