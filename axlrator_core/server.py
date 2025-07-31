@@ -30,6 +30,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from axlrator_core.config import STATIC_DIR
 from axlrator_core.process.reranker import AlfredReranker
+from axlrator_core.logger import logger
 
 # client service
 from axlrator_core.routes import (

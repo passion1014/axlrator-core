@@ -25,6 +25,7 @@ from axlrator_core.db_model.axlrui_database_models import Chat
 from axlrator_core.utils import get_llm_model
 from axlrator_core.vectordb.bm25_search import ElasticsearchBM25
 from axlrator_core.vectordb.vector_store import get_vector_store
+from axlrator_core.logger import logger
 
 
 
@@ -164,7 +165,7 @@ class CodeChatAgent:
                     return data
                 except Exception as e:
                     # 로깅을 추가하고 None 반환
-                    print(f"Error parsing file data: {e}")
+                    logger.info(f"Error parsing file data: {e}")
                     return None
         return None
 
@@ -352,14 +353,14 @@ class CodeChatAgent:
                 if len(lines) >= 3 and lines[0].strip().startswith("```") and lines[-1].strip() == "```":
                     raw_content = "\n".join(lines[1:-1])
 
-            # print(f"### raw_content = {raw_content}")
+            # logger.info(f"### raw_content = {raw_content}")
             result_json = json.loads(raw_content)
-            # print(f"### result_json = {result_json}")
+            # logger.info(f"### result_json = {result_json}")
             
             rewritten_ko = result_json.get("rewritten_ko")
             rewritten_en = result_json.get("rewritten_en")
         except Exception as e:
-            print(f"### JSON 파싱 실패! 에러: {e}\n결과:\n{result.content}")
+            logger.info(f"### JSON 파싱 실패! 에러: {e}\n결과:\n{result.content}")
             rewritten_ko = rewritten_en = None
 
         vector_store = get_vector_store(collection_name=index_name)
@@ -368,12 +369,12 @@ class CodeChatAgent:
         if rewritten_ko:
             search_ko_results = vector_store.similarity_search_with_score(query=rewritten_ko, k=5)
         else:
-            print("### 벡터 검색 생략: rewritten_ko가 None")
+            logger.info("### 벡터 검색 생략: rewritten_ko가 None")
 
         if rewritten_en:
             search_en_results = vector_store.similarity_search_with_score(query=rewritten_en, k=5)
         else:
-            print("### 벡터 검색 생략: rewritten_en가 None")
+            logger.info("### 벡터 검색 생략: rewritten_en가 None")
         
         # 로그출력
         # TODO: logging 모듈로 정해진 디렉토리에 저장하도록 한다.
@@ -391,7 +392,7 @@ class CodeChatAgent:
                 unique_results_dict[result_id] = result
         merged_results = list(unique_results_dict.values())
         
-        # print(f"\n\n>>>>>>>>>>>>>>>>>>>>> merged_results = {merged_results}")
+        # logger.info(f"\n\n>>>>>>>>>>>>>>>>>>>>> merged_results = {merged_results}")
         
         for i, vector_data in enumerate(merged_results, start=1):
             metadata = vector_data.get("metadata", {})
@@ -499,7 +500,7 @@ def store_vector_sources(metadata, context_datas):
     chat_id = metadata.get("chat_id") if metadata else None
     message_id = metadata.get("message_id") if metadata else None
     
-    print(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}, chat_type: {chat_type}")
+    logger.info(f"### [벡터 소스 저장] user_id: {user_id}, chat_id: {chat_id}, message_id: {message_id}, chat_type: {chat_type}")
     
     if user_id and chat_id and message_id:
         # make_source_item now returns a list of sources
@@ -549,7 +550,7 @@ def store_vector_sources(metadata, context_datas):
                     return chat_data
                 except Exception as e:
                     # 로깅을 추가하고 None 반환
-                    print(f"Error parsing file data: {e}")
+                    logger.info(f"Error parsing file data: {e}")
                     return None
 
 def make_source_item(user_id: str, context_datas: list) -> list:
@@ -568,7 +569,7 @@ def make_source_item(user_id: str, context_datas: list) -> list:
         resrc_name = items[0].get("doc_name", f"vector_{doc_id}")
         content_list = [item.get("content", "") for item in items]
         content_joined = "\n".join(item.get("content", "") for item in items)
-        # print(f">>>>>>>>>>>>>>>>>>> content_joined = {content_joined}")
+        # logger.info(f">>>>>>>>>>>>>>>>>>> content_joined = {content_joined}")
         source = {
             "source": {
                 "type": "milvus",
@@ -628,7 +629,7 @@ if __name__ == "__main__":
         chat_history="chat_history"
     )
     
-    print(test)
+    logger.info(test)
 
     # from langchain_core.messages import HumanMessage
     
