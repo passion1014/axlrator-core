@@ -49,6 +49,11 @@ async def process_vectorize(collection_name: str, session: AsyncSession, org_res
         }
 
         page_content = f"{chunked_data_dict.content}\n{chunked_data_dict.context_chunk}" if chunked_data_dict.context_chunk else chunked_data_dict.content
+        
+        # 길이가 65535 이상인 경우 컨텍스트 청크만 사용 (milvus 제한으로 인한 에러 방지)
+        if len(page_content) > 65535:
+            page_content = chunked_data_dict.context_chunk
+        
         metadata["type"] = "summary" if hasattr(chunked_data_dict, "context_chunk") and chunked_data_dict.context_chunk else "original"
         documents.append(Document(page_content=page_content, metadata=metadata))
 
