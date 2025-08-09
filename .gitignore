@@ -13,3 +13,4 @@ data
 copy_changed_files.sh
 test/ppt
 test/document
+extracted_files
