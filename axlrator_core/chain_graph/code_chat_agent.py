@@ -197,23 +197,7 @@ class CodeChatAgent:
         return {"messages": outputs}
 
     @staticmethod
-    def convert_to_messages(chat_prompts_raw):
-        '''
-        LangChain 모델에 사용할 수 있도록 입력된 메시지 목록을 변환합니다.
-
-        Args:
-            chat_prompts_raw (List[Union[dict, BaseMessage]]): 
-                'role'과 'content'를 포함한 딕셔너리 형태 또는 
-                LangChain의 메시지 객체(BaseMessage 하위 클래스)로 구성된 리스트.
-
-        Returns:
-            List[BaseMessage]: 
-                SystemMessage, HumanMessage, AIMessage 등 LangChain에서 사용하는 메시지 객체 리스트.
-
-        Raises:
-            ValueError: 
-                알 수 없는 역할(role)이 있는 경우 또는 지원하지 않는 타입이 포함된 경우 예외를 발생시킵니다.
-        '''
+    def convert_to_messages_old(chat_prompts_raw):
         converted = []
         for item in chat_prompts_raw:
             if isinstance(item, dict):
@@ -232,6 +216,50 @@ class CodeChatAgent:
             else:
                 raise ValueError(f"Unsupported chat_prompt type: {type(item)}")
         return converted
+
+    @staticmethod
+    def convert_to_messages(chat_prompts_raw):
+        from langchain_core.prompts import ChatPromptTemplate
+
+        def _escape_braces(s: str) -> str:
+            # Prevent LangChain template parser from interpreting literal braces in code blocks/JSON
+            return s.replace("{", "{{").replace("}", "}}") if isinstance(s, str) else s
+
+        converted = []
+        for item in chat_prompts_raw:
+            if isinstance(item, dict):
+                role = item.get("role")
+                content = _escape_braces(item.get("content", ""))
+
+                if role == "system":
+                    converted.append(("system", content))
+                elif role == "user":
+                    converted.append(("human", content))
+                elif role == "assistant":
+                    converted.append(("ai", content))
+                else:
+                    raise ValueError(f"Unknown role: {role}")
+
+            elif isinstance(item, BaseMessage):
+                content = _escape_braces(item.content)
+
+                if isinstance(item, SystemMessage):
+                    converted.append(("system", content))
+                elif isinstance(item, HumanMessage):
+                    converted.append(("human", content))
+                elif isinstance(item, AIMessage):
+                    converted.append(("ai", content))
+                else:
+                    raise ValueError(f"Unknown role: {role}")
+            else:
+                raise ValueError(f"Unsupported chat_prompt type: {type(item)}")
+
+        prompt = ChatPromptTemplate.from_messages(converted)
+
+        return prompt
+
+
+
 
     # Define the node that calls the model
     async def call_model_node(self,
@@ -253,8 +281,10 @@ class CodeChatAgent:
                 chat_history = chat_history
             )
         elif (chat_type == "02") :
+            _raw_context = state.get("context", "")
+            _ctx = f"<context>\n{_raw_context}\n</context>" if (_raw_context and str(_raw_context).strip()) else ""
             chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
-                context = state.get("context", ""),
+                context = _ctx,
                 user_query = user_query
             )
         elif (chat_type == "03") :
@@ -276,7 +306,7 @@ class CodeChatAgent:
         # system 메세지 뒤에 채팅이력 추가
         if chat_type in ("02") and isinstance(chat_prompts, list):
             messages = (state.get("messages") or [])[:-1]
-            messages = messages[-3:]  # 최근 3개만 유지
+            messages = messages[-5:]  # 최근 5개만 유지
             
             last_system_idx = -1
             for idx, msg in enumerate(chat_prompts):
@@ -285,11 +315,12 @@ class CodeChatAgent:
             if last_system_idx >= 0:
                 if messages:
                     chat_prompts = chat_prompts[:last_system_idx+1] + messages + chat_prompts[last_system_idx+1:]
-            
 
         # LangChain 모델에 사용할 수 있도록 입력된 메시지 목록을 변환
-        chat_prompts = self.convert_to_messages(chat_prompts)
-            
+        chat_Prompt_template = self.convert_to_messages(chat_prompts)
+        chat_prompts = chat_Prompt_template.format_messages()
+        print(f"### chat_prompts = {chat_prompts}")
+        
         # Stream 방식
         tokens = []
         async for chunk in self.model.astream(chat_prompts, config):
