@@ -252,7 +252,7 @@ class CodeChatAgent:
                 else:
                     raise ValueError(f"Unknown role: {role}")
             else:
-                raise ValueError(f"Unsupported chat_prompt type: {type(item)}")
+                converted.append(("human", item))
 
         prompt = ChatPromptTemplate.from_messages(converted)
 
