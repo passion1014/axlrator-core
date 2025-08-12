@@ -83,7 +83,7 @@ class CodeChatAgent:
         """
         chat_lines = []
         indent = "  "
-        recent_messages = state["messages"][-3:]
+        recent_messages = state["messages"][-6:]
         for msg in recent_messages:
             if isinstance(msg, HumanMessage):
                 chat_lines.append(f"{indent}USER: {msg.content.strip()}")
@@ -283,11 +283,17 @@ class CodeChatAgent:
             )
         elif (chat_type == "02") :
             _raw_context = state.get("context", "")
-            _ctx = f"<context>\n{_raw_context}\n</context>" if (_raw_context and str(_raw_context).strip()) else ""
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
-                context = _ctx,
-                user_query = user_query
-            )
+            
+            if (len(_raw_context.strip()) == 0) :
+                chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02_NOCONTEXT").compile(
+                    user_query = user_query
+                )
+            else :
+                chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
+                    context = _raw_context,
+                    user_query = user_query
+                )
+            
         elif (chat_type == "03") :
             chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_03").compile(
                 chat_history = chat_history
@@ -307,7 +313,7 @@ class CodeChatAgent:
         # system 메세지 뒤에 채팅이력 추가
         if chat_type in ("02") and isinstance(chat_prompts, list):
             messages = (state.get("messages") or [])[:-1]
-            messages = messages[-5:]  # 최근 5개만 유지
+            messages = messages[-10:]  # 최근 10개만 유지
             
             last_system_idx = -1
             for idx, msg in enumerate(chat_prompts):
