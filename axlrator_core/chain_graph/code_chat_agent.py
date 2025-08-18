@@ -123,24 +123,58 @@ class CodeChatAgent:
                 return True
         return False
 
-    def merge_context_datas_node(self, state: CodeChatState) -> CodeChatState:
+    def merge_context_datas_node(self, state: "CodeChatState") -> "CodeChatState":
         parts = []
-        context_datas = state.get("context_datas", [])
-        
-        if isinstance(context_datas, list):
-            for i, context_data in enumerate(context_datas):
-                if context_data:
-                    _content = context_data.get("content", "")
-                    if _content.strip():
-                        parts.append(
-                            f"<source id=\"{i+1}\" name=\"{context_data['name']}\">\n{_content}\n</source>"
-                            # id= 셋팅되는 값을 별도의 seq로 관리하는게 좋을듯.
-                        )
+        context_datas = state.get("context_datas", []) or []
 
+        # 1) doc_id -> id 매핑 테이블과 다음에 부여할 id 카운터
+        source_id_map: dict[str, int] = {}
+        next_id = 1
+
+        # 2) 각 context_data에 source_id를 계산해서 임시로 넣어둠
+        computed_ids: list[int] = []
+        for context_data in context_datas:
+            assigned_id = None
+
+            if isinstance(context_data, dict):
+                ctype = context_data.get("type")
+                if ctype == "vectordb":
+                    doc_id = context_data.get("doc_id")
+                    if doc_id:  # doc_id가 있을 때만 동일 id 재사용
+                        if doc_id in source_id_map:
+                            assigned_id = source_id_map[doc_id]
+                        else:
+                            source_id_map[doc_id] = next_id
+                            assigned_id = next_id
+                            next_id += 1
+
+            # vectordb/doc_id 케이스가 아니면 순차 id 부여
+            if assigned_id is None:
+                assigned_id = next_id
+                next_id += 1
+
+            computed_ids.append(assigned_id)
+
+        # 3) parts 구성
+        for i, context_data in enumerate(context_datas):
+            if not context_data:
+                continue
+
+            content = (context_data.get("content") or "").strip()
+            if not content:
+                continue
+
+            name = context_data.get("name") or f"source-{i+1}"
+            sid = computed_ids[i]
+
+            parts.append(
+                f"<source id=\"{sid}\" name=\"{name}\">\n{content}\n</source>"
+            )
+
+        # 4) state 반영: context와 매핑 테이블을 저장
         if parts:
-            content = "\n\n".join(parts)
-            state["context"] = content
-        
+            state["context"] = "\n\n".join(parts)
+
         return state
 
     def get_file_context(self, file_id: str) -> Optional[dict]:
@@ -362,9 +396,16 @@ class CodeChatAgent:
         return state
 
 
+    # 채팅 메시지 데이터 업데이트 노드
+    def update_chat_message_node(self, state: CodeChatState) -> CodeChatState:
+        # chat_type이 02인 경우만 아래 로직을 타도록
+        if state.get("chat_type") == "02":
+            pass
+        return state
+
+
     # 1. file 컨텍스트가 없을 경우
     # 2. LLM 
-
     async def search_vector_datas_node(self, state:CodeChatState) -> CodeChatState:
 
         index_name = "code_assist" # 추후 입력값을 받을 수 있도록 변경
@@ -421,7 +462,7 @@ class CodeChatAgent:
 
         # 2개의 결과값을 머지
         merged_results = search_ko_results + search_en_results
-        
+                
         # 중복 제거: id 기준으로 dict 구성 후 다시 리스트로
         unique_results_dict = {}
         for result in merged_results:
@@ -430,14 +471,14 @@ class CodeChatAgent:
                 unique_results_dict[result_id] = result
         merged_results = list(unique_results_dict.values())
         
-        # logger.info(f"\n\n>>>>>>>>>>>>>>>>>>>>> merged_results = {merged_results}")
-        
         for i, vector_data in enumerate(merged_results, start=1):
             metadata = vector_data.get("metadata", {})
             context_datas.append({
                 "id": vector_data["id"],
                 "seq": i,
                 "type": "vectordb",
+                "score": vector_data.get("score", 0), # 벡터 검색 거리 정보
+                "accuracy": vector_data.get("accuracy", 0), # 벡터 검색 정확도 정보
                 "doc_id": vector_data.get("doc_id", ""),
                 "doc_name": metadata.get("name", i),
                 "chunked_data_id": metadata.get("chunked_data_id", ""),
@@ -651,7 +692,10 @@ def make_source_item(user_id: str, context_datas: list) -> list:
                 }
                 for _ in items
             ],
-            "distances": [1.0 for _ in items]
+            "distances": [
+                (float(_item.get("accuracy", 0)) / 100.0) if isinstance(_item.get("accuracy", 0), (int, float)) else 0.0
+                for _item in items
+            ]
         }
 
         sources.append(source)

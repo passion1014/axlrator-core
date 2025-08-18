@@ -110,7 +110,7 @@ class PyMilvusVectorStore:
             } for hit in results[0]
         ]
         
-    def similarity_search_with_score(self, query: str, k: int = 3):
+    def similarity_search_with_score(self, query: str, k: int = 3, mode: str = "absolute"):
         query_vector = self.embedding_function.embed_query(query)
         results = self.client.search(
             collection_name=self.collection_name,
@@ -132,7 +132,28 @@ class PyMilvusVectorStore:
                 "metadata": {k: v for k, v in hit["entity"].items() if k not in ("content", "embedding")}
             } for hit in results[0]
         ]
-        
+
+        # Compute accuracy for each result
+        scores = [doc["score"] for doc in search_docs]
+        if not scores:
+            return search_docs
+        if mode == "relative":
+            min_score = min(scores)
+            max_score = max(scores)
+            # If all scores are equal, avoid division by zero
+            if max_score == min_score:
+                for doc in search_docs:
+                    doc["accuracy"] = 100.0
+            else:
+                for doc in search_docs:
+                    # Lower score = higher accuracy
+                    doc["accuracy"] = float((max_score - doc["score"]) / (max_score - min_score) * 100)
+        elif mode == "absolute":
+            for doc in search_docs:
+                doc["accuracy"] = float((1.0 / (1.0 + doc["score"])) * 100)
+        else:
+            # Unknown mode: don't add accuracy
+            pass
         return search_docs
 
 
