@@ -10,7 +10,7 @@
             "envFile": "${workspaceFolder}/.env.testcase",
             "args": [
                 "--port",
-                "8001",
+                "8000",
                 "--env",
                 ".env.testcase"
             ],
