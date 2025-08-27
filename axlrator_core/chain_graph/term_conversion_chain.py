@@ -91,7 +91,7 @@ def create_term_conversion_chain():
     model = get_llm_model().with_config(callbacks=[CallbackHandler()])
     
     def generate_response(state: AgentState) -> AgentState:
-        langfuse_prompt = langfuse.get_prompt("TERM_CONVERSION_PROMPT2", version=1)
+        langfuse_prompt = langfuse.get_prompt("TERM_CONVERSION_PROMPT2")
         prompt = langfuse_prompt.compile(request=state['question'], context=state['context'])
         response = model.invoke(prompt)
 
