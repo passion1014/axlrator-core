@@ -1,6 +1,6 @@
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, END
-from axlrator_core.utils import get_llm_model
+from axlrator_core.common.utils import get_llm_model
 from langfuse.callback import CallbackHandler
 from langfuse import Langfuse
 from langchain_core.runnables import Runnable

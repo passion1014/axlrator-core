@@ -1,4 +1,3 @@
-
 import json
 import os
 import time
@@ -108,8 +107,6 @@ async def post_v1_chat_completions(
     print(f"### /v1/chat/completions - body = {body}")
     message = ChatCompletionRequest.model_validate(body)
     
-    callback_handler = CallbackHandler()
-
     chat_type = message.chat_type
     model = message.model
     stream_mode = message.stream
@@ -132,6 +129,14 @@ async def post_v1_chat_completions(
     
     # 채팅 스레드 아이디 설정 없으면 생성
     thread_id = metadata.get("chat_id") or str(uuid.uuid4())
+    
+    callback_handler = CallbackHandler(
+        user_id=user_id,
+        session_id=thread_id,
+        tags=[f"chat_type={chat_type}"],
+        metadata={"purpose": "LangGraph tracing"}  # 추가 메타데이터
+    )
+    
     config = {"configurable": {"thread_id": thread_id}, "callbacks": [callback_handler]}
     
     if model == "AXLR-Chat":
@@ -215,12 +220,6 @@ async def post_v1_chat_completions(
         else:
             result = await graph.ainvoke({"chat_type": chat_type, "messages": messages, "context_datas": context_datas, "metadata": metadata}, config)
 
-            # if result["messages"]:
-            #     content = "".join(
-            #         m.content for m in result["messages"] if isinstance(m, AIMessage) and m.content
-            #     )
-            # else:
-            #     content = ""
             content = result.get("response")
             
             response = {

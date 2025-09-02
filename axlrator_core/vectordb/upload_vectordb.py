@@ -5,7 +5,7 @@ import chardet
 import argparse
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from axlrator_core.utils import get_embedding_model
+from axlrator_core.common.utils import get_embedding_model
 from langchain.docstore.document import Document
 
 

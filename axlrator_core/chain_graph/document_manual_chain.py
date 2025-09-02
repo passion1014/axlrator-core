@@ -3,12 +3,11 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage, AIMessage
 from axlrator_core.chain_graph.agent_state import AgentState, CodeAssistAutoCompletion, CodeAssistChatState, CodeAssistState
 from axlrator_core.chain_graph.code_chat_agent import store_vector_sources
-from axlrator_core.common.code_assist_utils import extract_code_blocks
-from axlrator_core.common.string_utils import is_table_name
+from axlrator_core.common.text_utils import extract_code_blocks
 from axlrator_core.db_model.data_repository import RSrcTableColumnRepository, RSrcTableRepository, ChunkedDataRepository
 from axlrator_core.process.reranker import get_reranker
 from langgraph.graph import StateGraph, END
-from axlrator_core.utils import get_llm_model
+from axlrator_core.common.utils import get_llm_model
 from axlrator_core.vectordb.bm25_search import ElasticsearchBM25
 from langfuse.callback import CallbackHandler
 from langgraph.types import StreamWriter

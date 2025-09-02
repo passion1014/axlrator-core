@@ -5,7 +5,7 @@ from langfuse import Langfuse
 # from langfuse.callback import CallbackHandler
 from langchain_core.prompts import PromptTemplate
 from axlrator_core.formatter.code_formatter import parse_augmented_chunk
-from axlrator_core.utils import get_llm_model
+from axlrator_core.common.utils import get_llm_model
 
 class CreateSummaryState(TypedDict):
     prompt: str

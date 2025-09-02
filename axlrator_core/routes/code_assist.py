@@ -246,7 +246,7 @@ async def chat(
     checkpointer = AsyncPostgresSaver(pool)
     checkpoint = await checkpointer.aget(config)
 
-    code_chat_info = checkpoint_to_code_chat_info(thead_id=thread_id, checkpoint=checkpoint)
+    checkpoint_to_code_chat_info(thead_id=thread_id, checkpoint=checkpoint)
 
     # 채팅을 위한 에이전트
     agent = await CodeChatAgent.create(index_name="cg_code_assist", session=session)

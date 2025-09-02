@@ -1,5 +1,5 @@
 from axlrator_core.chain_graph.agent_state import AgentState
-from axlrator_core.utils import get_llm_model
+from axlrator_core.common.utils import get_llm_model
 from langfuse.callback import CallbackHandler
 from langfuse import Langfuse
 from langgraph.graph import END, StateGraph

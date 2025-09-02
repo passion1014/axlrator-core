@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from axlrator_core.chain_graph.term_conversion_chain import create_term_conversion_chain
 from axlrator_core.process.compound_word_splitter import CompoundWordSplitter
-from axlrator_core.utils import remove_markdown_code_block
+from axlrator_core.common.utils import remove_markdown_code_block
 
 
 logger = setup_logging()

@@ -20,9 +20,10 @@ from langgraph.types import StreamWriter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
+from axlrator_core.common.text_utils import format_chat_history_tagsafe
 from axlrator_core.db_model.axlrui_database import get_axlrui_session
 from axlrator_core.db_model.axlrui_database_models import Chat
-from axlrator_core.utils import get_llm_model
+from axlrator_core.common.utils import get_llm_model
 from axlrator_core.vectordb.bm25_search import ElasticsearchBM25
 from axlrator_core.vectordb.vector_store import get_vector_store
 from axlrator_core.logger import logger
@@ -75,23 +76,6 @@ class CodeChatAgent:
             if isinstance(msg, HumanMessage):
                 return msg.content.strip()
         return None
-
-    @staticmethod
-    def format_chat_history(state: CodeChatState) -> str:
-        """
-        Formats the chat history for display, ensuring proper indentation and separation.
-        """
-        chat_lines = []
-        indent = "  "
-        recent_messages = state["messages"][-6:]
-        for msg in recent_messages:
-            if isinstance(msg, HumanMessage):
-                chat_lines.append(f"{indent}USER: {msg.content.strip()}")
-            elif isinstance(msg, AIMessage):
-                chat_lines.append(f"{indent}ASSISTANT: {msg.content.strip()}")
-        # Join messages with a blank line for separation
-        chat_history = "<chat_history>\n" + "\n\n".join(chat_lines) + "\n</chat_history>"
-        return chat_history
 
     def pre_process_node(self, state: CodeChatState) -> CodeChatState:
         # context_datas의 항목중에서 type이 files인 항목들은 content를 조회해서 셋팅한다.
@@ -302,65 +286,88 @@ class CodeChatAgent:
         config: RunnableConfig,
         writer: StreamWriter
     ):
-        chat_history = self.format_chat_history(state=state)
+        # 마지막 메세지는 user 메세지이므로 제외하고 이전 대화이력만 사용
+        chat_history = state.get("messages", [])[:-1]
         user_query = self.get_last_user_message(state=state)
         
         # chat_type:str # 01: 검색어 찾기, 02: 질문하기, 03: 후속질문하기, 04: 제목짓기, 05: 태그 추출
         chat_type = state.get('chat_type', '02')
-
         chat_prompts = []
         
-        if (chat_type == "01") :
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_01").compile(
+        system="You are an AI coding assistant. Provide accurate, efficient, and practical support across all areas of software development. Write clean, production-ready code and offer best practices, debugging help, and architectural guidance.",
+        
+        # 이전 대화 요약 파라미터 셋팅
+        _old_chat_summary = ""
+        if _old_chat_summary.strip():
+            _old_chat_summary = f"### Previous Conversation Summary\n{_old_chat_summary}\n\n---"
+
+        # context 파라미터 셋팅
+        _raw_context = state.get("context", "")
+        if _raw_context.strip():
+            _raw_context = f"### Context\n<context>\n{_raw_context}\n</context>\n\n---"
+        
+        _chat_history = format_chat_history_tagsafe(chat_history) if chat_history else ""
+        if _chat_history.strip():
+            _chat_history = f"### Recent Chat History\n{_chat_history}\n\n---"
+        
+        _user_query = user_query if user_query else ""    
+        
+        if (chat_type == "01") : # 검색어 생성
+            chat_prompts = self.langfuse.get_prompt("AXLR_CHAT_SEARCH_QUERY").compile(
+                system=system,
                 current_date = datetime.now().strftime("%Y-%m-%d"), # 현재일자를 yyyy-mm-dd 형식으로 포맷
                 chat_history = chat_history
             )
-        elif (chat_type == "02") :
-            _raw_context = state.get("context", "")
             
-            if (len(_raw_context.strip()) == 0) :
-                chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02_NOCONTEXT").compile(
-                    user_query = user_query
-                )
-            else :
-                chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_02").compile(
-                    context = _raw_context,
-                    user_query = user_query
-                )
+        elif (chat_type == "02") : # 질문하기
+            chat_prompts = self.langfuse.get_prompt("AXLR_CHAT_QUERY").compile(
+                system=system,
+                old_chat_summary=_old_chat_summary,
+                context=_raw_context,
+                chat_history=_chat_history,
+                user_query=_user_query
+            )
             
-        elif (chat_type == "03") :
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_03").compile(
+        elif (chat_type == "03") : # 후속질문 생성하기
+            chat_prompts = self.langfuse.get_prompt("AXLR_CHAT_FOLLOWUP_QUESTION").compile(
+                system=system,
                 chat_history = chat_history
             )
-        elif (chat_type == "04") :
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_04").compile(
+            
+        elif (chat_type == "04") : # 제목 생성
+            chat_prompts = self.langfuse.get_prompt("AXLR_CHAT_TITLE").compile(
+                system=system,
                 chat_history = chat_history
             )
-        elif (chat_type == "05") :
-            chat_prompts = self.langfuse.get_prompt("AXLR_UI_CHAT_CODE_05").compile(
+            
+        elif (chat_type == "05") : # 태그 생성
+            chat_prompts = self.langfuse.get_prompt("AXLR_CHAT_TAG").compile(
+                system=system,
                 chat_history = chat_history
             )
+            
         else :
             chat_prompts = user_query
             pass
             
         # system 메세지 뒤에 채팅이력 추가
-        if chat_type in ("02") and isinstance(chat_prompts, list):
-            messages = (state.get("messages") or [])[:-1]
-            messages = messages[-10:]  # 최근 10개만 유지
+        # if chat_type in ("02") and isinstance(chat_prompts, list):
+        #     messages = (state.get("messages") or [])[:-1]
+        #     messages = messages[-10:]  # 최근 10개만 유지
             
-            last_system_idx = -1
-            for idx, msg in enumerate(chat_prompts):
-                if isinstance(msg, dict) and msg.get("role") == "system":
-                    last_system_idx = idx
-            if last_system_idx >= 0:
-                if messages:
-                    chat_prompts = chat_prompts[:last_system_idx+1] + messages + chat_prompts[last_system_idx+1:]
+        #     last_system_idx = -1
+        #     for idx, msg in enumerate(chat_prompts):
+        #         if isinstance(msg, dict) and msg.get("role") == "system":
+        #             last_system_idx = idx
+        #     if last_system_idx >= 0:
+        #         if messages:
+        #             chat_prompts = chat_prompts[:last_system_idx+1] + messages + chat_prompts[last_system_idx+1:]
 
         # LangChain 모델에 사용할 수 있도록 입력된 메시지 목록을 변환
-        chat_Prompt_template = self.convert_to_messages(chat_prompts)
-        chat_prompts = chat_Prompt_template.format_messages()
-        print(f"### chat_prompts = {chat_prompts}")
+        if isinstance(chat_prompts, list):
+            chat_Prompt_template = self.convert_to_messages(chat_prompts)
+            chat_prompts = chat_Prompt_template.format_messages()
+            print(f"### chat_prompts = {chat_prompts}")
         
         # Stream 방식
         tokens = []
@@ -369,9 +376,6 @@ class CodeChatAgent:
             tokens.append(str(chunk.content))
         state['response'] = "".join(tokens)
 
-        # result = await self.model.ainvoke(chat_prompts)  # 동기 호출로 변경
-        # state["response"] = result.content
-        
         return state
 
     # Define the conditional edge that determines whether to continue or not
@@ -514,9 +518,9 @@ class CodeChatAgent:
             return state
         
         # 기존에 파일로 들어온 컨텍스트가 있으면 패스
-        if self.check_added_file_context(state["context_datas"]):
-            state["is_vector_search"] = "no"
-            return state
+        # if self.check_added_file_context(state["context_datas"]):
+        #     state["is_vector_search"] = "no"
+        #     return state
         
         query = self.get_last_user_message(state)
         prompt = f"""

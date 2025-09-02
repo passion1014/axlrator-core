@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from langchain.schema import Document
 import torch
 from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification
-from axlrator_core.utils import get_rerank_model, get_server_type
+from axlrator_core.common.utils import get_rerank_model, get_server_type
 
 
 class AlfredReranker:

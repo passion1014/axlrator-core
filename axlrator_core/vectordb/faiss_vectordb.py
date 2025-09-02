@@ -13,7 +13,7 @@ from langchain_core.documents import Document
 from axlrator_core.db_model.data_repository import ChunkedDataRepository
 from axlrator_core.db_model.database import get_async_session
 from axlrator_core.db_model.database_models import FaissInfo, ChunkedData
-from axlrator_core.utils import get_embedding_model
+from axlrator_core.common.utils import get_embedding_model
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class PostgresDocstore:

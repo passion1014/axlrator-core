@@ -2,7 +2,7 @@ import os
 from typing import List
 from dotenv import load_dotenv
 from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, MilvusClient, connections
-from axlrator_core.utils import get_embedding_model, get_llm_model
+from axlrator_core.common.utils import get_embedding_model, get_llm_model
 from langchain_milvus import Milvus
 from langchain.schema import Document
 import numpy as np
