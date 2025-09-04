@@ -57,11 +57,12 @@ def format_chat_history_tagsafe(
         elif isinstance(chat, AIMessage):
             result.append(f"<ASSISTANT>\n{escape_content}\n</ASSISTANT>")
             
-        elif chat["role"] == "user":
-            result.append(f"<USER>\n{escape_content}\n</USER>")
-            
-        elif chat["role"] == "assistant":
-            result.append(f"<ASSISTANT>\n{escape_content}\n</ASSISTANT>")
+        elif isinstance(chat, SystemMessage):
+            result.append(f"<SYSTEM>\n{escape_content}\n</SYSTEM>")
+
+        else:
+            print(f"######## Unknown message type: {type(chat)}")
+            result.append(f"<UNKNOWN>\n{escape_content}\n</UNKNOWN>")
             
     return "\n\n".join(result)
 
